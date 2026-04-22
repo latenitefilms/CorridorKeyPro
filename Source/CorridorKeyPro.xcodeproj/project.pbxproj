@@ -36,7 +36,6 @@
 		CK0100000000000000000014 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000014 /* InfoPlist.strings */; };
 		CK0100000000000000000015 /* CorridorKeyProApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000015 /* CorridorKeyProApp.swift */; };
 		CK0100000000000000000016 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000016 /* WelcomeView.swift */; };
-		CK010000000000000000002A /* MotionTemplateInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK020000000000000000002A /* MotionTemplateInstaller.swift */; };
 		CK0100000000000000000017 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000017 /* InfoPlist.strings */; };
 		CK0100000000000000000018 /* Corridor Key Pro.pluginkit in Embed PlugIns */ = {isa = PBXBuildFile; fileRef = CK0300000000000000000002 /* Corridor Key Pro.pluginkit */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		CK0100000000000000000019 /* FxPlug.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CK0400000000000000000001 /* FxPlug.framework */; };
@@ -47,6 +46,7 @@
 		CK010000000000000000001E /* MetalPerformanceShaders.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CK0400000000000000000005 /* MetalPerformanceShaders.framework */; };
 		CK010000000000000000001F /* CoreImage.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CK0400000000000000000006 /* CoreImage.framework */; };
 		CK0100000000000000000021 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CK0400000000000000000008 /* Accelerate.framework */; };
+		CK010000000000000000002A /* MotionTemplateInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK020000000000000000002A /* MotionTemplateInstaller.swift */; };
 		MX0200000000000000000002 /* MLXKeyingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = MX0100000000000000000003 /* MLXKeyingEngine.swift */; };
 		MX0500000000000000000001 /* MLX in Frameworks */ = {isa = PBXBuildFile; productRef = MX0400000000000000000001 /* MLX */; };
 		MX0500000000000000000002 /* MLXNN in Frameworks */ = {isa = PBXBuildFile; productRef = MX0400000000000000000002 /* MLXNN */; };
@@ -116,7 +116,6 @@
 		CK0200000000000000000013 /* RenderPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RenderPipeline.swift; path = CorridorKeyPro/Plugin/Render/RenderPipeline.swift; sourceTree = "<group>"; };
 		CK0200000000000000000015 /* CorridorKeyProApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CorridorKeyProApp.swift; path = CorridorKeyPro/WrapperApp/CorridorKeyProApp.swift; sourceTree = "<group>"; };
 		CK0200000000000000000016 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WelcomeView.swift; path = CorridorKeyPro/WrapperApp/WelcomeView.swift; sourceTree = "<group>"; };
-		CK020000000000000000002A /* MotionTemplateInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MotionTemplateInstaller.swift; path = CorridorKeyPro/WrapperApp/MotionTemplateInstaller.swift; sourceTree = "<group>"; };
 		CK0200000000000000000020 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = CorridorKeyPro/Plugin/Info.plist; sourceTree = "<group>"; };
 		CK0200000000000000000021 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = CorridorKeyPro/WrapperApp/Info.plist; sourceTree = "<group>"; };
 		CK0200000000000000000022 /* CorridorKeyPro.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = CorridorKeyPro.entitlements; path = CorridorKeyPro/Plugin/CorridorKeyPro.entitlements; sourceTree = "<group>"; };
@@ -124,6 +123,7 @@
 		CK0200000000000000000024 /* CorridorKeyShaderTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CorridorKeyShaderTypes.h; path = CorridorKeyPro/Plugin/Shared/CorridorKeyShaderTypes.h; sourceTree = "<group>"; };
 		CK0200000000000000000025 /* CorridorKeyPro-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "CorridorKeyPro-Bridging-Header.h"; path = "CorridorKeyPro/Plugin/Shared/CorridorKeyPro-Bridging-Header.h"; sourceTree = "<group>"; };
 		CK0200000000000000000026 /* Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Shared.xcconfig; path = Configuration/Shared.xcconfig; sourceTree = "<group>"; };
+		CK020000000000000000002A /* MotionTemplateInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MotionTemplateInstaller.swift; path = CorridorKeyPro/WrapperApp/MotionTemplateInstaller.swift; sourceTree = "<group>"; };
 		CK0200000000000000000030 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = CorridorKeyPro/Plugin/Resources/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		CK0200000000000000000031 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = CorridorKeyPro/WrapperApp/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		CK0300000000000000000001 /* Corridor Key Pro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Corridor Key Pro.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -166,7 +166,7 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		22D0980C2F988D670096E749 /* Models */ = {
+		221345DB2F98B78600CF734C /* MLX Models */ = {
 			isa = PBXGroup;
 			children = (
 				22D098012F988D4F0096E749 /* corridorkey_mlx_bridge_512.mlxfn */,
@@ -175,7 +175,7 @@
 				22D098022F988D4F0096E749 /* corridorkey_mlx_bridge_1536.mlxfn */,
 				22D098042F988D4F0096E749 /* corridorkey_mlx_bridge_2048.mlxfn */,
 			);
-			path = Models;
+			path = "MLX Models";
 			sourceTree = "<group>";
 		};
 		CK0A00000000000000000001 = {
@@ -243,7 +243,7 @@
 		CK0A00000000000000000007 /* WrapperApp */ = {
 			isa = PBXGroup;
 			children = (
-				22D0980C2F988D670096E749 /* Models */,
+				221345DB2F98B78600CF734C /* MLX Models */,
 				22D097FE2F9887BD0096E749 /* Credits.rtf */,
 				22D097712F986F5E0096E749 /* Template Icon.icon */,
 				CK0200000000000000000015 /* CorridorKeyProApp.swift */,
