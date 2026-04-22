@@ -1,6 +1,6 @@
 //
 //  CorridorKeyProPlugIn+Render.swift
-//  Corridor Key Pro
+//  Corridor Key Toolbox
 //
 //  Hooks FxPlug's per-tile render callback into the Corridor Key render
 //  pipeline. Final Cut Pro invokes this method on a background thread; the
@@ -24,7 +24,7 @@ extension CorridorKeyProPlugIn {
             throw NSError(
                 domain: FxPlugErrorDomain,
                 code: kFxError_InvalidParameter,
-                userInfo: [NSLocalizedDescriptionKey: "Corridor Key Pro requires a source input."]
+                userInfo: [NSLocalizedDescriptionKey: "Corridor Key Toolbox requires a source input."]
             )
         }
 

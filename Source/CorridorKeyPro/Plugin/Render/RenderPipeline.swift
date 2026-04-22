@@ -1,6 +1,6 @@
 //
 //  RenderPipeline.swift
-//  Corridor Key Pro
+//  Corridor Key Toolbox
 //
 //  Orchestrates a single-frame render. The pipeline is built around three
 //  command buffers so the inference engine (which owns synchronous CPU work
@@ -206,7 +206,7 @@ final class RenderPipeline: @unchecked Sendable {
         guard let commandBuffer = context.commandQueue.makeCommandBuffer() else {
             throw MetalDeviceCacheError.commandBufferCreationFailed
         }
-        commandBuffer.label = "Corridor Key Pro Pass-Through"
+        commandBuffer.label = "Corridor Key Toolbox Pass-Through"
 
         // Reuse the compose render pipeline with the source bound as every
         // sampler and `foregroundOnly` output. This re-publishes the raw
@@ -248,7 +248,7 @@ final class RenderPipeline: @unchecked Sendable {
         guard let preCommandBuffer = context.commandQueue.makeCommandBuffer() else {
             throw MetalDeviceCacheError.commandBufferCreationFailed
         }
-        preCommandBuffer.label = "Corridor Key Pro Cached Pre-Inference"
+        preCommandBuffer.label = "Corridor Key Toolbox Cached Pre-Inference"
 
         let rotatedSource = try applyScreenRotation(
             source: context.sourceTexture,
@@ -305,7 +305,7 @@ final class RenderPipeline: @unchecked Sendable {
         guard let preCommandBuffer = commandQueue.makeCommandBuffer() else {
             throw MetalDeviceCacheError.commandBufferCreationFailed
         }
-        preCommandBuffer.label = "Corridor Key Pro Pre-Inference"
+        preCommandBuffer.label = "Corridor Key Toolbox Pre-Inference"
 
         let rotatedSource = try applyScreenRotation(
             source: sourceTexture,
@@ -358,7 +358,7 @@ final class RenderPipeline: @unchecked Sendable {
         guard let postCommandBuffer = context.commandQueue.makeCommandBuffer() else {
             throw MetalDeviceCacheError.commandBufferCreationFailed
         }
-        postCommandBuffer.label = "Corridor Key Pro Post-Inference"
+        postCommandBuffer.label = "Corridor Key Toolbox Post-Inference"
 
         let upscaledAlpha = try resample(
             source: alphaAtInferenceResolution,
@@ -509,7 +509,7 @@ final class RenderPipeline: @unchecked Sendable {
         guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "Corridor Key Pro Screen Matrix"
+        encoder.label = "Corridor Key Toolbox Screen Matrix"
         encoder.setComputePipelineState(entry.computePipelines.applyScreenMatrix)
         encoder.setTexture(source, index: Int(CKTextureIndexSource.rawValue))
         encoder.setTexture(output, index: Int(CKTextureIndexOutput.rawValue))
@@ -541,7 +541,7 @@ final class RenderPipeline: @unchecked Sendable {
         guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "Corridor Key Pro Hint"
+        encoder.label = "Corridor Key Toolbox Hint"
 
         if let hintTile, let hostTexture = hintTile.metalTexture(for: device) {
             encoder.setComputePipelineState(entry.computePipelines.extractHint)
@@ -581,7 +581,7 @@ final class RenderPipeline: @unchecked Sendable {
         guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "Corridor Key Pro Combine + Normalise"
+        encoder.label = "Corridor Key Toolbox Combine + Normalise"
         encoder.setComputePipelineState(entry.computePipelines.combineAndNormalize)
         encoder.setTexture(source, index: Int(CKTextureIndexSource.rawValue))
         encoder.setTexture(hint, index: Int(CKTextureIndexHint.rawValue))
@@ -617,7 +617,7 @@ final class RenderPipeline: @unchecked Sendable {
         guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "Corridor Key Pro Despill"
+        encoder.label = "Corridor Key Toolbox Despill"
         encoder.setComputePipelineState(entry.computePipelines.despill)
         encoder.setTexture(foreground, index: Int(CKTextureIndexSource.rawValue))
         encoder.setTexture(output, index: Int(CKTextureIndexOutput.rawValue))
@@ -721,7 +721,7 @@ final class RenderPipeline: @unchecked Sendable {
         guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "Corridor Key Pro Levels + Gamma"
+        encoder.label = "Corridor Key Toolbox Levels + Gamma"
         encoder.setComputePipelineState(entry.computePipelines.alphaLevelsGamma)
         encoder.setTexture(source, index: Int(CKTextureIndexMatte.rawValue))
         encoder.setTexture(destination, index: Int(CKTextureIndexOutput.rawValue))
@@ -753,7 +753,7 @@ final class RenderPipeline: @unchecked Sendable {
         var erodeFlag: Int32 = (radius < 0) ? 1 : 0
 
         if let encoder = commandBuffer.makeComputeCommandEncoder() {
-            encoder.label = "Corridor Key Pro Morphology H"
+            encoder.label = "Corridor Key Toolbox Morphology H"
             encoder.setComputePipelineState(entry.computePipelines.morphologyHorizontal)
             encoder.setTexture(source, index: Int(CKTextureIndexMatte.rawValue))
             encoder.setTexture(intermediate, index: Int(CKTextureIndexOutput.rawValue))
@@ -764,7 +764,7 @@ final class RenderPipeline: @unchecked Sendable {
         }
 
         if let encoder = commandBuffer.makeComputeCommandEncoder() {
-            encoder.label = "Corridor Key Pro Morphology V"
+            encoder.label = "Corridor Key Toolbox Morphology V"
             encoder.setComputePipelineState(entry.computePipelines.morphologyVertical)
             encoder.setTexture(intermediate, index: Int(CKTextureIndexMatte.rawValue))
             encoder.setTexture(destination, index: Int(CKTextureIndexOutput.rawValue))
@@ -807,7 +807,7 @@ final class RenderPipeline: @unchecked Sendable {
         var radiusValue = Int32(kernelRadius)
 
         if let encoder = commandBuffer.makeComputeCommandEncoder() {
-            encoder.label = "Corridor Key Pro Blur H"
+            encoder.label = "Corridor Key Toolbox Blur H"
             encoder.setComputePipelineState(entry.computePipelines.gaussianHorizontal)
             encoder.setTexture(source, index: Int(CKTextureIndexMatte.rawValue))
             encoder.setTexture(intermediate, index: Int(CKTextureIndexOutput.rawValue))
@@ -817,7 +817,7 @@ final class RenderPipeline: @unchecked Sendable {
             encoder.endEncoding()
         }
         if let encoder = commandBuffer.makeComputeCommandEncoder() {
-            encoder.label = "Corridor Key Pro Blur V"
+            encoder.label = "Corridor Key Toolbox Blur V"
             encoder.setComputePipelineState(entry.computePipelines.gaussianVertical)
             encoder.setTexture(intermediate, index: Int(CKTextureIndexMatte.rawValue))
             encoder.setTexture(destination, index: Int(CKTextureIndexOutput.rawValue))
@@ -841,7 +841,7 @@ final class RenderPipeline: @unchecked Sendable {
         guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "Corridor Key Pro Source Passthrough"
+        encoder.label = "Corridor Key Toolbox Source Passthrough"
         encoder.setComputePipelineState(entry.computePipelines.sourcePassthrough)
         encoder.setTexture(foreground, index: Int(CKTextureIndexForeground.rawValue))
         encoder.setTexture(source, index: Int(CKTextureIndexSource.rawValue))
@@ -877,7 +877,7 @@ final class RenderPipeline: @unchecked Sendable {
         guard let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: passDescriptor) else {
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "Corridor Key Pro Compose"
+        encoder.label = "Corridor Key Toolbox Compose"
 
         let outputWidth = Float(destinationTile.tilePixelBounds.right - destinationTile.tilePixelBounds.left)
         let outputHeight = Float(destinationTile.tilePixelBounds.top - destinationTile.tilePixelBounds.bottom)
@@ -948,7 +948,7 @@ final class RenderPipeline: @unchecked Sendable {
         guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "Corridor Key Pro Resample"
+        encoder.label = "Corridor Key Toolbox Resample"
         encoder.setComputePipelineState(entry.computePipelines.resample)
         encoder.setTexture(source, index: Int(CKTextureIndexSource.rawValue))
         encoder.setTexture(target, index: Int(CKTextureIndexOutput.rawValue))

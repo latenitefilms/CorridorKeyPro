@@ -1,6 +1,6 @@
 //
 //  RoughMatteKeyingEngine.swift
-//  Corridor Key Pro
+//  Corridor Key Toolbox
 //
 //  Default engine used whenever MLX is disabled or unavailable. Computes the
 //  matte from the raw (0..1) RGB source using the `corridorKeyRoughMatteKernel`
@@ -37,7 +37,7 @@ final class RoughMatteKeyingEngine: KeyingInferenceEngine, @unchecked Sendable {
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             throw KeyingInferenceError.deviceUnavailable
         }
-        commandBuffer.label = "Corridor Key Pro Rough Matte"
+        commandBuffer.label = "Corridor Key Toolbox Rough Matte"
 
         guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
             throw KeyingInferenceError.deviceUnavailable

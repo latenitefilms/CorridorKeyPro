@@ -1,6 +1,6 @@
 //
 //  MLXKeyingEngine.swift
-//  Corridor Key Pro
+//  Corridor Key Toolbox
 //
 //  Loads a CorridorKey `.mlxfn` bridge via mlx-swift's public
 //  `ImportedFunction` API and runs inference for one frame at a time. The

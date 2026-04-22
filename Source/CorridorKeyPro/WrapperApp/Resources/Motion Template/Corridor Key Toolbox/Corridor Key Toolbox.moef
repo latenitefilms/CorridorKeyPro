@@ -256,7 +256,7 @@
 				<parameter name="Width" id="313" flags="8589934610" default="1" value="1920"/>
 				<parameter name="Height" id="314" flags="8589934610" default="1" value="1080"/>
 			</parameter>
-			<filter name="Corridor Key Pro" id="10010" factoryID="6" pluginUUID="D29F6B10-4F3A-4C5E-B611-7A2E8D4C9F08" pluginVersion="1" pluginName="Corridor Key Pro" pluginDynamicParams="0">
+			<filter name="Corridor Key Toolbox" id="10010" factoryID="6" pluginUUID="D29F6B10-4F3A-4C5E-B611-7A2E8D4C9F08" pluginVersion="1" pluginName="Corridor Key Toolbox" pluginDynamicParams="0">
 				<timing in="0 1 1 0" out="147456 153600 1 0" offset="0 1 1 0"/>
 				<baseFlags>8589934609</baseFlags>
 				<parameter name="Settings" id="100" flags="8589938704">

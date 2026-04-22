@@ -1,6 +1,6 @@
 //
 //  CorridorKeyProPlugIn+FxAnalyzer.swift
-//  Corridor Key Pro
+//  Corridor Key Toolbox
 //
 //  Implements the `FxAnalyzer` protocol so the plug-in can run MLX inference
 //  for every frame of the source clip before the user expects real-time

@@ -1,6 +1,6 @@
 //
 //  ParameterEnumerations.swift
-//  Corridor Key Pro
+//  Corridor Key Toolbox
 //
 //  Swift-native representations of each choice parameter. The `rawValue` lines
 //  up with the `addPopupMenu` index order used in

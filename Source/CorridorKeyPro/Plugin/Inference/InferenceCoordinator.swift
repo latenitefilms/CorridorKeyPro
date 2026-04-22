@@ -1,6 +1,6 @@
 //
 //  InferenceCoordinator.swift
-//  Corridor Key Pro
+//  Corridor Key Toolbox
 //
 //  Chooses a keying engine and manages warm-up. The render pipeline delegates
 //  the opaque "ask a model for a matte" problem to this coordinator so the

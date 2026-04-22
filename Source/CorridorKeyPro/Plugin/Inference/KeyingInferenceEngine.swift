@@ -1,6 +1,6 @@
 //
 //  KeyingInferenceEngine.swift
-//  Corridor Key Pro
+//  Corridor Key Toolbox
 //
 //  Abstraction over whichever neural backend is producing mattes. The render
 //  pipeline is written against this protocol so we can swap CoreML, MLX, or a

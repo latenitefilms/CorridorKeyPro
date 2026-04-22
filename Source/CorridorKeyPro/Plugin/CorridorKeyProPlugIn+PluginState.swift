@@ -1,6 +1,6 @@
 //
 //  CorridorKeyProPlugIn+PluginState.swift
-//  Corridor Key Pro
+//  Corridor Key Toolbox
 //
 //  Reads every parameter into a single value-type snapshot that the renderer
 //  and analyser can consume without touching the FxPlug API again. FxPlug
@@ -23,7 +23,7 @@ extension CorridorKeyProPlugIn {
             throw NSError(
                 domain: FxPlugErrorDomain,
                 code: kFxError_APIUnavailable,
-                userInfo: [NSLocalizedDescriptionKey: "Corridor Key Pro could not read parameter values."]
+                userInfo: [NSLocalizedDescriptionKey: "Corridor Key Toolbox could not read parameter values."]
             )
         }
 

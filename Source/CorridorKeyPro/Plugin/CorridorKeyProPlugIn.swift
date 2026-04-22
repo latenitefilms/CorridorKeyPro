@@ -1,6 +1,6 @@
 //
 //  CorridorKeyProPlugIn.swift
-//  Corridor Key Pro
+//  Corridor Key Toolbox
 //
 //  Main FxPlug entry point. Final Cut Pro instantiates this class through the
 //  `ProPlugPlugInList` declaration in Info.plist and routes every tileable

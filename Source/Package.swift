@@ -1,7 +1,7 @@
 // swift-tools-version: 6.0
 //
 //  Package.swift
-//  Corridor Key Pro
+//  Corridor Key Toolbox
 //
 //  Headless regression suite for the plug-in's pure-Swift logic. The Xcode
 //  project remains the build system of record for the FxPlug target itself;

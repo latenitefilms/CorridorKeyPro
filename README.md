@@ -1,4 +1,4 @@
-# Corridor Key Pro
+# Corridor Key Toolbox
 
 An FxPlug4 plug-in for Final Cut Pro that ports [CorridorKey](https://github.com/nikopueringer/CorridorKey)'s AI green-screen keying to Apple Silicon.
 
@@ -8,8 +8,8 @@ An FxPlug4 plug-in for Final Cut Pro that ports [CorridorKey](https://github.com
 
 | Target                      | Product                             | Role                                                                 |
 | --------------------------- | ----------------------------------- | -------------------------------------------------------------------- |
-| `Corridor Key Pro`          | `Corridor Key Pro.app`              | Wrapper application required for App Store packaging and discovery.  |
-| `Corridor Key Pro Renderer` | `Corridor Key Pro.pluginkit` (XPC)  | The actual FxPlug plug-in Final Cut Pro loads into its plug-in host. |
+| `Corridor Key Toolbox`          | `Corridor Key Toolbox.app`              | Wrapper application required for App Store packaging and discovery.  |
+| `Corridor Key Toolbox Renderer` | `Corridor Key Toolbox.pluginkit` (XPC)  | The actual FxPlug plug-in Final Cut Pro loads into its plug-in host. |
 
 The wrapper embeds the XPC service inside its `Contents/PlugIns` directory, so a single `.app` bundle is the unit of distribution.
 
@@ -86,7 +86,7 @@ Source/
 
 ## Building
 
-Open `CorridorKeyPro.xcodeproj` in Xcode and build the `Corridor Key Pro` scheme. On first open Xcode will resolve the `mlx-swift` Swift package; this takes ~30 seconds over a cold network and is cached thereafter.
+Open `CorridorKeyPro.xcodeproj` in Xcode and build the `Corridor Key Toolbox` scheme. On first open Xcode will resolve the `mlx-swift` Swift package; this takes ~30 seconds over a cold network and is cached thereafter.
 
 ---
 

@@ -1,6 +1,6 @@
 //
 //  CorridorKeyShaders.metal
-//  Corridor Key Pro
+//  Corridor Key Toolbox
 //
 //  Metal kernels and vertex/fragment shaders that implement the Corridor Key
 //  per-frame GPU pipeline: screen-colour rotation, downsample & normalisation

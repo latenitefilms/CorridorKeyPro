@@ -1,6 +1,6 @@
 //
 //  ParameterIdentifiers.swift
-//  Corridor Key Pro
+//  Corridor Key Toolbox
 //
 //  Every parameter surfaced to Final Cut Pro has a stable numeric identifier.
 //  FxPlug requires identifiers to stay in the range 1...9998 for the lifetime

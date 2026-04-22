@@ -1,6 +1,6 @@
 //
 //  CorridorKeyInspectorBridge.swift
-//  Corridor Key Pro
+//  Corridor Key Toolbox
 //
 //  Thin bridge between the SwiftUI inspector header and the FxPlug host
 //  APIs. Keeps SwiftUI views free of `PROAPIAccessing` / `NSError` plumbing

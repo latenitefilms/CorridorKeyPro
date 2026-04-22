@@ -1,6 +1,6 @@
 //
 //  CorridorKeyPro-Bridging-Header.h
-//  Corridor Key Pro
+//  Corridor Key Toolbox
 //
 //  Exposes the FxPlug SDK and our shared shader constants to Swift.
 //

@@ -1,6 +1,6 @@
 //
 //  MatteCodec.swift
-//  Corridor Key Pro
+//  Corridor Key Toolbox
 //
 //  Encodes and decodes single-channel alpha mattes for embedding inside the
 //  plug-in's FxPlug custom parameter. The matte is the only thing we persist

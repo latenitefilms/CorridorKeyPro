@@ -1,6 +1,6 @@
 //
 //  CorridorKeyProPlugIn+RenderRects.swift
-//  Corridor Key Pro
+//  Corridor Key Toolbox
 //
 //  Tells FxPlug which parts of the input and output images we touch. The
 //  keyer is an identity transform so the output bounds always equal the

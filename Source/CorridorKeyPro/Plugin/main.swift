@@ -1,6 +1,6 @@
 //
 //  main.swift
-//  Corridor Key Pro
+//  Corridor Key Toolbox
 //
 //  Entry point for the FxPlug XPC service. `FxPrincipal.startServicePrincipal`
 //  hands control over to Final Cut Pro's plug-in host, which instantiates
@@ -21,7 +21,7 @@ final class CorridorKeyProServiceDelegate: NSObject, FxPrincipalDelegate {
 }
 
 PluginLog.installFileRedirect()
-PluginLog.notice("Corridor Key Pro Renderer launching.")
+PluginLog.notice("Corridor Key Toolbox Renderer launching.")
 
 let corridorKeyProServiceDelegate = CorridorKeyProServiceDelegate()
 FxPrincipal.startServicePrincipal(with: corridorKeyProServiceDelegate)

@@ -1,6 +1,6 @@
 //
 //  MetalDeviceCache.swift
-//  Corridor Key Pro
+//  Corridor Key Toolbox
 //
 //  Caches Metal devices, command queues, and compiled pipeline states so the
 //  render path never does I/O. Compute pipelines are cached per device; render
@@ -24,19 +24,19 @@ enum MetalDeviceCacheError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .missingDefaultLibrary:
-            return "Corridor Key Pro could not locate its compiled Metal library."
+            return "Corridor Key Toolbox could not locate its compiled Metal library."
         case .missingShaderFunction(let name):
-            return "Corridor Key Pro could not find Metal function \(name)."
+            return "Corridor Key Toolbox could not find Metal function \(name)."
         case .unknownDevice(let registryID):
-            return "Corridor Key Pro was handed an unfamiliar GPU (registry id \(registryID))."
+            return "Corridor Key Toolbox was handed an unfamiliar GPU (registry id \(registryID))."
         case .queueExhausted:
-            return "All Corridor Key Pro command queues are currently in flight."
+            return "All Corridor Key Toolbox command queues are currently in flight."
         case .textureAllocationFailed:
-            return "Corridor Key Pro could not allocate an intermediate Metal texture."
+            return "Corridor Key Toolbox could not allocate an intermediate Metal texture."
         case .commandBufferCreationFailed:
-            return "Corridor Key Pro could not create a Metal command buffer."
+            return "Corridor Key Toolbox could not create a Metal command buffer."
         case .commandEncoderCreationFailed:
-            return "Corridor Key Pro could not create a Metal command encoder."
+            return "Corridor Key Toolbox could not create a Metal command encoder."
         }
     }
 }
@@ -95,7 +95,7 @@ final class CorridorKeyRenderPipelines: Sendable {
             throw MetalDeviceCacheError.missingShaderFunction("corridorKeyComposeFragment")
         }
         let descriptor = MTLRenderPipelineDescriptor()
-        descriptor.label = "Corridor Key Pro Compose"
+        descriptor.label = "Corridor Key Toolbox Compose"
         descriptor.vertexFunction = vertexFunction
         descriptor.fragmentFunction = fragmentFunction
         descriptor.colorAttachments[0].pixelFormat = pixelFormat
@@ -131,7 +131,7 @@ final class MetalDeviceCacheEntry {
         queues.reserveCapacity(queueCount)
         for _ in 0..<queueCount {
             if let queue = device.makeCommandQueue() {
-                queue.label = "Corridor Key Pro"
+                queue.label = "Corridor Key Toolbox"
                 queues.append(queue)
             }
         }

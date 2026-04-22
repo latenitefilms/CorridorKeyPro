@@ -1,6 +1,6 @@
 //
 //  PluginLog.swift
-//  Corridor Key Pro
+//  Corridor Key Toolbox
 //
 //  File-based logging utility for the FxPlug XPC service. Because Final Cut Pro
 //  runs plug-ins in an out-of-process sandbox, messages written with `print` or
@@ -11,9 +11,9 @@
 
 import Foundation
 
-/// Namespace for Corridor Key Pro logging. Exposes level-tagged helpers that
+/// Namespace for Corridor Key Toolbox logging. Exposes level-tagged helpers that
 /// forward to `NSLog` and append to a persistent log file under
-/// `~/Library/Application Support/Corridor Key Pro/Logs/`. Calls are
+/// `~/Library/Application Support/Corridor Key Toolbox/Logs/`. Calls are
 /// intentionally forgiving — the log path exists from the first redirect
 /// install, and emits made before that still show up in Console.app.
 enum PluginLog {
@@ -37,7 +37,7 @@ enum PluginLog {
         }
 
         let logDirectory = applicationSupport
-            .appending(path: "Corridor Key Pro", directoryHint: .isDirectory)
+            .appending(path: "Corridor Key Toolbox", directoryHint: .isDirectory)
             .appending(path: "Logs", directoryHint: .isDirectory)
         if !fileManager.fileExists(atPath: logDirectory.path) {
             do {
@@ -56,24 +56,24 @@ enum PluginLog {
         let logFile = logDirectory.appending(path: "CorridorKeyProRenderer-\(versionString)-\(buildString).log")
 
         freopen(logFile.path.cString(using: .utf8), "a+", stderr)
-        notice("--------- Corridor Key Pro Renderer \(versionString) (\(buildString)) ---------")
+        notice("--------- Corridor Key Toolbox Renderer \(versionString) (\(buildString)) ---------")
         notice("Log file: \(logFile.path)")
     }
 
     static func notice(_ message: String) {
-        NSLog("[Corridor Key Pro] %@", message)
+        NSLog("[Corridor Key Toolbox] %@", message)
     }
 
     static func debug(_ message: String) {
-        NSLog("[Corridor Key Pro] DEBUG: %@", message)
+        NSLog("[Corridor Key Toolbox] DEBUG: %@", message)
     }
 
     static func warning(_ message: String) {
-        NSLog("[Corridor Key Pro] WARNING: %@", message)
+        NSLog("[Corridor Key Toolbox] WARNING: %@", message)
     }
 
     static func error(_ message: String) {
-        NSLog("[Corridor Key Pro] ERROR: %@", message)
+        NSLog("[Corridor Key Toolbox] ERROR: %@", message)
     }
 
     private nonisolated(unsafe) static var didInstallRedirect = false

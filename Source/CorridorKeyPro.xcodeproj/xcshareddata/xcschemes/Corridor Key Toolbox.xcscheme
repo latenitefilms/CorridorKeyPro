@@ -15,8 +15,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "CK0700000000000000000001"
-               BuildableName = "Corridor Key Pro.app"
-               BlueprintName = "Corridor Key Pro"
+               BuildableName = "Corridor Key Toolbox.app"
+               BlueprintName = "Corridor Key Toolbox"
                ReferencedContainer = "container:CorridorKeyPro.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -29,8 +29,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "CK0700000000000000000002"
-               BuildableName = "Corridor Key Pro Renderer.pluginkit"
-               BlueprintName = "Corridor Key Pro Renderer"
+               BuildableName = "Corridor Key Toolbox Renderer.pluginkit"
+               BlueprintName = "Corridor Key Toolbox Renderer"
                ReferencedContainer = "container:CorridorKeyPro.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -59,8 +59,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "CK0700000000000000000001"
-            BuildableName = "Corridor Key Pro.app"
-            BlueprintName = "Corridor Key Pro"
+            BuildableName = "Corridor Key Toolbox.app"
+            BlueprintName = "Corridor Key Toolbox"
             ReferencedContainer = "container:CorridorKeyPro.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -76,8 +76,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "CK0700000000000000000001"
-            BuildableName = "Corridor Key Pro.app"
-            BlueprintName = "Corridor Key Pro"
+            BuildableName = "Corridor Key Toolbox.app"
+            BlueprintName = "Corridor Key Toolbox"
             ReferencedContainer = "container:CorridorKeyPro.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

@@ -1,6 +1,6 @@
 //
 //  CorridorKeyProPlugIn+Properties.swift
-//  Corridor Key Pro
+//  Corridor Key Toolbox
 //
 //  Declares the static capabilities of the plug-in. Properties are fetched
 //  once per instance and cached by the host, so this method is the right place

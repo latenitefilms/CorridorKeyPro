@@ -1,6 +1,6 @@
 //
 //  MotionTemplateInstaller.swift
-//  Corridor Key Pro
+//  Corridor Key Toolbox
 //
 //  Installs (or refreshes) the bundled Motion Template into the user's
 //  real `~/Movies/Motion Templates.localized/Effects.localized/Corridor Key
@@ -35,7 +35,7 @@ private enum MotionTemplateCopyResult: Sendable {
 // MARK: - Installer
 
 actor MotionTemplateInstaller {
-    static let effectCategory = "Corridor Key Pro"
+    static let effectCategory = "Corridor Key Toolbox"
 
     private let fileManager = FileManager.default
 
@@ -45,14 +45,14 @@ actor MotionTemplateInstaller {
         guard let bundledTemplateURL = bundledTemplateURL() else {
             return .failed(
                 title: "Motion Template could not be installed.",
-                info: "Motion Template resources were not found inside Corridor Key Pro.app."
+                info: "Motion Template resources were not found inside Corridor Key Toolbox.app."
             )
         }
 
         guard let realMoviesURL = realUserMoviesDirectory() else {
             return .failed(
                 title: "Motion Template could not be installed.",
-                info: "Corridor Key Pro could not locate your ~/Movies folder."
+                info: "Corridor Key Toolbox could not locate your ~/Movies folder."
             )
         }
 
@@ -70,7 +70,7 @@ actor MotionTemplateInstaller {
         guard isMotionTemplateAlreadyInstalled(in: realMoviesURL, bundledTemplateURL: bundledTemplateURL) else {
             return .failed(
                 title: "Motion Template could not be verified.",
-                info: "Corridor Key Pro copied the template files but could not confirm the installed copy. Try relaunching the app."
+                info: "Corridor Key Toolbox copied the template files but could not confirm the installed copy. Try relaunching the app."
             )
         }
         return .installed
@@ -80,7 +80,7 @@ actor MotionTemplateInstaller {
 
     /// Location of the bundled template inside the running wrapper app. The
     /// Motion Template folder reference in the Xcode project lands at
-    /// `Contents/Resources/Motion Template/Corridor Key Pro`.
+    /// `Contents/Resources/Motion Template/Corridor Key Toolbox`.
     private func bundledTemplateURL() -> URL? {
         guard let resourceURL = Bundle.main.resourceURL else {
             return nil
@@ -253,6 +253,6 @@ actor MotionTemplateInstaller {
     // MARK: - Logging
 
     private func log(_ message: String) {
-        NSLog("[Corridor Key Pro] %@", message)
+        NSLog("[Corridor Key Toolbox] %@", message)
     }
 }

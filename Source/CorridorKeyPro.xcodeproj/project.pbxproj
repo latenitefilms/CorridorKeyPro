@@ -36,7 +36,7 @@
 		CK0100000000000000000015 /* CorridorKeyProApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000015 /* CorridorKeyProApp.swift */; };
 		CK0100000000000000000016 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000016 /* WelcomeView.swift */; };
 		CK0100000000000000000017 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000017 /* InfoPlist.strings */; };
-		CK0100000000000000000018 /* Corridor Key Pro Renderer.pluginkit in Embed PlugIns */ = {isa = PBXBuildFile; fileRef = CK0300000000000000000002 /* Corridor Key Pro Renderer.pluginkit */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		CK0100000000000000000018 /* Corridor Key Toolbox Renderer.pluginkit in Embed PlugIns */ = {isa = PBXBuildFile; fileRef = CK0300000000000000000002 /* Corridor Key Toolbox Renderer.pluginkit */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		CK0100000000000000000019 /* FxPlug.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CK0400000000000000000001 /* FxPlug.framework */; };
 		CK010000000000000000001A /* FxPlug.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = CK0400000000000000000001 /* FxPlug.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		CK010000000000000000001B /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CK0400000000000000000002 /* Cocoa.framework */; };
@@ -65,7 +65,7 @@
 			containerPortal = CK0600000000000000000001 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = CK0700000000000000000002;
-			remoteInfo = "Corridor Key Pro XPC";
+			remoteInfo = "Corridor Key Toolbox XPC";
 		};
 /* End PBXContainerItemProxy section */
 
@@ -76,7 +76,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				CK0100000000000000000018 /* Corridor Key Pro Renderer.pluginkit in Embed PlugIns */,
+				CK0100000000000000000018 /* Corridor Key Toolbox Renderer.pluginkit in Embed PlugIns */,
 			);
 			name = "Embed PlugIns";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -140,8 +140,8 @@
 		CK0200000000000000000061 /* CorridorKeyInspectorBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CorridorKeyInspectorBridge.swift; path = CorridorKeyPro/Plugin/Inspector/CorridorKeyInspectorBridge.swift; sourceTree = "<group>"; };
 		CK0200000000000000000062 /* CorridorKeyHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CorridorKeyHeaderView.swift; path = CorridorKeyPro/Plugin/Inspector/CorridorKeyHeaderView.swift; sourceTree = "<group>"; };
 		CK0200000000000000000063 /* CorridorKeyAnalysisSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CorridorKeyAnalysisSnapshot.swift; path = CorridorKeyPro/Plugin/Inspector/CorridorKeyAnalysisSnapshot.swift; sourceTree = "<group>"; };
-		CK0300000000000000000001 /* Corridor Key Pro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Corridor Key Pro.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		CK0300000000000000000002 /* Corridor Key Pro Renderer.pluginkit */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Corridor Key Pro Renderer.pluginkit"; sourceTree = BUILT_PRODUCTS_DIR; };
+		CK0300000000000000000001 /* Corridor Key Toolbox.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Corridor Key Toolbox.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		CK0300000000000000000002 /* Corridor Key Toolbox Renderer.pluginkit */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Corridor Key Toolbox Renderer.pluginkit"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CK0400000000000000000001 /* FxPlug.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FxPlug.framework; path = /Library/Developer/Frameworks/FxPlug.framework; sourceTree = "<absolute>"; };
 		CK0400000000000000000002 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		CK0400000000000000000003 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
@@ -291,8 +291,8 @@
 		CK0A00000000000000000009 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				CK0300000000000000000001 /* Corridor Key Pro.app */,
-				CK0300000000000000000002 /* Corridor Key Pro Renderer.pluginkit */,
+				CK0300000000000000000001 /* Corridor Key Toolbox.app */,
+				CK0300000000000000000002 /* Corridor Key Toolbox Renderer.pluginkit */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -358,9 +358,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		CK0700000000000000000001 /* Corridor Key Pro */ = {
+		CK0700000000000000000001 /* Corridor Key Toolbox */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = CK0B00000000000000000001 /* Build configuration list for PBXNativeTarget "Corridor Key Pro" */;
+			buildConfigurationList = CK0B00000000000000000001 /* Build configuration list for PBXNativeTarget "Corridor Key Toolbox" */;
 			buildPhases = (
 				CK0C00000000000000000001 /* Sources */,
 				CK0900000000000000000001 /* Frameworks */,
@@ -372,14 +372,14 @@
 			dependencies = (
 				CK0E00000000000000000001 /* PBXTargetDependency */,
 			);
-			name = "Corridor Key Pro";
-			productName = "Corridor Key Pro";
-			productReference = CK0300000000000000000001 /* Corridor Key Pro.app */;
+			name = "Corridor Key Toolbox";
+			productName = "Corridor Key Toolbox";
+			productReference = CK0300000000000000000001 /* Corridor Key Toolbox.app */;
 			productType = "com.apple.product-type.application";
 		};
-		CK0700000000000000000002 /* Corridor Key Pro Renderer */ = {
+		CK0700000000000000000002 /* Corridor Key Toolbox Renderer */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = CK0B00000000000000000002 /* Build configuration list for PBXNativeTarget "Corridor Key Pro Renderer" */;
+			buildConfigurationList = CK0B00000000000000000002 /* Build configuration list for PBXNativeTarget "Corridor Key Toolbox Renderer" */;
 			buildPhases = (
 				CK0C00000000000000000002 /* Sources */,
 				CK0900000000000000000002 /* Frameworks */,
@@ -391,13 +391,13 @@
 			);
 			dependencies = (
 			);
-			name = "Corridor Key Pro Renderer";
+			name = "Corridor Key Toolbox Renderer";
 			packageProductDependencies = (
 				MX0400000000000000000001 /* MLX */,
 				MX0400000000000000000002 /* MLXNN */,
 			);
-			productName = "Corridor Key Pro XPC";
-			productReference = CK0300000000000000000002 /* Corridor Key Pro Renderer.pluginkit */;
+			productName = "Corridor Key Toolbox XPC";
+			productReference = CK0300000000000000000002 /* Corridor Key Toolbox Renderer.pluginkit */;
 			productType = "com.apple.product-type.bundle";
 		};
 /* End PBXNativeTarget section */
@@ -435,8 +435,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				CK0700000000000000000001 /* Corridor Key Pro */,
-				CK0700000000000000000002 /* Corridor Key Pro Renderer */,
+				CK0700000000000000000001 /* Corridor Key Toolbox */,
+				CK0700000000000000000002 /* Corridor Key Toolbox Renderer */,
 			);
 		};
 /* End PBXProject section */
@@ -539,7 +539,7 @@
 /* Begin PBXTargetDependency section */
 		CK0E00000000000000000001 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = CK0700000000000000000002 /* Corridor Key Pro Renderer */;
+			target = CK0700000000000000000002 /* Corridor Key Toolbox Renderer */;
 			targetProxy = CK0500000000000000000001 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -699,7 +699,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.latenitefilms.CorridorKeyPro;
 				PRODUCT_MODULE_NAME = CorridorKeyProApp;
-				PRODUCT_NAME = "Corridor Key Pro";
+				PRODUCT_NAME = "Corridor Key Toolbox";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
 			name = Debug;
@@ -730,7 +730,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.latenitefilms.CorridorKeyPro;
 				PRODUCT_MODULE_NAME = CorridorKeyProApp;
-				PRODUCT_NAME = "Corridor Key Pro";
+				PRODUCT_NAME = "Corridor Key Toolbox";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
 			name = Release;
@@ -747,13 +747,13 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				HEADER_SEARCH_PATHS = "$(SRCROOT)/CorridorKeyPro/Plugin/Shared";
 				INFOPLIST_FILE = CorridorKeyPro/Plugin/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Corridor Key Pro Renderer";
+				INFOPLIST_KEY_CFBundleDisplayName = "Corridor Key Toolbox Renderer";
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
 				MACH_O_TYPE = mh_execute;
 				MTL_HEADER_SEARCH_PATHS = "$(SRCROOT)/CorridorKeyPro/Plugin/Shared";
 				PRODUCT_BUNDLE_IDENTIFIER = com.latenitefilms.CorridorKeyPro.Renderer;
 				PRODUCT_MODULE_NAME = CorridorKeyProRenderer;
-				PRODUCT_NAME = "Corridor Key Pro Renderer";
+				PRODUCT_NAME = "Corridor Key Toolbox Renderer";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "CorridorKeyPro/Plugin/Shared/CorridorKeyPro-Bridging-Header.h";
 				WRAPPER_EXTENSION = pluginkit;
@@ -772,13 +772,13 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				HEADER_SEARCH_PATHS = "$(SRCROOT)/CorridorKeyPro/Plugin/Shared";
 				INFOPLIST_FILE = CorridorKeyPro/Plugin/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Corridor Key Pro Renderer";
+				INFOPLIST_KEY_CFBundleDisplayName = "Corridor Key Toolbox Renderer";
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
 				MACH_O_TYPE = mh_execute;
 				MTL_HEADER_SEARCH_PATHS = "$(SRCROOT)/CorridorKeyPro/Plugin/Shared";
 				PRODUCT_BUNDLE_IDENTIFIER = com.latenitefilms.CorridorKeyPro.Renderer;
 				PRODUCT_MODULE_NAME = CorridorKeyProRenderer;
-				PRODUCT_NAME = "Corridor Key Pro Renderer";
+				PRODUCT_NAME = "Corridor Key Toolbox Renderer";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "CorridorKeyPro/Plugin/Shared/CorridorKeyPro-Bridging-Header.h";
 				WRAPPER_EXTENSION = pluginkit;
@@ -788,7 +788,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		CK0B00000000000000000001 /* Build configuration list for PBXNativeTarget "Corridor Key Pro" */ = {
+		CK0B00000000000000000001 /* Build configuration list for PBXNativeTarget "Corridor Key Toolbox" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				CK1000000000000000000003 /* Debug */,
@@ -797,7 +797,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		CK0B00000000000000000002 /* Build configuration list for PBXNativeTarget "Corridor Key Pro Renderer" */ = {
+		CK0B00000000000000000002 /* Build configuration list for PBXNativeTarget "Corridor Key Toolbox Renderer" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				CK1000000000000000000005 /* Debug */,

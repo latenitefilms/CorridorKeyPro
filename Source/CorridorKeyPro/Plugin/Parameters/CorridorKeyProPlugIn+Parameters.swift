@@ -1,6 +1,6 @@
 //
 //  CorridorKeyProPlugIn+Parameters.swift
-//  Corridor Key Pro
+//  Corridor Key Toolbox
 //
 //  Defines the entire inspector layout for the plug-in. Analyse / Reset /
 //  version live in the custom-UI header at the top, then the sliders match
@@ -24,7 +24,7 @@ extension CorridorKeyProPlugIn {
             throw NSError(
                 domain: FxPlugErrorDomain,
                 code: kFxError_APIUnavailable,
-                userInfo: [NSLocalizedDescriptionKey: "Corridor Key Pro could not attach to the FxPlug parameter API."]
+                userInfo: [NSLocalizedDescriptionKey: "Corridor Key Toolbox could not attach to the FxPlug parameter API."]
             )
         }
 
