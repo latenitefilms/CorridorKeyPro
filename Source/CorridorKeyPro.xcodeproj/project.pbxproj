@@ -7,13 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		221345E22F98BC6800CF734C /* corridorkey_mlx_bridge_512.mlxfn in Resources */ = {isa = PBXBuildFile; fileRef = 221345DC2F98BC6800CF734C /* corridorkey_mlx_bridge_512.mlxfn */; };
+		221345E32F98BC6800CF734C /* corridorkey_mlx_bridge_1536.mlxfn in Resources */ = {isa = PBXBuildFile; fileRef = 221345DF2F98BC6800CF734C /* corridorkey_mlx_bridge_1536.mlxfn */; };
+		221345E42F98BC6800CF734C /* corridorkey_mlx_bridge_768.mlxfn in Resources */ = {isa = PBXBuildFile; fileRef = 221345DD2F98BC6800CF734C /* corridorkey_mlx_bridge_768.mlxfn */; };
+		221345E52F98BC6800CF734C /* corridorkey_mlx_bridge_1024.mlxfn in Resources */ = {isa = PBXBuildFile; fileRef = 221345DE2F98BC6800CF734C /* corridorkey_mlx_bridge_1024.mlxfn */; };
+		221345E62F98BC6800CF734C /* corridorkey_mlx_bridge_2048.mlxfn in Resources */ = {isa = PBXBuildFile; fileRef = 221345E02F98BC6800CF734C /* corridorkey_mlx_bridge_2048.mlxfn */; };
 		22D097722F986F5E0096E749 /* Template Icon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 22D097712F986F5E0096E749 /* Template Icon.icon */; };
 		22D097FF2F9887BD0096E749 /* Credits.rtf in Resources */ = {isa = PBXBuildFile; fileRef = 22D097FE2F9887BD0096E749 /* Credits.rtf */; };
-		22D098052F988D4F0096E749 /* corridorkey_mlx_bridge_768.mlxfn in Resources */ = {isa = PBXBuildFile; fileRef = 22D098002F988D4F0096E749 /* corridorkey_mlx_bridge_768.mlxfn */; };
-		22D098062F988D4F0096E749 /* corridorkey_mlx_bridge_512.mlxfn in Resources */ = {isa = PBXBuildFile; fileRef = 22D098012F988D4F0096E749 /* corridorkey_mlx_bridge_512.mlxfn */; };
-		22D098072F988D4F0096E749 /* corridorkey_mlx_bridge_1536.mlxfn in Resources */ = {isa = PBXBuildFile; fileRef = 22D098022F988D4F0096E749 /* corridorkey_mlx_bridge_1536.mlxfn */; };
-		22D098082F988D4F0096E749 /* corridorkey_mlx_bridge_1024.mlxfn in Resources */ = {isa = PBXBuildFile; fileRef = 22D098032F988D4F0096E749 /* corridorkey_mlx_bridge_1024.mlxfn */; };
-		22D098092F988D4F0096E749 /* corridorkey_mlx_bridge_2048.mlxfn in Resources */ = {isa = PBXBuildFile; fileRef = 22D098042F988D4F0096E749 /* corridorkey_mlx_bridge_2048.mlxfn */; };
 		22D0980E2F988FB70096E749 /* Motion Template in Resources */ = {isa = PBXBuildFile; fileRef = 22D0980D2F988FB70096E749 /* Motion Template */; };
 		CK0100000000000000000001 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000001 /* main.swift */; };
 		CK0100000000000000000002 /* CorridorKeyProPlugIn.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000002 /* CorridorKeyProPlugIn.swift */; };
@@ -88,13 +88,13 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		221345DC2F98BC6800CF734C /* corridorkey_mlx_bridge_512.mlxfn */ = {isa = PBXFileReference; lastKnownFileType = file; path = corridorkey_mlx_bridge_512.mlxfn; sourceTree = "<group>"; };
+		221345DD2F98BC6800CF734C /* corridorkey_mlx_bridge_768.mlxfn */ = {isa = PBXFileReference; lastKnownFileType = file; path = corridorkey_mlx_bridge_768.mlxfn; sourceTree = "<group>"; };
+		221345DE2F98BC6800CF734C /* corridorkey_mlx_bridge_1024.mlxfn */ = {isa = PBXFileReference; lastKnownFileType = file; path = corridorkey_mlx_bridge_1024.mlxfn; sourceTree = "<group>"; };
+		221345DF2F98BC6800CF734C /* corridorkey_mlx_bridge_1536.mlxfn */ = {isa = PBXFileReference; lastKnownFileType = file; path = corridorkey_mlx_bridge_1536.mlxfn; sourceTree = "<group>"; };
+		221345E02F98BC6800CF734C /* corridorkey_mlx_bridge_2048.mlxfn */ = {isa = PBXFileReference; lastKnownFileType = file; path = corridorkey_mlx_bridge_2048.mlxfn; sourceTree = "<group>"; };
 		22D097712F986F5E0096E749 /* Template Icon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; name = "Template Icon.icon"; path = "CorridorKeyPro/WrapperApp/Template Icon.icon"; sourceTree = "<group>"; };
 		22D097FE2F9887BD0096E749 /* Credits.rtf */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; name = Credits.rtf; path = CorridorKeyPro/WrapperApp/Credits.rtf; sourceTree = "<group>"; };
-		22D098002F988D4F0096E749 /* corridorkey_mlx_bridge_768.mlxfn */ = {isa = PBXFileReference; lastKnownFileType = file; name = corridorkey_mlx_bridge_768.mlxfn; path = ../CorridorKeyPro/Plugin/Resources/corridorkey_mlx_bridge_768.mlxfn; sourceTree = "<group>"; };
-		22D098012F988D4F0096E749 /* corridorkey_mlx_bridge_512.mlxfn */ = {isa = PBXFileReference; lastKnownFileType = file; name = corridorkey_mlx_bridge_512.mlxfn; path = ../CorridorKeyPro/Plugin/Resources/corridorkey_mlx_bridge_512.mlxfn; sourceTree = "<group>"; };
-		22D098022F988D4F0096E749 /* corridorkey_mlx_bridge_1536.mlxfn */ = {isa = PBXFileReference; lastKnownFileType = file; name = corridorkey_mlx_bridge_1536.mlxfn; path = ../CorridorKeyPro/Plugin/Resources/corridorkey_mlx_bridge_1536.mlxfn; sourceTree = "<group>"; };
-		22D098032F988D4F0096E749 /* corridorkey_mlx_bridge_1024.mlxfn */ = {isa = PBXFileReference; lastKnownFileType = file; name = corridorkey_mlx_bridge_1024.mlxfn; path = ../CorridorKeyPro/Plugin/Resources/corridorkey_mlx_bridge_1024.mlxfn; sourceTree = "<group>"; };
-		22D098042F988D4F0096E749 /* corridorkey_mlx_bridge_2048.mlxfn */ = {isa = PBXFileReference; lastKnownFileType = file; name = corridorkey_mlx_bridge_2048.mlxfn; path = ../CorridorKeyPro/Plugin/Resources/corridorkey_mlx_bridge_2048.mlxfn; sourceTree = "<group>"; };
 		22D0980D2F988FB70096E749 /* Motion Template */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "Motion Template"; path = "CorridorKeyPro/Plugin/Resources/Motion Template"; sourceTree = "<group>"; };
 		CK0200000000000000000001 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = main.swift; path = CorridorKeyPro/Plugin/main.swift; sourceTree = "<group>"; };
 		CK0200000000000000000002 /* CorridorKeyProPlugIn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CorridorKeyProPlugIn.swift; path = CorridorKeyPro/Plugin/CorridorKeyProPlugIn.swift; sourceTree = "<group>"; };
@@ -166,16 +166,17 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		221345DB2F98B78600CF734C /* MLX Models */ = {
+		221345E12F98BC6800CF734C /* MLX Models */ = {
 			isa = PBXGroup;
 			children = (
-				22D098012F988D4F0096E749 /* corridorkey_mlx_bridge_512.mlxfn */,
-				22D098002F988D4F0096E749 /* corridorkey_mlx_bridge_768.mlxfn */,
-				22D098032F988D4F0096E749 /* corridorkey_mlx_bridge_1024.mlxfn */,
-				22D098022F988D4F0096E749 /* corridorkey_mlx_bridge_1536.mlxfn */,
-				22D098042F988D4F0096E749 /* corridorkey_mlx_bridge_2048.mlxfn */,
+				221345DC2F98BC6800CF734C /* corridorkey_mlx_bridge_512.mlxfn */,
+				221345DD2F98BC6800CF734C /* corridorkey_mlx_bridge_768.mlxfn */,
+				221345DE2F98BC6800CF734C /* corridorkey_mlx_bridge_1024.mlxfn */,
+				221345DF2F98BC6800CF734C /* corridorkey_mlx_bridge_1536.mlxfn */,
+				221345E02F98BC6800CF734C /* corridorkey_mlx_bridge_2048.mlxfn */,
 			);
-			path = "MLX Models";
+			name = "MLX Models";
+			path = "CorridorKeyPro/Plugin/Resources/MLX Models";
 			sourceTree = "<group>";
 		};
 		CK0A00000000000000000001 = {
@@ -243,7 +244,7 @@
 		CK0A00000000000000000007 /* WrapperApp */ = {
 			isa = PBXGroup;
 			children = (
-				221345DB2F98B78600CF734C /* MLX Models */,
+				221345E12F98BC6800CF734C /* MLX Models */,
 				22D097FE2F9887BD0096E749 /* Credits.rtf */,
 				22D097712F986F5E0096E749 /* Template Icon.icon */,
 				CK0200000000000000000015 /* CorridorKeyProApp.swift */,
@@ -427,11 +428,11 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				22D098052F988D4F0096E749 /* corridorkey_mlx_bridge_768.mlxfn in Resources */,
-				22D098062F988D4F0096E749 /* corridorkey_mlx_bridge_512.mlxfn in Resources */,
-				22D098072F988D4F0096E749 /* corridorkey_mlx_bridge_1536.mlxfn in Resources */,
-				22D098082F988D4F0096E749 /* corridorkey_mlx_bridge_1024.mlxfn in Resources */,
-				22D098092F988D4F0096E749 /* corridorkey_mlx_bridge_2048.mlxfn in Resources */,
+				221345E22F98BC6800CF734C /* corridorkey_mlx_bridge_512.mlxfn in Resources */,
+				221345E32F98BC6800CF734C /* corridorkey_mlx_bridge_1536.mlxfn in Resources */,
+				221345E42F98BC6800CF734C /* corridorkey_mlx_bridge_768.mlxfn in Resources */,
+				221345E52F98BC6800CF734C /* corridorkey_mlx_bridge_1024.mlxfn in Resources */,
+				221345E62F98BC6800CF734C /* corridorkey_mlx_bridge_2048.mlxfn in Resources */,
 				CK0100000000000000000014 /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
