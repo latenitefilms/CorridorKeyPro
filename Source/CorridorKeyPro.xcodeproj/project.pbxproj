@@ -1,0 +1,808 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		22D097722F986F5E0096E749 /* Template Icon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 22D097712F986F5E0096E749 /* Template Icon.icon */; };
+		22D097FF2F9887BD0096E749 /* Credits.rtf in Resources */ = {isa = PBXBuildFile; fileRef = 22D097FE2F9887BD0096E749 /* Credits.rtf */; };
+		22D098052F988D4F0096E749 /* corridorkey_mlx_bridge_768.mlxfn in Resources */ = {isa = PBXBuildFile; fileRef = 22D098002F988D4F0096E749 /* corridorkey_mlx_bridge_768.mlxfn */; };
+		22D098062F988D4F0096E749 /* corridorkey_mlx_bridge_512.mlxfn in Resources */ = {isa = PBXBuildFile; fileRef = 22D098012F988D4F0096E749 /* corridorkey_mlx_bridge_512.mlxfn */; };
+		22D098072F988D4F0096E749 /* corridorkey_mlx_bridge_1536.mlxfn in Resources */ = {isa = PBXBuildFile; fileRef = 22D098022F988D4F0096E749 /* corridorkey_mlx_bridge_1536.mlxfn */; };
+		22D098082F988D4F0096E749 /* corridorkey_mlx_bridge_1024.mlxfn in Resources */ = {isa = PBXBuildFile; fileRef = 22D098032F988D4F0096E749 /* corridorkey_mlx_bridge_1024.mlxfn */; };
+		22D098092F988D4F0096E749 /* corridorkey_mlx_bridge_2048.mlxfn in Resources */ = {isa = PBXBuildFile; fileRef = 22D098042F988D4F0096E749 /* corridorkey_mlx_bridge_2048.mlxfn */; };
+		22D0980E2F988FB70096E749 /* Motion Template in Resources */ = {isa = PBXBuildFile; fileRef = 22D0980D2F988FB70096E749 /* Motion Template */; };
+		CK0100000000000000000001 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000001 /* main.swift */; };
+		CK0100000000000000000002 /* CorridorKeyProPlugIn.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000002 /* CorridorKeyProPlugIn.swift */; };
+		CK0100000000000000000003 /* CorridorKeyProPlugIn+Parameters.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000003 /* CorridorKeyProPlugIn+Parameters.swift */; };
+		CK0100000000000000000004 /* CorridorKeyProPlugIn+PluginState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000004 /* CorridorKeyProPlugIn+PluginState.swift */; };
+		CK0100000000000000000005 /* CorridorKeyProPlugIn+Properties.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000005 /* CorridorKeyProPlugIn+Properties.swift */; };
+		CK0100000000000000000006 /* CorridorKeyProPlugIn+RenderRects.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000006 /* CorridorKeyProPlugIn+RenderRects.swift */; };
+		CK0100000000000000000007 /* CorridorKeyProPlugIn+Render.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000007 /* CorridorKeyProPlugIn+Render.swift */; };
+		CK0100000000000000000008 /* CorridorKeyProPlugIn+FxAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000008 /* CorridorKeyProPlugIn+FxAnalyzer.swift */; };
+		CK0100000000000000000009 /* ParameterIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000009 /* ParameterIdentifiers.swift */; };
+		CK010000000000000000000A /* ParameterEnumerations.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK020000000000000000000A /* ParameterEnumerations.swift */; };
+		CK010000000000000000000B /* PluginStateData.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK020000000000000000000B /* PluginStateData.swift */; };
+		CK010000000000000000000C /* MetalDeviceCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK020000000000000000000C /* MetalDeviceCache.swift */; };
+		CK010000000000000000000D /* CorridorKeyShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = CK020000000000000000000D /* CorridorKeyShaders.metal */; };
+		CK010000000000000000000E /* ScreenColorEstimator.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK020000000000000000000E /* ScreenColorEstimator.swift */; };
+		CK010000000000000000000F /* KeyingInferenceEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK020000000000000000000F /* KeyingInferenceEngine.swift */; };
+		CK0100000000000000000010 /* RoughMatteKeyingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000010 /* RoughMatteKeyingEngine.swift */; };
+		CK0100000000000000000012 /* InferenceCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000012 /* InferenceCoordinator.swift */; };
+		CK0100000000000000000013 /* RenderPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000013 /* RenderPipeline.swift */; };
+		CK0100000000000000000014 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000014 /* InfoPlist.strings */; };
+		CK0100000000000000000015 /* CorridorKeyProApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000015 /* CorridorKeyProApp.swift */; };
+		CK0100000000000000000016 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000016 /* WelcomeView.swift */; };
+		CK010000000000000000002A /* MotionTemplateInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK020000000000000000002A /* MotionTemplateInstaller.swift */; };
+		CK0100000000000000000017 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000017 /* InfoPlist.strings */; };
+		CK0100000000000000000018 /* Corridor Key Pro.pluginkit in Embed PlugIns */ = {isa = PBXBuildFile; fileRef = CK0300000000000000000002 /* Corridor Key Pro.pluginkit */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		CK0100000000000000000019 /* FxPlug.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CK0400000000000000000001 /* FxPlug.framework */; };
+		CK010000000000000000001A /* FxPlug.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = CK0400000000000000000001 /* FxPlug.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		CK010000000000000000001B /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CK0400000000000000000002 /* Cocoa.framework */; };
+		CK010000000000000000001C /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CK0400000000000000000003 /* Metal.framework */; };
+		CK010000000000000000001D /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CK0400000000000000000004 /* MetalKit.framework */; };
+		CK010000000000000000001E /* MetalPerformanceShaders.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CK0400000000000000000005 /* MetalPerformanceShaders.framework */; };
+		CK010000000000000000001F /* CoreImage.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CK0400000000000000000006 /* CoreImage.framework */; };
+		CK0100000000000000000021 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CK0400000000000000000008 /* Accelerate.framework */; };
+		MX0200000000000000000002 /* MLXKeyingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = MX0100000000000000000003 /* MLXKeyingEngine.swift */; };
+		MX0500000000000000000001 /* MLX in Frameworks */ = {isa = PBXBuildFile; productRef = MX0400000000000000000001 /* MLX */; };
+		MX0500000000000000000002 /* MLXNN in Frameworks */ = {isa = PBXBuildFile; productRef = MX0400000000000000000002 /* MLXNN */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		CK0500000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CK0600000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CK0700000000000000000002;
+			remoteInfo = "Corridor Key Pro XPC";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		CK0800000000000000000001 /* Embed PlugIns */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				CK0100000000000000000018 /* Corridor Key Pro.pluginkit in Embed PlugIns */,
+			);
+			name = "Embed PlugIns";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CK0800000000000000000002 /* Copy Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				CK010000000000000000001A /* FxPlug.framework in Copy Frameworks */,
+			);
+			name = "Copy Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		22D097712F986F5E0096E749 /* Template Icon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; name = "Template Icon.icon"; path = "CorridorKeyPro/WrapperApp/Template Icon.icon"; sourceTree = "<group>"; };
+		22D097FE2F9887BD0096E749 /* Credits.rtf */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; name = Credits.rtf; path = CorridorKeyPro/WrapperApp/Credits.rtf; sourceTree = "<group>"; };
+		22D098002F988D4F0096E749 /* corridorkey_mlx_bridge_768.mlxfn */ = {isa = PBXFileReference; lastKnownFileType = file; name = corridorkey_mlx_bridge_768.mlxfn; path = ../CorridorKeyPro/Plugin/Resources/corridorkey_mlx_bridge_768.mlxfn; sourceTree = "<group>"; };
+		22D098012F988D4F0096E749 /* corridorkey_mlx_bridge_512.mlxfn */ = {isa = PBXFileReference; lastKnownFileType = file; name = corridorkey_mlx_bridge_512.mlxfn; path = ../CorridorKeyPro/Plugin/Resources/corridorkey_mlx_bridge_512.mlxfn; sourceTree = "<group>"; };
+		22D098022F988D4F0096E749 /* corridorkey_mlx_bridge_1536.mlxfn */ = {isa = PBXFileReference; lastKnownFileType = file; name = corridorkey_mlx_bridge_1536.mlxfn; path = ../CorridorKeyPro/Plugin/Resources/corridorkey_mlx_bridge_1536.mlxfn; sourceTree = "<group>"; };
+		22D098032F988D4F0096E749 /* corridorkey_mlx_bridge_1024.mlxfn */ = {isa = PBXFileReference; lastKnownFileType = file; name = corridorkey_mlx_bridge_1024.mlxfn; path = ../CorridorKeyPro/Plugin/Resources/corridorkey_mlx_bridge_1024.mlxfn; sourceTree = "<group>"; };
+		22D098042F988D4F0096E749 /* corridorkey_mlx_bridge_2048.mlxfn */ = {isa = PBXFileReference; lastKnownFileType = file; name = corridorkey_mlx_bridge_2048.mlxfn; path = ../CorridorKeyPro/Plugin/Resources/corridorkey_mlx_bridge_2048.mlxfn; sourceTree = "<group>"; };
+		22D0980D2F988FB70096E749 /* Motion Template */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "Motion Template"; path = "CorridorKeyPro/Plugin/Resources/Motion Template"; sourceTree = "<group>"; };
+		CK0200000000000000000001 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = main.swift; path = CorridorKeyPro/Plugin/main.swift; sourceTree = "<group>"; };
+		CK0200000000000000000002 /* CorridorKeyProPlugIn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CorridorKeyProPlugIn.swift; path = CorridorKeyPro/Plugin/CorridorKeyProPlugIn.swift; sourceTree = "<group>"; };
+		CK0200000000000000000003 /* CorridorKeyProPlugIn+Parameters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CorridorKeyProPlugIn+Parameters.swift"; path = "CorridorKeyPro/Plugin/Parameters/CorridorKeyProPlugIn+Parameters.swift"; sourceTree = "<group>"; };
+		CK0200000000000000000004 /* CorridorKeyProPlugIn+PluginState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CorridorKeyProPlugIn+PluginState.swift"; path = "CorridorKeyPro/Plugin/CorridorKeyProPlugIn+PluginState.swift"; sourceTree = "<group>"; };
+		CK0200000000000000000005 /* CorridorKeyProPlugIn+Properties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CorridorKeyProPlugIn+Properties.swift"; path = "CorridorKeyPro/Plugin/CorridorKeyProPlugIn+Properties.swift"; sourceTree = "<group>"; };
+		CK0200000000000000000006 /* CorridorKeyProPlugIn+RenderRects.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CorridorKeyProPlugIn+RenderRects.swift"; path = "CorridorKeyPro/Plugin/CorridorKeyProPlugIn+RenderRects.swift"; sourceTree = "<group>"; };
+		CK0200000000000000000007 /* CorridorKeyProPlugIn+Render.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CorridorKeyProPlugIn+Render.swift"; path = "CorridorKeyPro/Plugin/CorridorKeyProPlugIn+Render.swift"; sourceTree = "<group>"; };
+		CK0200000000000000000008 /* CorridorKeyProPlugIn+FxAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CorridorKeyProPlugIn+FxAnalyzer.swift"; path = "CorridorKeyPro/Plugin/CorridorKeyProPlugIn+FxAnalyzer.swift"; sourceTree = "<group>"; };
+		CK0200000000000000000009 /* ParameterIdentifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ParameterIdentifiers.swift; path = CorridorKeyPro/Plugin/Parameters/ParameterIdentifiers.swift; sourceTree = "<group>"; };
+		CK020000000000000000000A /* ParameterEnumerations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ParameterEnumerations.swift; path = CorridorKeyPro/Plugin/Parameters/ParameterEnumerations.swift; sourceTree = "<group>"; };
+		CK020000000000000000000B /* PluginStateData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PluginStateData.swift; path = CorridorKeyPro/Plugin/Parameters/PluginStateData.swift; sourceTree = "<group>"; };
+		CK020000000000000000000C /* MetalDeviceCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MetalDeviceCache.swift; path = CorridorKeyPro/Plugin/Metal/MetalDeviceCache.swift; sourceTree = "<group>"; };
+		CK020000000000000000000D /* CorridorKeyShaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; name = CorridorKeyShaders.metal; path = CorridorKeyPro/Plugin/Metal/CorridorKeyShaders.metal; sourceTree = "<group>"; };
+		CK020000000000000000000E /* ScreenColorEstimator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ScreenColorEstimator.swift; path = CorridorKeyPro/Plugin/PostProcess/ScreenColorEstimator.swift; sourceTree = "<group>"; };
+		CK020000000000000000000F /* KeyingInferenceEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = KeyingInferenceEngine.swift; path = CorridorKeyPro/Plugin/Inference/KeyingInferenceEngine.swift; sourceTree = "<group>"; };
+		CK0200000000000000000010 /* RoughMatteKeyingEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RoughMatteKeyingEngine.swift; path = CorridorKeyPro/Plugin/Inference/RoughMatteKeyingEngine.swift; sourceTree = "<group>"; };
+		CK0200000000000000000012 /* InferenceCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = InferenceCoordinator.swift; path = CorridorKeyPro/Plugin/Inference/InferenceCoordinator.swift; sourceTree = "<group>"; };
+		CK0200000000000000000013 /* RenderPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RenderPipeline.swift; path = CorridorKeyPro/Plugin/Render/RenderPipeline.swift; sourceTree = "<group>"; };
+		CK0200000000000000000015 /* CorridorKeyProApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CorridorKeyProApp.swift; path = CorridorKeyPro/WrapperApp/CorridorKeyProApp.swift; sourceTree = "<group>"; };
+		CK0200000000000000000016 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WelcomeView.swift; path = CorridorKeyPro/WrapperApp/WelcomeView.swift; sourceTree = "<group>"; };
+		CK020000000000000000002A /* MotionTemplateInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MotionTemplateInstaller.swift; path = CorridorKeyPro/WrapperApp/MotionTemplateInstaller.swift; sourceTree = "<group>"; };
+		CK0200000000000000000020 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = CorridorKeyPro/Plugin/Info.plist; sourceTree = "<group>"; };
+		CK0200000000000000000021 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = CorridorKeyPro/WrapperApp/Info.plist; sourceTree = "<group>"; };
+		CK0200000000000000000022 /* CorridorKeyPro.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = CorridorKeyPro.entitlements; path = CorridorKeyPro/Plugin/CorridorKeyPro.entitlements; sourceTree = "<group>"; };
+		CK0200000000000000000023 /* WrapperApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = WrapperApp.entitlements; path = CorridorKeyPro/WrapperApp/WrapperApp.entitlements; sourceTree = "<group>"; };
+		CK0200000000000000000024 /* CorridorKeyShaderTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CorridorKeyShaderTypes.h; path = CorridorKeyPro/Plugin/Shared/CorridorKeyShaderTypes.h; sourceTree = "<group>"; };
+		CK0200000000000000000025 /* CorridorKeyPro-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "CorridorKeyPro-Bridging-Header.h"; path = "CorridorKeyPro/Plugin/Shared/CorridorKeyPro-Bridging-Header.h"; sourceTree = "<group>"; };
+		CK0200000000000000000026 /* Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Shared.xcconfig; path = Configuration/Shared.xcconfig; sourceTree = "<group>"; };
+		CK0200000000000000000030 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = CorridorKeyPro/Plugin/Resources/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		CK0200000000000000000031 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = CorridorKeyPro/WrapperApp/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		CK0300000000000000000001 /* Corridor Key Pro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Corridor Key Pro.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		CK0300000000000000000002 /* Corridor Key Pro.pluginkit */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Corridor Key Pro.pluginkit"; sourceTree = BUILT_PRODUCTS_DIR; };
+		CK0400000000000000000001 /* FxPlug.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FxPlug.framework; path = /Library/Developer/Frameworks/FxPlug.framework; sourceTree = "<absolute>"; };
+		CK0400000000000000000002 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
+		CK0400000000000000000003 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		CK0400000000000000000004 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		CK0400000000000000000005 /* MetalPerformanceShaders.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalPerformanceShaders.framework; path = System/Library/Frameworks/MetalPerformanceShaders.framework; sourceTree = SDKROOT; };
+		CK0400000000000000000006 /* CoreImage.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreImage.framework; path = System/Library/Frameworks/CoreImage.framework; sourceTree = SDKROOT; };
+		CK0400000000000000000008 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
+		CK0400000000000000000009 /* PluginManager.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PluginManager.framework; path = /Library/Developer/Frameworks/PluginManager.framework; sourceTree = "<absolute>"; };
+		MX0100000000000000000003 /* MLXKeyingEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MLXKeyingEngine.swift; path = CorridorKeyPro/Plugin/Inference/MLXKeyingEngine.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		CK0900000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CK010000000000000000001B /* Cocoa.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CK0900000000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CK0100000000000000000019 /* FxPlug.framework in Frameworks */,
+				CK010000000000000000001C /* Metal.framework in Frameworks */,
+				CK010000000000000000001D /* MetalKit.framework in Frameworks */,
+				CK010000000000000000001E /* MetalPerformanceShaders.framework in Frameworks */,
+				CK010000000000000000001F /* CoreImage.framework in Frameworks */,
+				CK0100000000000000000021 /* Accelerate.framework in Frameworks */,
+				MX0500000000000000000001 /* MLX in Frameworks */,
+				MX0500000000000000000002 /* MLXNN in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		22D0980C2F988D670096E749 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				22D098012F988D4F0096E749 /* corridorkey_mlx_bridge_512.mlxfn */,
+				22D098002F988D4F0096E749 /* corridorkey_mlx_bridge_768.mlxfn */,
+				22D098032F988D4F0096E749 /* corridorkey_mlx_bridge_1024.mlxfn */,
+				22D098022F988D4F0096E749 /* corridorkey_mlx_bridge_1536.mlxfn */,
+				22D098042F988D4F0096E749 /* corridorkey_mlx_bridge_2048.mlxfn */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		CK0A00000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				22D0980D2F988FB70096E749 /* Motion Template */,
+				CK0A00000000000000000010 /* Configuration */,
+				CK0A00000000000000000002 /* CorridorKeyPro */,
+				CK0A00000000000000000008 /* Frameworks */,
+				CK0A00000000000000000009 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		CK0A00000000000000000002 /* CorridorKeyPro */ = {
+			isa = PBXGroup;
+			children = (
+				CK0A00000000000000000003 /* Plugin */,
+				CK0A00000000000000000007 /* WrapperApp */,
+			);
+			name = CorridorKeyPro;
+			sourceTree = "<group>";
+		};
+		CK0A00000000000000000003 /* Plugin */ = {
+			isa = PBXGroup;
+			children = (
+				CK0200000000000000000001 /* main.swift */,
+				CK0200000000000000000002 /* CorridorKeyProPlugIn.swift */,
+				CK0200000000000000000004 /* CorridorKeyProPlugIn+PluginState.swift */,
+				CK0200000000000000000005 /* CorridorKeyProPlugIn+Properties.swift */,
+				CK0200000000000000000006 /* CorridorKeyProPlugIn+RenderRects.swift */,
+				CK0200000000000000000007 /* CorridorKeyProPlugIn+Render.swift */,
+				CK0200000000000000000008 /* CorridorKeyProPlugIn+FxAnalyzer.swift */,
+				CK0A00000000000000000004 /* Parameters */,
+				CK0A00000000000000000005 /* Render */,
+				CK0A0000000000000000000A /* Inference */,
+				CK0A0000000000000000000B /* Metal */,
+				CK0A0000000000000000000C /* PostProcess */,
+				CK0A0000000000000000000D /* Shared */,
+				CK0200000000000000000020 /* Info.plist */,
+				CK0200000000000000000022 /* CorridorKeyPro.entitlements */,
+				CK0200000000000000000014 /* InfoPlist.strings */,
+			);
+			name = Plugin;
+			sourceTree = "<group>";
+		};
+		CK0A00000000000000000004 /* Parameters */ = {
+			isa = PBXGroup;
+			children = (
+				CK0200000000000000000003 /* CorridorKeyProPlugIn+Parameters.swift */,
+				CK0200000000000000000009 /* ParameterIdentifiers.swift */,
+				CK020000000000000000000A /* ParameterEnumerations.swift */,
+				CK020000000000000000000B /* PluginStateData.swift */,
+			);
+			name = Parameters;
+			sourceTree = "<group>";
+		};
+		CK0A00000000000000000005 /* Render */ = {
+			isa = PBXGroup;
+			children = (
+				CK0200000000000000000013 /* RenderPipeline.swift */,
+			);
+			name = Render;
+			sourceTree = "<group>";
+		};
+		CK0A00000000000000000007 /* WrapperApp */ = {
+			isa = PBXGroup;
+			children = (
+				22D0980C2F988D670096E749 /* Models */,
+				22D097FE2F9887BD0096E749 /* Credits.rtf */,
+				22D097712F986F5E0096E749 /* Template Icon.icon */,
+				CK0200000000000000000015 /* CorridorKeyProApp.swift */,
+				CK0200000000000000000016 /* WelcomeView.swift */,
+				CK020000000000000000002A /* MotionTemplateInstaller.swift */,
+				CK0200000000000000000021 /* Info.plist */,
+				CK0200000000000000000023 /* WrapperApp.entitlements */,
+				CK0200000000000000000017 /* InfoPlist.strings */,
+			);
+			name = WrapperApp;
+			sourceTree = "<group>";
+		};
+		CK0A00000000000000000008 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				CK0400000000000000000001 /* FxPlug.framework */,
+				CK0400000000000000000009 /* PluginManager.framework */,
+				CK0400000000000000000002 /* Cocoa.framework */,
+				CK0400000000000000000003 /* Metal.framework */,
+				CK0400000000000000000004 /* MetalKit.framework */,
+				CK0400000000000000000005 /* MetalPerformanceShaders.framework */,
+				CK0400000000000000000006 /* CoreImage.framework */,
+				CK0400000000000000000008 /* Accelerate.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		CK0A00000000000000000009 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				CK0300000000000000000001 /* Corridor Key Pro.app */,
+				CK0300000000000000000002 /* Corridor Key Pro.pluginkit */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		CK0A0000000000000000000A /* Inference */ = {
+			isa = PBXGroup;
+			children = (
+				CK020000000000000000000F /* KeyingInferenceEngine.swift */,
+				CK0200000000000000000010 /* RoughMatteKeyingEngine.swift */,
+				MX0100000000000000000003 /* MLXKeyingEngine.swift */,
+				CK0200000000000000000012 /* InferenceCoordinator.swift */,
+			);
+			name = Inference;
+			sourceTree = "<group>";
+		};
+		CK0A0000000000000000000B /* Metal */ = {
+			isa = PBXGroup;
+			children = (
+				CK020000000000000000000C /* MetalDeviceCache.swift */,
+				CK020000000000000000000D /* CorridorKeyShaders.metal */,
+			);
+			name = Metal;
+			sourceTree = "<group>";
+		};
+		CK0A0000000000000000000C /* PostProcess */ = {
+			isa = PBXGroup;
+			children = (
+				CK020000000000000000000E /* ScreenColorEstimator.swift */,
+			);
+			name = PostProcess;
+			sourceTree = "<group>";
+		};
+		CK0A0000000000000000000D /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				CK0200000000000000000024 /* CorridorKeyShaderTypes.h */,
+				CK0200000000000000000025 /* CorridorKeyPro-Bridging-Header.h */,
+			);
+			name = Shared;
+			sourceTree = "<group>";
+		};
+		CK0A00000000000000000010 /* Configuration */ = {
+			isa = PBXGroup;
+			children = (
+				CK0200000000000000000026 /* Shared.xcconfig */,
+			);
+			name = Configuration;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		CK0700000000000000000001 /* Corridor Key Pro */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CK0B00000000000000000001 /* Build configuration list for PBXNativeTarget "Corridor Key Pro" */;
+			buildPhases = (
+				CK0C00000000000000000001 /* Sources */,
+				CK0900000000000000000001 /* Frameworks */,
+				CK0D00000000000000000001 /* Resources */,
+				CK0800000000000000000001 /* Embed PlugIns */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CK0E00000000000000000001 /* PBXTargetDependency */,
+			);
+			name = "Corridor Key Pro";
+			productName = "Corridor Key Pro";
+			productReference = CK0300000000000000000001 /* Corridor Key Pro.app */;
+			productType = "com.apple.product-type.application";
+		};
+		CK0700000000000000000002 /* Corridor Key Pro Renderer */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CK0B00000000000000000002 /* Build configuration list for PBXNativeTarget "Corridor Key Pro Renderer" */;
+			buildPhases = (
+				CK0C00000000000000000002 /* Sources */,
+				CK0900000000000000000002 /* Frameworks */,
+				CK0D00000000000000000002 /* Resources */,
+				CK0800000000000000000002 /* Copy Frameworks */,
+				CK0F00000000000000000001 /* Copy and Code Sign PluginManager.framework */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "Corridor Key Pro Renderer";
+			packageProductDependencies = (
+				MX0400000000000000000001 /* MLX */,
+				MX0400000000000000000002 /* MLXNN */,
+			);
+			productName = "Corridor Key Pro XPC";
+			productReference = CK0300000000000000000002 /* Corridor Key Pro.pluginkit */;
+			productType = "com.apple.product-type.bundle";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		CK0600000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 2640;
+				ORGANIZATIONNAME = "Corridor Digital";
+				TargetAttributes = {
+					CK0700000000000000000001 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+					CK0700000000000000000002 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+				};
+			};
+			buildConfigurationList = CK0B00000000000000000003 /* Build configuration list for PBXProject "CorridorKeyPro" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = CK0A00000000000000000001;
+			packageReferences = (
+				MX0300000000000000000001 /* XCRemoteSwiftPackageReference "mlx-swift" */,
+			);
+			productRefGroup = CK0A00000000000000000009 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				CK0700000000000000000001 /* Corridor Key Pro */,
+				CK0700000000000000000002 /* Corridor Key Pro Renderer */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		CK0D00000000000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				22D097722F986F5E0096E749 /* Template Icon.icon in Resources */,
+				22D097FF2F9887BD0096E749 /* Credits.rtf in Resources */,
+				22D0980E2F988FB70096E749 /* Motion Template in Resources */,
+				CK0100000000000000000017 /* InfoPlist.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CK0D00000000000000000002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				22D098052F988D4F0096E749 /* corridorkey_mlx_bridge_768.mlxfn in Resources */,
+				22D098062F988D4F0096E749 /* corridorkey_mlx_bridge_512.mlxfn in Resources */,
+				22D098072F988D4F0096E749 /* corridorkey_mlx_bridge_1536.mlxfn in Resources */,
+				22D098082F988D4F0096E749 /* corridorkey_mlx_bridge_1024.mlxfn in Resources */,
+				22D098092F988D4F0096E749 /* corridorkey_mlx_bridge_2048.mlxfn in Resources */,
+				CK0100000000000000000014 /* InfoPlist.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		CK0F00000000000000000001 /* Copy and Code Sign PluginManager.framework */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Copy and Code Sign PluginManager.framework";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "mkdir -p \"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}\"\nrsync --archive --links --whole-file --no-owner --no-group --checksum --exclude='Headers' \"/Library/Developer/Frameworks/PluginManager.framework/\" \"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/PluginManager.framework/\"\nif [ \"$?\" -ne 0 ]; then echo \"error: rsync failed; couldn't embed PluginManager.framework\"; exit 1; fi\ncodesign --force --timestamp --options runtime --sign \"${CODE_SIGN_IDENTITY}\" \"${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}/PluginManager.framework\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		CK0C00000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CK0100000000000000000015 /* CorridorKeyProApp.swift in Sources */,
+				CK0100000000000000000016 /* WelcomeView.swift in Sources */,
+				CK010000000000000000002A /* MotionTemplateInstaller.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CK0C00000000000000000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CK0100000000000000000001 /* main.swift in Sources */,
+				CK0100000000000000000002 /* CorridorKeyProPlugIn.swift in Sources */,
+				CK0100000000000000000003 /* CorridorKeyProPlugIn+Parameters.swift in Sources */,
+				CK0100000000000000000004 /* CorridorKeyProPlugIn+PluginState.swift in Sources */,
+				CK0100000000000000000005 /* CorridorKeyProPlugIn+Properties.swift in Sources */,
+				CK0100000000000000000006 /* CorridorKeyProPlugIn+RenderRects.swift in Sources */,
+				CK0100000000000000000007 /* CorridorKeyProPlugIn+Render.swift in Sources */,
+				CK0100000000000000000008 /* CorridorKeyProPlugIn+FxAnalyzer.swift in Sources */,
+				CK0100000000000000000009 /* ParameterIdentifiers.swift in Sources */,
+				CK010000000000000000000A /* ParameterEnumerations.swift in Sources */,
+				CK010000000000000000000B /* PluginStateData.swift in Sources */,
+				CK010000000000000000000C /* MetalDeviceCache.swift in Sources */,
+				CK010000000000000000000D /* CorridorKeyShaders.metal in Sources */,
+				CK010000000000000000000E /* ScreenColorEstimator.swift in Sources */,
+				CK010000000000000000000F /* KeyingInferenceEngine.swift in Sources */,
+				CK0100000000000000000010 /* RoughMatteKeyingEngine.swift in Sources */,
+				MX0200000000000000000002 /* MLXKeyingEngine.swift in Sources */,
+				CK0100000000000000000012 /* InferenceCoordinator.swift in Sources */,
+				CK0100000000000000000013 /* RenderPipeline.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		CK0E00000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CK0700000000000000000002 /* Corridor Key Pro Renderer */;
+			targetProxy = CK0500000000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		CK0200000000000000000014 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				CK0200000000000000000030 /* en */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+		CK0200000000000000000017 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				CK0200000000000000000031 /* en */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		CK1000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = CK0200000000000000000026 /* Shared.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = A5HDJTY9X5;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		CK1000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = CK0200000000000000000026 /* Shared.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = A5HDJTY9X5;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		CK1000000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = CK0200000000000000000026 /* Shared.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "Template Icon";
+				CODE_SIGN_ENTITLEMENTS = CorridorKeyPro/WrapperApp/WrapperApp.entitlements;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_FILE_ACCESS_MOVIES_FOLDER = readwrite;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = NO;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = CorridorKeyPro/WrapperApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.latenitefilms.CorridorKeyPro;
+				PRODUCT_MODULE_NAME = CorridorKeyProApp;
+				PRODUCT_NAME = "Corridor Key Pro";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+			};
+			name = Debug;
+		};
+		CK1000000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = CK0200000000000000000026 /* Shared.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "Template Icon";
+				CODE_SIGN_ENTITLEMENTS = CorridorKeyPro/WrapperApp/WrapperApp.entitlements;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_FILE_ACCESS_MOVIES_FOLDER = readwrite;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = NO;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = CorridorKeyPro/WrapperApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.latenitefilms.CorridorKeyPro;
+				PRODUCT_MODULE_NAME = CorridorKeyProApp;
+				PRODUCT_NAME = "Corridor Key Pro";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+			};
+			name = Release;
+		};
+		CK1000000000000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = CK0200000000000000000026 /* Shared.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = CorridorKeyPro/Plugin/CorridorKeyPro.entitlements;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/CorridorKeyPro/Plugin/Shared";
+				INFOPLIST_FILE = CorridorKeyPro/Plugin/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Corridor Key Pro Renderer";
+				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
+				MACH_O_TYPE = mh_execute;
+				MTL_HEADER_SEARCH_PATHS = "$(SRCROOT)/CorridorKeyPro/Plugin/Shared";
+				PRODUCT_BUNDLE_IDENTIFIER = com.latenitefilms.CorridorKeyPro.Renderer;
+				PRODUCT_MODULE_NAME = CorridorKeyProPlugIn;
+				PRODUCT_NAME = "Corridor Key Pro";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_OBJC_BRIDGING_HEADER = "CorridorKeyPro/Plugin/Shared/CorridorKeyPro-Bridging-Header.h";
+				WRAPPER_EXTENSION = pluginkit;
+			};
+			name = Debug;
+		};
+		CK1000000000000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = CK0200000000000000000026 /* Shared.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = CorridorKeyPro/Plugin/CorridorKeyPro.entitlements;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/CorridorKeyPro/Plugin/Shared";
+				INFOPLIST_FILE = CorridorKeyPro/Plugin/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Corridor Key Pro Renderer";
+				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
+				MACH_O_TYPE = mh_execute;
+				MTL_HEADER_SEARCH_PATHS = "$(SRCROOT)/CorridorKeyPro/Plugin/Shared";
+				PRODUCT_BUNDLE_IDENTIFIER = com.latenitefilms.CorridorKeyPro.Renderer;
+				PRODUCT_MODULE_NAME = CorridorKeyProPlugIn;
+				PRODUCT_NAME = "Corridor Key Pro";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_OBJC_BRIDGING_HEADER = "CorridorKeyPro/Plugin/Shared/CorridorKeyPro-Bridging-Header.h";
+				WRAPPER_EXTENSION = pluginkit;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		CK0B00000000000000000001 /* Build configuration list for PBXNativeTarget "Corridor Key Pro" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CK1000000000000000000003 /* Debug */,
+				CK1000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CK0B00000000000000000002 /* Build configuration list for PBXNativeTarget "Corridor Key Pro Renderer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CK1000000000000000000005 /* Debug */,
+				CK1000000000000000000006 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CK0B00000000000000000003 /* Build configuration list for PBXProject "CorridorKeyPro" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CK1000000000000000000001 /* Debug */,
+				CK1000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		MX0300000000000000000001 /* XCRemoteSwiftPackageReference "mlx-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ml-explore/mlx-swift.git";
+			requirement = {
+				kind = exactVersion;
+				version = 0.31.3;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		MX0400000000000000000001 /* MLX */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = MX0300000000000000000001 /* XCRemoteSwiftPackageReference "mlx-swift" */;
+			productName = MLX;
+		};
+		MX0400000000000000000002 /* MLXNN */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = MX0300000000000000000001 /* XCRemoteSwiftPackageReference "mlx-swift" */;
+			productName = MLXNN;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = CK0600000000000000000001 /* Project object */;
+}

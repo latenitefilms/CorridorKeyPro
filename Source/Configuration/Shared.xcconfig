@@ -1,0 +1,34 @@
+// Shared build settings for Corridor Key Pro.
+// Referenced by both the Wrapper Application and the FxPlug XPC Service.
+
+// Marketing and build numbers are the single source of truth for the bundle.
+MARKETING_VERSION = 1.0.0
+CURRENT_PROJECT_VERSION = 1
+
+// Apple Silicon only. Corridor Key Pro requires the Apple Neural Engine and
+// modern Metal features; Intel Macs are explicitly out of scope.
+ARCHS = arm64
+ONLY_ACTIVE_ARCH = NO
+VALID_ARCHS = arm64
+
+// macOS target. Final Cut Pro 12 ships on macOS 26; the plugin matches the host.
+MACOSX_DEPLOYMENT_TARGET = 26.0
+SDKROOT = macosx
+
+// FxPlug SDK lives alongside Xcode's macOS SDK.
+ADDITIONAL_SDKS = /Library/Developer/SDKs/FxPlug.sdk
+FRAMEWORK_SEARCH_PATHS = $(inherited) /Library/Frameworks
+
+// Swift 6 with strict concurrency checking.
+SWIFT_VERSION = 6.0
+SWIFT_STRICT_CONCURRENCY = complete
+SWIFT_UPCOMING_FEATURE_EXISTENTIAL_ANY = YES
+
+// Keep the Swift runtime bundled with the wrapper for stand-alone distribution.
+ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES
+
+// Hardened runtime is required for Mac App Store distribution.
+ENABLE_HARDENED_RUNTIME = YES
+
+// Brand identifiers.
+PRODUCT_COPYRIGHT = Copyright © LateNite Films Pty Ltd 2026. All Rights Reserved.

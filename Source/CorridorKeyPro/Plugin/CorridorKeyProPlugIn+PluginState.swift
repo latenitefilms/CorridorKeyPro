@@ -1,0 +1,218 @@
+//
+//  CorridorKeyProPlugIn+PluginState.swift
+//  Corridor Key Pro
+//
+//  Reads every parameter into a single value-type snapshot that the renderer
+//  and analyser can consume without touching the FxPlug API again. FxPlug
+//  requires us to return a fresh NSData each call because the host may issue
+//  calls from multiple threads.
+//
+
+import Foundation
+import CoreMedia
+
+extension CorridorKeyProPlugIn {
+
+    @objc(pluginState:atTime:quality:error:)
+    func pluginState(
+        _ pluginState: AutoreleasingUnsafeMutablePointer<NSData>?,
+        at renderTime: CMTime,
+        quality qualityLevel: UInt
+    ) throws {
+        guard let retrieval = apiManager.api(for: FxParameterRetrievalAPI_v6.self) as? FxParameterRetrievalAPI_v6 else {
+            throw NSError(
+                domain: FxPlugErrorDomain,
+                code: kFxError_APIUnavailable,
+                userInfo: [NSLocalizedDescriptionKey: "Corridor Key Pro could not read parameter values."]
+            )
+        }
+
+        var state = PluginStateData()
+        state.renderQualityLevel = Int(qualityLevel)
+
+        // Key setup
+        state.screenColor = popupValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.screenColor,
+            time: renderTime,
+            default: .green
+        )
+        state.qualityMode = popupValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.qualityMode,
+            time: renderTime,
+            default: .draft512
+        )
+        state.inputColorSpace = popupValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.inputColorSpace,
+            time: renderTime,
+            default: .hostManaged
+        )
+
+        // Interior
+        state.sourcePassthroughEnabled = boolValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.sourcePassthrough,
+            time: renderTime,
+            default: true
+        )
+        state.passthroughErodeNormalized = floatValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.passthroughErode,
+            time: renderTime,
+            default: 3
+        )
+        state.passthroughBlurNormalized = floatValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.passthroughBlur,
+            time: renderTime,
+            default: 7
+        )
+
+        // Matte
+        state.alphaBlackPoint = floatValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.alphaBlackPoint,
+            time: renderTime,
+            default: 0
+        )
+        state.alphaWhitePoint = floatValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.alphaWhitePoint,
+            time: renderTime,
+            default: 1
+        )
+        state.alphaErodeNormalized = floatValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.alphaErode,
+            time: renderTime,
+            default: 0
+        )
+        state.alphaSoftnessNormalized = floatValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.alphaSoftness,
+            time: renderTime,
+            default: 0
+        )
+        state.alphaGamma = floatValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.alphaGamma,
+            time: renderTime,
+            default: 1
+        )
+        state.autoDespeckleEnabled = boolValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.autoDespeckle,
+            time: renderTime,
+            default: false
+        )
+        state.despeckleSize = intValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.despeckleSize,
+            time: renderTime,
+            default: 400
+        )
+
+        // Edge & spill
+        state.despillStrength = floatValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.despillStrength,
+            time: renderTime,
+            default: 0.5
+        )
+        state.spillMethod = popupValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.spillMethod,
+            time: renderTime,
+            default: .average
+        )
+
+        // Output and performance
+        state.outputMode = popupValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.outputMode,
+            time: renderTime,
+            default: .processed
+        )
+        state.temporalSmoothing = floatValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.temporalSmoothing,
+            time: renderTime,
+            default: 0
+        )
+        state.upscaleMethod = popupValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.upscaleMethod,
+            time: renderTime,
+            default: .bilinear
+        )
+
+        // Advanced
+        state.allowCPUFallback = boolValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.allowCPUFallback,
+            time: renderTime,
+            default: false
+        )
+        state.renderTimeoutSeconds = intValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.renderTimeoutSeconds,
+            time: renderTime,
+            default: 60
+        )
+
+        let nsData = try state.encodedForHost()
+        pluginState?.pointee = nsData
+    }
+
+    // MARK: - Retrieval helpers
+
+    /// Reads a choice parameter, falling back to the supplied default if the
+    /// host signals an error or returns an index outside of the known range.
+    private func popupValue<Enum: RawRepresentable>(
+        retrieval: any FxParameterRetrievalAPI_v6,
+        parameterID: UInt32,
+        time: CMTime,
+        default defaultValue: Enum
+    ) -> Enum where Enum.RawValue == Int {
+        var raw: Int32 = 0
+        guard retrieval.getIntValue(&raw, fromParameter: parameterID, at: time) else {
+            return defaultValue
+        }
+        return Enum(rawValue: Int(raw)) ?? defaultValue
+    }
+
+    private func floatValue(
+        retrieval: any FxParameterRetrievalAPI_v6,
+        parameterID: UInt32,
+        time: CMTime,
+        default defaultValue: Double
+    ) -> Double {
+        var value: Double = defaultValue
+        retrieval.getFloatValue(&value, fromParameter: parameterID, at: time)
+        return value
+    }
+
+    private func intValue(
+        retrieval: any FxParameterRetrievalAPI_v6,
+        parameterID: UInt32,
+        time: CMTime,
+        default defaultValue: Int
+    ) -> Int {
+        var value: Int32 = Int32(defaultValue)
+        retrieval.getIntValue(&value, fromParameter: parameterID, at: time)
+        return Int(value)
+    }
+
+    private func boolValue(
+        retrieval: any FxParameterRetrievalAPI_v6,
+        parameterID: UInt32,
+        time: CMTime,
+        default defaultValue: Bool
+    ) -> Bool {
+        var value: ObjCBool = ObjCBool(defaultValue)
+        retrieval.getBoolValue(&value, fromParameter: parameterID, at: time)
+        return value.boolValue
+    }
+}
