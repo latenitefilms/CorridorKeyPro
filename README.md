@@ -1,6 +1,6 @@
 # Corridor Key Pro
 
-An FxPlug4 plug-in for Final Cut Pro that ports [CorridorKey][https://github.com/nikopueringer/CorridorKey]'s AI green-screen keying to Apple Silicon.
+An FxPlug4 plug-in for Final Cut Pro that ports [CorridorKey](https://github.com/nikopueringer/CorridorKey)'s AI green-screen keying to Apple Silicon.
 
 ---
 
