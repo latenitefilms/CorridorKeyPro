@@ -251,7 +251,7 @@ extension CorridorKeyProPlugIn {
         create.startParameterSubGroup(
             "Performance",
             parameterID: ParameterIdentifier.performanceGroup,
-            parameterFlags: [CorridorKeyParameterFlags.default, .collapsed].reduce(into: CorridorKeyParameterFlags()) { $0.insert($1) }.fxFlags
+            parameterFlags: [CorridorKeyParameterFlags.default].reduce(into: CorridorKeyParameterFlags()) { $0.insert($1) }.fxFlags
         )
 
         create.addFloatSlider(
