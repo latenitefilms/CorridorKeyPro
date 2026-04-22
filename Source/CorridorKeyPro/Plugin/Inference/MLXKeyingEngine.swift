@@ -124,6 +124,7 @@ final class MLXKeyingEngine: KeyingInferenceEngine, @unchecked Sendable {
             throw KeyingInferenceError.modelUnavailable("MLX bridge not prepared.")
         }
 
+        _ = request.rawSourceTexture
         // Step 1: stage the normalised tensor off the GPU into our CPU scratch
         // buffer. Apple Silicon's unified memory keeps this near-zero cost.
         try readNormalisedInput(texture: request.normalisedInputTexture, rung: rung)

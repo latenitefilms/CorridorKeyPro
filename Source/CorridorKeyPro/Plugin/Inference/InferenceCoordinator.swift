@@ -2,17 +2,30 @@
 //  InferenceCoordinator.swift
 //  Corridor Key Pro
 //
-//  Chooses a keying engine, manages warm-up, and recovers from engine-level
-//  failures. The render pipeline delegates the opaque "ask a model for a matte"
-//  problem to this coordinator so the orchestrator can stay linear and testable.
+//  Chooses a keying engine and manages warm-up. The render pipeline delegates
+//  the opaque "ask a model for a matte" problem to this coordinator so the
+//  orchestrator can stay linear and testable.
+//
+//  MLX integration is gated behind `Self.mlxEnabled`. MLX is currently
+//  disabled so the plug-in has a fast, dependency-free render path while the
+//  neural bridge is validated against CorridorKey's canonical outputs. When
+//  MLX is turned back on, the coordinator will prefer it and fall back to
+//  the rough-matte engine on any failure.
 //
 
 import Foundation
 import Metal
 
-/// Wraps the per-instance engine selection and warm-up. Thread-safe so
-/// Final Cut Pro can drive multiple tiles into the same instance at once.
 final class InferenceCoordinator: @unchecked Sendable {
+
+    /// Set to `true` once the MLX bridge's input/output convention is
+    /// validated end-to-end against CorridorKey's reference OFX plug-in.
+    /// Currently off because the bundled bridge produces an inverted matte
+    /// at runtime — the pipeline gets the same artefact every frame whether
+    /// MLX is involved or not, so we ship the deterministic rough-matte
+    /// path until we have the right pre/post-processing wired up.
+    private static let mlxEnabled = false
+
     private let stateLock = NSLock()
     private var currentEngine: (any KeyingInferenceEngine)?
     private var warmResolution: Int = 0
@@ -34,11 +47,6 @@ final class InferenceCoordinator: @unchecked Sendable {
     ) throws -> KeyingInferenceOutput {
         let engine = try engine(for: request.inferenceResolution, cacheEntry: cacheEntry)
 
-        // Output textures are allocated with `.shared` storage so the engine
-        // can populate them from the CPU via `texture.replace(region:…)`, and
-        // the post-inference GPU pass can then read them back. 32-bit float
-        // formats match the `Float` scratch buffers MLX produces so the
-        // replace call is a pointer-size copy.
         guard let alpha = cacheEntry.makeIntermediateTexture(
             width: request.inferenceResolution,
             height: request.inferenceResolution,
@@ -87,22 +95,24 @@ final class InferenceCoordinator: @unchecked Sendable {
         }
         stateLock.unlock()
 
-        let preferred = MLXKeyingEngine(cacheEntry: cacheEntry)
-        if preferred.supports(resolution: resolution) {
-            do {
-                try runBlocking { try await preferred.prepare(resolution: resolution) }
-                stateLock.lock()
-                currentEngine = preferred
-                warmResolution = resolution
-                warmCacheEntryID = ObjectIdentifier(cacheEntry)
-                stateLock.unlock()
-                PluginLog.notice("MLX engine ready for \(resolution)px inference on \(cacheEntry.device.name).")
-                return preferred
-            } catch {
-                PluginLog.error("MLX warm-up failed; using rough matte fallback. Error: \(error.localizedDescription)")
+        if Self.mlxEnabled {
+            let preferred = MLXKeyingEngine(cacheEntry: cacheEntry)
+            if preferred.supports(resolution: resolution) {
+                do {
+                    try runBlocking { try await preferred.prepare(resolution: resolution) }
+                    stateLock.lock()
+                    currentEngine = preferred
+                    warmResolution = resolution
+                    warmCacheEntryID = ObjectIdentifier(cacheEntry)
+                    stateLock.unlock()
+                    PluginLog.notice("MLX engine ready for \(resolution)px inference on \(cacheEntry.device.name).")
+                    return preferred
+                } catch {
+                    PluginLog.error("MLX warm-up failed; using rough matte fallback. Error: \(error.localizedDescription)")
+                }
+            } else {
+                PluginLog.notice("No MLX bridge bundled for \(resolution)px; using rough matte fallback.")
             }
-        } else {
-            PluginLog.notice("No MLX bridge bundled for \(resolution)px; using rough matte fallback.")
         }
 
         let fallback = RoughMatteKeyingEngine(cacheEntry: cacheEntry)
@@ -117,7 +127,7 @@ final class InferenceCoordinator: @unchecked Sendable {
     /// Runs an async throwing closure on a detached task and blocks the
     /// caller until it completes. FxPlug's render entry point is synchronous,
     /// so we bridge Swift concurrency back to the render thread for MLX
-    /// warm-up only (a one-time cost amortised across the timeline).
+    /// warm-up only.
     private func runBlocking<T>(_ body: @escaping @Sendable () async throws -> T) throws -> T where T: Sendable {
         let semaphore = DispatchSemaphore(value: 0)
         let resultBox = RunBlockingBox<T>()

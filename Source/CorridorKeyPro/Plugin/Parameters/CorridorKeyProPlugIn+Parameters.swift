@@ -9,6 +9,7 @@
 
 import Foundation
 import AppKit
+import CoreMedia
 
 extension CorridorKeyProPlugIn {
 
@@ -303,20 +304,65 @@ extension CorridorKeyProPlugIn {
     // MARK: - Callbacks
 
     @objc func handleProcessClip() {
-        guard let analysis = apiManager.api(for: (any FxAnalysisAPI_v2).self) as? any FxAnalysisAPI_v2 else {
-            PluginLog.error("Process Clip: FxAnalysisAPI is not available.")
+        PluginLog.notice("Process Clip button pressed.")
+        guard let analysisObject = apiManager.api(for: (any FxAnalysisAPI_v2).self)
+                ?? apiManager.api(for: (any FxAnalysisAPI).self) else {
+            PluginLog.error("Process Clip: FxAnalysisAPI is not available on this host.")
+            presentProcessAlert(
+                title: "Process Clip unavailable",
+                message: "This host does not expose the analysis API. Live rendering will continue using the rough matte."
+            )
             return
         }
-        PluginLog.notice("Starting forward analysis of clip.")
+
         do {
-            try analysis.startForwardAnalysis(kFxAnalysisLocation_GPU)
+            if let analysis = analysisObject as? any FxAnalysisAPI_v2 {
+                try analysis.startForwardAnalysis(kFxAnalysisLocation_GPU)
+            } else if let analysis = analysisObject as? any FxAnalysisAPI {
+                try analysis.startForwardAnalysis(kFxAnalysisLocation_GPU)
+            } else {
+                throw NSError(domain: FxPlugErrorDomain, code: kFxError_APIUnavailable)
+            }
+            PluginLog.notice("Forward analysis started on GPU.")
+            presentProcessAlert(
+                title: "Processing started",
+                message: "Final Cut Pro is analysing the clip in the background. Progress is shown in the timeline overlay."
+            )
         } catch {
             PluginLog.error("startForwardAnalysis failed: \(error.localizedDescription)")
+            presentProcessAlert(
+                title: "Processing could not start",
+                message: error.localizedDescription
+            )
         }
     }
 
     @objc func handleOpenUserGuide() {
         guard let url = URL(string: "https://corridordigital.com/corridor-key-pro") else { return }
         NSWorkspace.shared.open(url)
+    }
+
+    /// Shows a short confirmation alert over the FCP UI. Posted through the
+    /// main queue because the button handler arrives on an arbitrary thread.
+    private func presentProcessAlert(title: String, message: String) {
+        Task { @MainActor in
+            let alert = NSAlert()
+            alert.messageText = title
+            alert.informativeText = message
+            alert.addButton(withTitle: "OK")
+            alert.runModal()
+        }
+    }
+
+    // MARK: - Parameter change notifications
+
+    /// Final Cut Pro invokes this method when the user edits a control. We
+    /// don't need to react per-parameter — the host will re-request the
+    /// plug-in state and re-render automatically — but having it defined
+    /// ensures FCP correctly invalidates any cached render when a control
+    /// changes.
+    @objc(parameterChanged:atTime:error:)
+    func parameterChanged(_ paramID: UInt32, atTime time: CMTime) throws {
+        PluginLog.debug("Parameter \(paramID) changed at \(CMTimeGetSeconds(time))s.")
     }
 }

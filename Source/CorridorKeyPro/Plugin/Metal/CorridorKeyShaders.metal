@@ -43,9 +43,14 @@ vertex ComposeRasterizerData corridorKeyComposeVertex(
     return out;
 }
 
-/// Reads source, foreground, and matte textures, applies the selected output
-/// mode, and writes the final pixel into the destination colour attachment.
-/// Runs at the destination resolution so there's no rescaling cost here.
+/// Reads source and matte textures, applies the selected output mode, and
+/// writes the final pixel into the destination colour attachment. Runs at
+/// the destination resolution so there's no rescaling cost here.
+///
+/// The foreground bound slot is kept as a sampler so the shader signature
+/// stays stable, but the current output modes all key off the original
+/// source texture: the pipeline's inference-time foreground tensor lives
+/// in ImageNet-normalised space and would blow out when displayed directly.
 fragment float4 corridorKeyComposeFragment(
     ComposeRasterizerData in [[stage_in]],
     texture2d<float, access::sample> sourceTexture [[texture(CKTextureIndexSource)]],
@@ -56,24 +61,20 @@ fragment float4 corridorKeyComposeFragment(
     constexpr sampler bilinear(mag_filter::linear, min_filter::linear, address::clamp_to_edge);
 
     float3 source = sourceTexture.sample(bilinear, in.textureCoordinate).rgb;
-    float3 foreground = foregroundTexture.sample(bilinear, in.textureCoordinate).rgb;
     float alpha = saturate(matteTexture.sample(bilinear, in.textureCoordinate).r);
 
     switch (params.outputMode) {
         case CKOutputModeMatteOnly:
             return float4(alpha, alpha, alpha, 1.0);
         case CKOutputModeForegroundOnly:
-            return float4(foreground, 1.0);
+            return float4(source, 1.0);
         case CKOutputModeSourcePlusMatte:
             return float4(source * alpha, alpha);
         case CKOutputModeForegroundPlusMatte:
-            return float4(foreground, alpha);
+            return float4(source, alpha);
         case CKOutputModeProcessed:
         default:
-            // Premultiplied composite: the foreground is already despilled,
-            // multiply by the matte so Final Cut Pro can layer it over a
-            // background clip below the keyed clip in the timeline.
-            return float4(foreground * alpha, alpha);
+            return float4(source * alpha, alpha);
     }
 }
 

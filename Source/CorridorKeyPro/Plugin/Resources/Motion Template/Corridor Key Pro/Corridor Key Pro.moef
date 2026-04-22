@@ -292,7 +292,10 @@
 					<parameter name="Temporal Smoothing" id="6001" flags="12884901904" default="0" value="0"/>
 					<parameter name="Upscale Method" id="6002" flags="12884901904" default="0" value="0"/>
 				</parameter>
-				<parameter name="Process" id="160" flags="8589938704"/>
+				<parameter name="Process" id="160" flags="8589938704">
+					<parameter name="Process Clip" id="7003" flags="8589938704"/>
+					<parameter name="Open User Guide" id="9001" flags="8589938704"/>
+				</parameter>
 				<parameter name="Mix" id="10001" flags="12884901888" default="1" value="1"/>
 				<parameter name="Flip" id="10002" flags="12889161760" default="0" value="0"/>
 				<parameter name="Input Points" id="10003" flags="12889161760" default="1" value="1"/>

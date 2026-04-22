@@ -116,6 +116,15 @@ final class RenderPipeline: @unchecked Sendable {
             commandBuffer: preCommandBuffer
         )
 
+        let rawSourceAtInferenceResolution = try resample(
+            source: rotatedSource,
+            targetWidth: inferenceResolution,
+            targetHeight: inferenceResolution,
+            pixelFormat: .rgba16Float,
+            entry: entry,
+            commandBuffer: preCommandBuffer
+        )
+
         preCommandBuffer.commit()
         preCommandBuffer.waitUntilCompleted()
         if let error = preCommandBuffer.error {
@@ -126,6 +135,7 @@ final class RenderPipeline: @unchecked Sendable {
         let inferenceOutput = try inferenceCoordinator.runInference(
             request: KeyingInferenceRequest(
                 normalisedInputTexture: normalisedInput,
+                rawSourceTexture: rawSourceAtInferenceResolution,
                 inferenceResolution: inferenceResolution
             ),
             cacheEntry: entry

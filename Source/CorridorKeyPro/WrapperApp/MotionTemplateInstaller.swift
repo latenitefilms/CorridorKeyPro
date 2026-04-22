@@ -3,11 +3,17 @@
 //  Corridor Key Pro
 //
 //  Installs (or refreshes) the bundled Motion Template into the user's
-//  `~/Movies/Motion Templates.localized/Effects.localized/Corridor Key Pro/`
-//  directory so Final Cut Pro picks up the effect as soon as the app finishes
-//  launching. The installer is idempotent — re-running it with an unchanged
-//  bundle is a no-op, and re-running after an upgrade replaces the previous
-//  copy on disk.
+//  real `~/Movies/Motion Templates.localized/Effects.localized/Corridor Key
+//  Pro/` directory so Final Cut Pro picks up the effect as soon as the app
+//  finishes launching.
+//
+//  Because the wrapper app runs inside the App Sandbox,
+//  `URL.moviesDirectory` resolves to the container's redirected copy at
+//  `~/Library/Containers/com.latenitefilms.CorridorKeyPro/Data/Movies/` —
+//  which Final Cut Pro never reads. We resolve the real user home with
+//  `getpwuid`, which bypasses the sandbox redirect, and rely on the
+//  `com.apple.security.assets.movies.read-write` entitlement to let the
+//  copy succeed at the actual path.
 //
 
 import Foundation
@@ -15,17 +21,12 @@ import AppKit
 
 // MARK: - Result types
 
-/// Terminal state surfaced back to the SwiftUI view once installation
-/// finishes. Two success cases keep the UI messaging meaningful without
-/// exposing disk-level details.
 enum MotionTemplateInstallationResult: Sendable {
     case alreadyInstalled
     case installed
     case failed(title: String, info: String)
 }
 
-/// Internal result used while copying files. Kept private so the SwiftUI
-/// layer only has to reason about the higher-level `MotionTemplateInstallationResult`.
 private enum MotionTemplateCopyResult: Sendable {
     case success
     case failed(title: String, info: String)
@@ -33,16 +34,13 @@ private enum MotionTemplateCopyResult: Sendable {
 
 // MARK: - Installer
 
-/// Performs the Motion Template install work off of the main actor so the
-/// SwiftUI view stays responsive even when the file operations take a moment
-/// (for example, replacing a large media folder on a slow disk).
 actor MotionTemplateInstaller {
     static let effectCategory = "Corridor Key Pro"
 
     private let fileManager = FileManager.default
 
-    /// Entry point: installs (or updates) the latest bundled template and
-    /// returns a `MotionTemplateInstallationResult` describing the outcome.
+    /// Installs or refreshes the bundled Motion Template and returns a
+    /// `MotionTemplateInstallationResult` describing the outcome.
     func installLatestTemplate() -> MotionTemplateInstallationResult {
         guard let bundledTemplateURL = bundledTemplateURL() else {
             return .failed(
@@ -51,25 +49,30 @@ actor MotionTemplateInstaller {
             )
         }
 
-        let moviesFolderURL = URL.moviesDirectory
-        if isMotionTemplateAlreadyInstalled(in: moviesFolderURL, bundledTemplateURL: bundledTemplateURL) {
+        guard let realMoviesURL = realUserMoviesDirectory() else {
+            return .failed(
+                title: "Motion Template could not be installed.",
+                info: "Corridor Key Pro could not locate your ~/Movies folder."
+            )
+        }
+
+        if isMotionTemplateAlreadyInstalled(in: realMoviesURL, bundledTemplateURL: bundledTemplateURL) {
             return .alreadyInstalled
         }
 
-        switch installMotionTemplate(in: moviesFolderURL, bundledTemplateURL: bundledTemplateURL) {
+        switch installMotionTemplate(in: realMoviesURL, bundledTemplateURL: bundledTemplateURL) {
         case .success:
             break
         case .failed(let title, let info):
             return .failed(title: title, info: info)
         }
 
-        guard isMotionTemplateAlreadyInstalled(in: moviesFolderURL, bundledTemplateURL: bundledTemplateURL) else {
+        guard isMotionTemplateAlreadyInstalled(in: realMoviesURL, bundledTemplateURL: bundledTemplateURL) else {
             return .failed(
                 title: "Motion Template could not be verified.",
                 info: "Corridor Key Pro copied the template files but could not confirm the installed copy. Try relaunching the app."
             )
         }
-
         return .installed
     }
 
@@ -87,10 +90,23 @@ actor MotionTemplateInstaller {
             .appending(path: Self.effectCategory, directoryHint: .isDirectory)
     }
 
+    /// Resolves the **real** `~/Movies` path, ignoring the sandbox
+    /// container redirect that `URL.moviesDirectory` and
+    /// `FileManager.homeDirectoryForCurrentUser` apply. The POSIX password
+    /// database returns the on-disk home directory set by the operating
+    /// system, which is what Final Cut Pro reads its Motion Templates from.
+    private func realUserMoviesDirectory() -> URL? {
+        guard let passwordEntry = getpwuid(getuid()),
+              let homeCString = passwordEntry.pointee.pw_dir else {
+            return nil
+        }
+        let homePath = String(cString: homeCString)
+        return URL(fileURLWithPath: homePath, isDirectory: true)
+            .appending(path: "Movies", directoryHint: .isDirectory)
+    }
+
     /// Final Cut Pro expects effects at:
     /// `~/Movies/Motion Templates.localized/Effects.localized/<Category>/<TemplateName>/`
-    /// We use the same name for the category and the template so a single
-    /// effect appears in the inspector browser.
     private func destinationTemplateURL(in moviesFolderURL: URL) -> URL {
         moviesFolderURL
             .appending(path: "Motion Templates.localized", directoryHint: .isDirectory)
@@ -101,9 +117,9 @@ actor MotionTemplateInstaller {
 
     // MARK: - Freshness check
 
-    /// Compares the bundled and installed templates byte-for-byte via
-    /// `FileManager.contentsEqual`. Motion Template folders are relatively
-    /// small so this is quick even on spinning disks.
+    /// Compares the bundled and installed templates byte-for-byte. Motion
+    /// Template folders are small so a direct comparison is quick and lets
+    /// us skip the remove+copy pair when nothing has changed.
     private func isMotionTemplateAlreadyInstalled(
         in moviesFolderURL: URL,
         bundledTemplateURL: URL
@@ -113,14 +129,12 @@ actor MotionTemplateInstaller {
             log("No installed template at: \(destinationURL.path)")
             return false
         }
-
         if fileManager.contentsEqual(
             atPath: bundledTemplateURL.path,
             andPath: destinationURL.path
         ) {
             return true
         }
-
         log("Installed template differs from bundled version; will refresh.")
         return false
     }
@@ -212,7 +226,7 @@ actor MotionTemplateInstaller {
             } catch {
                 return .failed(
                     title: "Motion Template could not be installed.",
-                    info: "The '\(pathDescription)' folder could not be created."
+                    info: "The '\(pathDescription)' folder could not be created. \(error.localizedDescription)"
                 )
             }
         }

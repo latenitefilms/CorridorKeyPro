@@ -2,10 +2,10 @@
 //  RoughMatteKeyingEngine.swift
 //  Corridor Key Pro
 //
-//  Fallback engine used when no neural model artefact is bundled (or when MLX
-//  fails to load). Produces a simple `saturate((G - max(R, B)) * 2.5)` matte on
-//  the GPU and copies the normalised input forward as the foreground texture
-//  so the rest of the pipeline always has something to work with.
+//  Default engine used whenever MLX is disabled or unavailable. Computes the
+//  matte from the raw (0..1) RGB source using the `corridorKeyRoughMatteKernel`
+//  — a simple `1 - saturate((G - max(R, B)) * 2.5)` that cleanly matches the
+//  convention used by CorridorKey-Runtime's `ColorUtils::generate_rough_matte`.
 //
 
 import Foundation
@@ -43,18 +43,32 @@ final class RoughMatteKeyingEngine: KeyingInferenceEngine, @unchecked Sendable {
             throw KeyingInferenceError.deviceUnavailable
         }
 
-        // The normalised tensor texture holds (R, G, B, hint) where hint is in
-        // the alpha channel. Re-reading with the rough-matte kernel produces a
-        // crude alpha from `max(G - max(R, B), 0) * 2.5`.
+        // Derive the matte from the raw RGB source (not the ImageNet-normalised
+        // tensor) so the green-detection math operates in 0..1 space and the
+        // fallback matches the reference CPU rough-matte exactly.
         encoder.setComputePipelineState(cacheEntry.computePipelines.roughMatte)
-        encoder.setTexture(request.normalisedInputTexture, index: Int(CKTextureIndexSource.rawValue))
+        encoder.setTexture(request.rawSourceTexture, index: Int(CKTextureIndexSource.rawValue))
         encoder.setTexture(output.alphaTexture, index: Int(CKTextureIndexOutput.rawValue))
-        dispatchThreads(encoder: encoder, pipeline: cacheEntry.computePipelines.roughMatte, width: output.alphaTexture.width, height: output.alphaTexture.height)
+        dispatchThreads(
+            encoder: encoder,
+            pipeline: cacheEntry.computePipelines.roughMatte,
+            width: output.alphaTexture.width,
+            height: output.alphaTexture.height
+        )
 
+        // The foreground texture is only used by downstream despill /
+        // passthrough stages that read the ML-provided foreground tensor.
+        // Fill it with the raw RGB source so those stages see sensible
+        // values even when MLX is disabled.
         encoder.setComputePipelineState(cacheEntry.computePipelines.resample)
-        encoder.setTexture(request.normalisedInputTexture, index: Int(CKTextureIndexSource.rawValue))
+        encoder.setTexture(request.rawSourceTexture, index: Int(CKTextureIndexSource.rawValue))
         encoder.setTexture(output.foregroundTexture, index: Int(CKTextureIndexOutput.rawValue))
-        dispatchThreads(encoder: encoder, pipeline: cacheEntry.computePipelines.resample, width: output.foregroundTexture.width, height: output.foregroundTexture.height)
+        dispatchThreads(
+            encoder: encoder,
+            pipeline: cacheEntry.computePipelines.resample,
+            width: output.foregroundTexture.width,
+            height: output.foregroundTexture.height
+        )
 
         encoder.endEncoding()
         commandBuffer.commit()
