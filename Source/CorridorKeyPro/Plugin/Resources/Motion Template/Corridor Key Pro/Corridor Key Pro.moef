@@ -169,8 +169,6 @@
 		<target object="10010" channel="./130" name="Edge Spill"/>
 		<target object="10010" channel="./140" name="Output"/>
 		<target object="10010" channel="./150" name="Performance"/>
-		<target object="10010" channel="./160" name="Advanced"/>
-		<target object="10010" channel="./170" name="Runtime Status"/>
 	</publishSettings>
 	<currentFrame>0 1 1 0</currentFrame>
 	<currentObject>10007</currentObject>
@@ -264,8 +262,7 @@
 				<baseFlags>8589934609</baseFlags>
 				<parameter name="Key Setup" id="100" flags="8589938704">
 					<parameter name="Screen Colour" id="1001" flags="12884901904" default="0" value="0"/>
-					<parameter name="Quality" id="1002" flags="12884901904" default="1" value="1"/>
-					<parameter name="Input Colour Space" id="1003" flags="12884901904" default="2" value="2"/>
+					<parameter name="Quality" id="1002" flags="12884901904" default="0" value="0"/>
 					<parameter name="Alpha Hint" id="1004" flags="81604444176" default="0" value="0"/>
 				</parameter>
 				<parameter name="Interior Detail" id="110" flags="8589938704">
@@ -295,29 +292,7 @@
 					<parameter name="Temporal Smoothing" id="6001" flags="12884901904" default="0" value="0"/>
 					<parameter name="Upscale Method" id="6002" flags="12884901904" default="0" value="0"/>
 				</parameter>
-				<parameter name="Advanced" id="160" flags="8589938704">
-					<foldFlags>4</foldFlags>
-					<parameter name="Allow CPU Fallback" id="7001" flags="12884901904" default="0" value="0"/>
-					<parameter name="Render Timeout (seconds)" id="7002" flags="12884901904" default="60" value="60"/>
-				</parameter>
-				<parameter name="Runtime Status" id="170" flags="8589938704">
-					<foldFlags>4</foldFlags>
-					<parameter name="Backend" id="8001" flags="12884967428">
-						<text>Idle</text>
-					</parameter>
-					<parameter name="Effective Quality" id="8002" flags="12884967428">
-						<text>—</text>
-					</parameter>
-					<parameter name="Guide Source" id="8003" flags="12884967428">
-						<text>Auto Rough Fallback</text>
-					</parameter>
-					<parameter name="Last Frame" id="8004" flags="12884967428">
-						<text>—</text>
-					</parameter>
-					<parameter name="Device" id="8005" flags="12884967428">
-						<text>—</text>
-					</parameter>
-				</parameter>
+				<parameter name="Process" id="160" flags="8589938704"/>
 				<parameter name="Mix" id="10001" flags="12884901888" default="1" value="1"/>
 				<parameter name="Flip" id="10002" flags="12889161760" default="0" value="0"/>
 				<parameter name="Input Points" id="10003" flags="12889161760" default="1" value="1"/>

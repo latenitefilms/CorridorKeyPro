@@ -291,11 +291,29 @@ kernel void corridorKeyGaussianVerticalKernel(
     destination.write(float4(acc, 0.0, 0.0, 1.0), gid);
 }
 
-// MARK: - Rough matte fallback
+// MARK: - Green screen detection & rough matte fallback
 
-/// Generates a crude alpha matte from `max(G - max(R, B), 0)`. Used by the
-/// rough-matte fallback engine and as the default guide when no user-supplied
-/// hint clip is connected.
+/// Detects how green-dominant each pixel is. Writes a value in 0..1 where 1
+/// means "very green" and 0 means "not green". Used as the alpha-hint input
+/// to the neural model — the network consumes this as a coarse guide to the
+/// screen area.
+kernel void corridorKeyGreenHintKernel(
+    texture2d<float, access::read> source [[texture(CKTextureIndexSource)]],
+    texture2d<float, access::write> destination [[texture(CKTextureIndexOutput)]],
+    uint2 gid [[thread_position_in_grid]]
+) {
+    uint2 dims = uint2(destination.get_width(), destination.get_height());
+    if (gid.x >= dims.x || gid.y >= dims.y) { return; }
+
+    float4 rgba = source.read(gid);
+    float greenness = saturate((rgba.g - max(rgba.r, rgba.b)) * 2.5);
+    destination.write(float4(greenness, 0.0, 0.0, 1.0), gid);
+}
+
+/// Produces a fallback alpha matte where 1 = foreground (opaque) and 0 =
+/// green screen (transparent). Used when no MLX bridge is loaded. This is
+/// the inverse of the green-hint convention, because the compose step
+/// expects alpha-as-foreground-opacity.
 kernel void corridorKeyRoughMatteKernel(
     texture2d<float, access::read> source [[texture(CKTextureIndexSource)]],
     texture2d<float, access::write> destination [[texture(CKTextureIndexOutput)]],
@@ -305,10 +323,9 @@ kernel void corridorKeyRoughMatteKernel(
     if (gid.x >= dims.x || gid.y >= dims.y) { return; }
 
     float4 rgba = source.read(gid);
-    float diff = rgba.g - max(rgba.r, rgba.b);
-    // Scale and clamp so the matte spans ~0..1 without needing levels tuning.
-    float hint = saturate(diff * 2.5);
-    destination.write(float4(hint, 0.0, 0.0, 1.0), gid);
+    float greenness = saturate((rgba.g - max(rgba.r, rgba.b)) * 2.5);
+    float alpha = 1.0 - greenness;
+    destination.write(float4(alpha, 0.0, 0.0, 1.0), gid);
 }
 
 // MARK: - Source passthrough blending

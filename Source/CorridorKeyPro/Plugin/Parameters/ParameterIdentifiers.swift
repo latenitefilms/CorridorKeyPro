@@ -18,13 +18,11 @@ enum ParameterIdentifier {
     static let edgeSpillGroup: UInt32 = 130
     static let outputGroup: UInt32 = 140
     static let performanceGroup: UInt32 = 150
-    static let advancedGroup: UInt32 = 160
-    static let runtimeStatusGroup: UInt32 = 170
+    static let processGroup: UInt32 = 160
 
     // Key Setup
     static let screenColor: UInt32 = 1001
     static let qualityMode: UInt32 = 1002
-    static let inputColorSpace: UInt32 = 1003
     static let alphaHintClip: UInt32 = 1004
 
     // Interior Detail
@@ -52,18 +50,8 @@ enum ParameterIdentifier {
     static let temporalSmoothing: UInt32 = 6001
     static let upscaleMethod: UInt32 = 6002
 
-    // Advanced runtime
-    static let allowCPUFallback: UInt32 = 7001
-    static let renderTimeoutSeconds: UInt32 = 7002
-
-    // Read-only runtime status (string parameters the render step updates).
-    static let statusBackend: UInt32 = 8001
-    static let statusEffectiveQuality: UInt32 = 8002
-    static let statusGuideSource: UInt32 = 8003
-    static let statusLastFrameMs: UInt32 = 8004
-    static let statusDevice: UInt32 = 8005
-
-    // Push buttons
+    // Process and help
+    static let processClipButton: UInt32 = 7003
     static let openUserGuide: UInt32 = 9001
 }
 

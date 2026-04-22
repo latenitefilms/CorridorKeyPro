@@ -3,9 +3,9 @@
 //  Corridor Key Pro
 //
 //  Swift-native representations of each choice parameter. The `rawValue` lines
-//  up with the `addPopupMenu` index order used in `CorridorKeyProPlugIn
-//  +Parameters.swift`; changing that order here will invalidate saved user
-//  documents.
+//  up with the `addPopupMenu` index order used in
+//  `CorridorKeyProPlugIn+Parameters.swift`; changing that order here will
+//  invalidate saved user documents.
 //
 
 import Foundation
@@ -24,8 +24,8 @@ enum ScreenColor: Int, Sendable, CaseIterable, Codable {
     }
 }
 
-/// Quality rung used for neural inference. `auto` chooses a safe tier based on
-/// the input resolution.
+/// Quality rung used for neural inference. `automatic` chooses a safe tier
+/// based on the input resolution.
 enum QualityMode: Int, Sendable, CaseIterable, Codable {
     case automatic = 0
     case draft512 = 1
@@ -59,21 +59,6 @@ enum QualityMode: Int, Sendable, CaseIterable, Codable {
         case .high1024: return "High (1024)"
         case .ultra1536: return "Ultra (1536)"
         case .maximum2048: return "Maximum (2048)"
-        }
-    }
-}
-
-/// How the input pixel data is colour-managed before inference.
-enum InputColorSpace: Int, Sendable, CaseIterable, Codable {
-    case sRGB = 0
-    case linear = 1
-    case hostManaged = 2
-
-    var displayName: String {
-        switch self {
-        case .sRGB: return "sRGB"
-        case .linear: return "Linear"
-        case .hostManaged: return "Host Managed"
         }
     }
 }

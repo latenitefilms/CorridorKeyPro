@@ -19,7 +19,7 @@ extension CorridorKeyProPlugIn {
         at renderTime: CMTime,
         quality qualityLevel: UInt
     ) throws {
-        guard let retrieval = apiManager.api(for: FxParameterRetrievalAPI_v6.self) as? any FxParameterRetrievalAPI_v6 else {
+        guard let retrieval = apiManager.api(for: (any FxParameterRetrievalAPI_v6).self) as? any FxParameterRetrievalAPI_v6 else {
             throw NSError(
                 domain: FxPlugErrorDomain,
                 code: kFxError_APIUnavailable,
@@ -41,13 +41,7 @@ extension CorridorKeyProPlugIn {
             retrieval: retrieval,
             parameterID: ParameterIdentifier.qualityMode,
             time: renderTime,
-            default: .draft512
-        )
-        state.inputColorSpace = popupValue(
-            retrieval: retrieval,
-            parameterID: ParameterIdentifier.inputColorSpace,
-            time: renderTime,
-            default: .hostManaged
+            default: .automatic
         )
 
         // Interior
@@ -148,23 +142,11 @@ extension CorridorKeyProPlugIn {
             default: .bilinear
         )
 
-        // Advanced
-        state.allowCPUFallback = boolValue(
-            retrieval: retrieval,
-            parameterID: ParameterIdentifier.allowCPUFallback,
-            time: renderTime,
-            default: false
-        )
-        state.renderTimeoutSeconds = intValue(
-            retrieval: retrieval,
-            parameterID: ParameterIdentifier.renderTimeoutSeconds,
-            time: renderTime,
-            default: 60
-        )
-
         let nsData = try state.encodedForHost()
         pluginState?.pointee = nsData
-        PluginLog.debug("Plugin state captured: screen=\(state.screenColor.displayName), quality=\(state.qualityMode.displayName).")
+        PluginLog.debug(
+            "Plugin state captured: screen=\(state.screenColor.displayName), quality=\(state.qualityMode.displayName), output=\(state.outputMode.displayName)."
+        )
     }
 
     // MARK: - Retrieval helpers

@@ -17,7 +17,6 @@ struct PluginStateData: Codable, Sendable {
     // Key setup
     var screenColor: ScreenColor
     var qualityMode: QualityMode
-    var inputColorSpace: InputColorSpace
 
     // Interior detail
     var sourcePassthroughEnabled: Bool
@@ -45,8 +44,6 @@ struct PluginStateData: Codable, Sendable {
     var upscaleMethod: UpscaleMethod
 
     // Runtime
-    var allowCPUFallback: Bool
-    var renderTimeoutSeconds: Int
     var renderQualityLevel: Int
 
     /// Long edge used by the parameter panel to scale pixel-space controls to
@@ -60,7 +57,6 @@ struct PluginStateData: Codable, Sendable {
     init(
         screenColor: ScreenColor = .green,
         qualityMode: QualityMode = .draft512,
-        inputColorSpace: InputColorSpace = .hostManaged,
         sourcePassthroughEnabled: Bool = true,
         passthroughErodeNormalized: Double = 3.0,
         passthroughBlurNormalized: Double = 7.0,
@@ -76,15 +72,12 @@ struct PluginStateData: Codable, Sendable {
         outputMode: OutputMode = .processed,
         temporalSmoothing: Double = 0.0,
         upscaleMethod: UpscaleMethod = .bilinear,
-        allowCPUFallback: Bool = false,
-        renderTimeoutSeconds: Int = 60,
         renderQualityLevel: Int = 2,
         longEdgeBaseline: Double = 1920.0,
         destinationLongEdgePixels: Int = 1920
     ) {
         self.screenColor = screenColor
         self.qualityMode = qualityMode
-        self.inputColorSpace = inputColorSpace
         self.sourcePassthroughEnabled = sourcePassthroughEnabled
         self.passthroughErodeNormalized = passthroughErodeNormalized
         self.passthroughBlurNormalized = passthroughBlurNormalized
@@ -100,8 +93,6 @@ struct PluginStateData: Codable, Sendable {
         self.outputMode = outputMode
         self.temporalSmoothing = temporalSmoothing
         self.upscaleMethod = upscaleMethod
-        self.allowCPUFallback = allowCPUFallback
-        self.renderTimeoutSeconds = renderTimeoutSeconds
         self.renderQualityLevel = renderQualityLevel
         self.longEdgeBaseline = longEdgeBaseline
         self.destinationLongEdgePixels = destinationLongEdgePixels

@@ -8,6 +8,7 @@
 //
 
 import Foundation
+import AppKit
 
 extension CorridorKeyProPlugIn {
 
@@ -15,7 +16,7 @@ extension CorridorKeyProPlugIn {
     /// Called once by FxPlug for each new instance.
     @objc(addParametersWithError:)
     func addParameters() throws {
-        guard let create = apiManager.api(for: FxParameterCreationAPI_v5.self) as? any FxParameterCreationAPI_v5 else {
+        guard let create = apiManager.api(for: (any FxParameterCreationAPI_v5).self) as? any FxParameterCreationAPI_v5 else {
             throw NSError(
                 domain: FxPlugErrorDomain,
                 code: kFxError_APIUnavailable,
@@ -29,8 +30,7 @@ extension CorridorKeyProPlugIn {
         try addEdgeAndSpillGroup(create: create)
         try addOutputGroup(create: create)
         try addPerformanceGroup(create: create)
-        try addAdvancedGroup(create: create)
-        try addRuntimeStatusGroup(create: create)
+        try addProcessGroup(create: create)
         PluginLog.notice("Parameters registered with Final Cut Pro.")
     }
 
@@ -54,16 +54,8 @@ extension CorridorKeyProPlugIn {
         create.addPopupMenu(
             withName: "Quality",
             parameterID: ParameterIdentifier.qualityMode,
-            defaultValue: UInt32(QualityMode.draft512.rawValue),
+            defaultValue: UInt32(QualityMode.automatic.rawValue),
             menuEntries: QualityMode.allCases.map(\.displayName),
-            parameterFlags: CorridorKeyParameterFlags.default.fxFlags
-        )
-
-        create.addPopupMenu(
-            withName: "Input Colour Space",
-            parameterID: ParameterIdentifier.inputColorSpace,
-            defaultValue: UInt32(InputColorSpace.hostManaged.rawValue),
-            menuEntries: InputColorSpace.allCases.map(\.displayName),
             parameterFlags: CorridorKeyParameterFlags.default.fxFlags
         )
 
@@ -284,29 +276,17 @@ extension CorridorKeyProPlugIn {
         create.endParameterSubGroup()
     }
 
-    private func addAdvancedGroup(create: any FxParameterCreationAPI_v5) throws {
+    private func addProcessGroup(create: any FxParameterCreationAPI_v5) throws {
         create.startParameterSubGroup(
-            "Advanced",
-            parameterID: ParameterIdentifier.advancedGroup,
-            parameterFlags: [CorridorKeyParameterFlags.default, .collapsed].reduce(into: CorridorKeyParameterFlags()) { $0.insert($1) }.fxFlags
-        )
-
-        create.addToggleButton(
-            withName: "Allow CPU Fallback",
-            parameterID: ParameterIdentifier.allowCPUFallback,
-            defaultValue: false,
+            "Process",
+            parameterID: ParameterIdentifier.processGroup,
             parameterFlags: CorridorKeyParameterFlags.default.fxFlags
         )
 
-        create.addIntSlider(
-            withName: "Render Timeout (seconds)",
-            parameterID: ParameterIdentifier.renderTimeoutSeconds,
-            defaultValue: 60,
-            parameterMin: 10,
-            parameterMax: 300,
-            sliderMin: 10,
-            sliderMax: 180,
-            delta: 1,
+        create.addPushButton(
+            withName: "Process Clip",
+            parameterID: ParameterIdentifier.processClipButton,
+            selector: #selector(handleProcessClip),
             parameterFlags: CorridorKeyParameterFlags.default.fxFlags
         )
 
@@ -320,51 +300,20 @@ extension CorridorKeyProPlugIn {
         create.endParameterSubGroup()
     }
 
-    private func addRuntimeStatusGroup(create: any FxParameterCreationAPI_v5) throws {
-        create.startParameterSubGroup(
-            "Runtime Status",
-            parameterID: ParameterIdentifier.runtimeStatusGroup,
-            parameterFlags: [CorridorKeyParameterFlags.default, .collapsed].reduce(into: CorridorKeyParameterFlags()) { $0.insert($1) }.fxFlags
-        )
-
-        let readOnlyFlags = [CorridorKeyParameterFlags.default, .disabled, .notAnimatable]
-            .reduce(into: CorridorKeyParameterFlags()) { $0.insert($1) }.fxFlags
-
-        create.addStringParameter(
-            withName: "Backend",
-            parameterID: ParameterIdentifier.statusBackend,
-            defaultValue: "Idle",
-            parameterFlags: readOnlyFlags
-        )
-        create.addStringParameter(
-            withName: "Effective Quality",
-            parameterID: ParameterIdentifier.statusEffectiveQuality,
-            defaultValue: "—",
-            parameterFlags: readOnlyFlags
-        )
-        create.addStringParameter(
-            withName: "Guide Source",
-            parameterID: ParameterIdentifier.statusGuideSource,
-            defaultValue: "Auto Rough Fallback",
-            parameterFlags: readOnlyFlags
-        )
-        create.addStringParameter(
-            withName: "Last Frame",
-            parameterID: ParameterIdentifier.statusLastFrameMs,
-            defaultValue: "—",
-            parameterFlags: readOnlyFlags
-        )
-        create.addStringParameter(
-            withName: "Device",
-            parameterID: ParameterIdentifier.statusDevice,
-            defaultValue: "—",
-            parameterFlags: readOnlyFlags
-        )
-
-        create.endParameterSubGroup()
-    }
-
     // MARK: - Callbacks
+
+    @objc func handleProcessClip() {
+        guard let analysis = apiManager.api(for: (any FxAnalysisAPI_v2).self) as? any FxAnalysisAPI_v2 else {
+            PluginLog.error("Process Clip: FxAnalysisAPI is not available.")
+            return
+        }
+        PluginLog.notice("Starting forward analysis of clip.")
+        do {
+            try analysis.startForwardAnalysis(kFxAnalysisLocation_GPU)
+        } catch {
+            PluginLog.error("startForwardAnalysis failed: \(error.localizedDescription)")
+        }
+    }
 
     @objc func handleOpenUserGuide() {
         guard let url = URL(string: "https://corridordigital.com/corridor-key-pro") else { return }

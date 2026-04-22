@@ -52,6 +52,7 @@ final class CorridorKeyComputePipelines: Sendable {
     let gaussianHorizontal: any MTLComputePipelineState
     let gaussianVertical: any MTLComputePipelineState
     let roughMatte: any MTLComputePipelineState
+    let greenHint: any MTLComputePipelineState
     let sourcePassthrough: any MTLComputePipelineState
     let applyScreenMatrix: any MTLComputePipelineState
     let resample: any MTLComputePipelineState
@@ -72,6 +73,7 @@ final class CorridorKeyComputePipelines: Sendable {
         gaussianHorizontal = try compute("corridorKeyGaussianHorizontalKernel")
         gaussianVertical = try compute("corridorKeyGaussianVerticalKernel")
         roughMatte = try compute("corridorKeyRoughMatteKernel")
+        greenHint = try compute("corridorKeyGreenHintKernel")
         sourcePassthrough = try compute("corridorKeySourcePassthroughKernel")
         applyScreenMatrix = try compute("corridorKeyApplyScreenMatrixKernel")
         resample = try compute("corridorKeyResampleKernel")

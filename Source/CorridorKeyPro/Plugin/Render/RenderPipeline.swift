@@ -277,10 +277,10 @@ final class RenderPipeline: @unchecked Sendable {
             encoder.setBytes(&layout, length: MemoryLayout<Int32>.size, index: 0)
             dispatch(encoder: encoder, pipeline: entry.computePipelines.extractHint, width: hintTexture.width, height: hintTexture.height)
         } else {
-            encoder.setComputePipelineState(entry.computePipelines.roughMatte)
+            encoder.setComputePipelineState(entry.computePipelines.greenHint)
             encoder.setTexture(source, index: Int(CKTextureIndexSource.rawValue))
             encoder.setTexture(hintTexture, index: Int(CKTextureIndexOutput.rawValue))
-            dispatch(encoder: encoder, pipeline: entry.computePipelines.roughMatte, width: hintTexture.width, height: hintTexture.height)
+            dispatch(encoder: encoder, pipeline: entry.computePipelines.greenHint, width: hintTexture.width, height: hintTexture.height)
         }
         encoder.endEncoding()
         return hintTexture
