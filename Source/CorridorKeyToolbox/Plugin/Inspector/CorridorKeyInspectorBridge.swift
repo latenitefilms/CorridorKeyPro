@@ -20,9 +20,9 @@ final class CorridorKeyInspectorBridge: ObservableObject {
     @Published private(set) var snapshot: CorridorKeyAnalysisSnapshot = .empty
 
     private let apiManager: any PROAPIAccessing
-    private weak var plugin: CorridorKeyProPlugIn?
+    private weak var plugin: CorridorKeyToolboxPlugIn?
 
-    init(apiManager: any PROAPIAccessing, plugin: CorridorKeyProPlugIn) {
+    init(apiManager: any PROAPIAccessing, plugin: CorridorKeyToolboxPlugIn) {
         self.apiManager = apiManager
         self.plugin = plugin
         refreshSnapshot()
@@ -97,6 +97,20 @@ final class CorridorKeyInspectorBridge: ObservableObject {
             return (0, 0, 0)
         }
         guard let plugin, let data = plugin.loadAnalysisData(using: retrieval) else {
+            return (0, 0, 0)
+        }
+        // If the user flipped the Quality popup since the cache was built, the
+        // stored matte resolution no longer matches the rung they want. Treat
+        // that like "nothing analysed yet" so the orange header badge prompts
+        // a fresh analyse — the underlying cache is overwritten the moment
+        // they click Analyse Clip again.
+        var currentQualityRaw: Int32 = Int32(QualityMode.automatic.rawValue)
+        retrieval.getIntValue(
+            &currentQualityRaw,
+            fromParameter: ParameterIdentifier.qualityMode,
+            at: CMTime.zero
+        )
+        if Int(currentQualityRaw) != data.qualityModeRaw {
             return (0, 0, 0)
         }
         return (data.analyzedCount, data.frameCount, data.inferenceResolution)

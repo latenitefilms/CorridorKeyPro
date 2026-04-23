@@ -1,6 +1,6 @@
 //
 //  QualityModeTests.swift
-//  CorridorKeyProLogicTests
+//  CorridorKeyToolboxLogicTests
 //
 //  Guards the automatic-quality rung ladder against accidental drift. The
 //  plug-in's "Recommended" option is chosen to line up with CorridorKey's OFX
@@ -9,7 +9,7 @@
 //
 
 import Testing
-@testable import CorridorKeyProLogic
+@testable import CorridorKeyToolboxLogic
 
 @Suite("QualityMode")
 struct QualityModeTests {

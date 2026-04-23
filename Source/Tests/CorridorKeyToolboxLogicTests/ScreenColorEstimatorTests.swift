@@ -1,6 +1,6 @@
 //
 //  ScreenColorEstimatorTests.swift
-//  CorridorKeyProLogicTests
+//  CorridorKeyToolboxLogicTests
 //
 //  The render pipeline applies the forward matrix before inference and the
 //  inverse on the way out. If forward × inverse drifts from identity the
@@ -10,7 +10,7 @@
 
 import Testing
 import simd
-@testable import CorridorKeyProLogic
+@testable import CorridorKeyToolboxLogic
 
 @Suite("ScreenColorEstimator")
 struct ScreenColorEstimatorTests {

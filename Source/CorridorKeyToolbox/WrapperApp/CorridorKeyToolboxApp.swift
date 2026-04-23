@@ -1,5 +1,5 @@
 //
-//  CorridorKeyProApp.swift
+//  CorridorKeyToolboxApp.swift
 //  Corridor Key Toolbox
 //
 //  The wrapper application is required by Apple's FxPlug packaging model: the
@@ -13,7 +13,7 @@ import SwiftUI
 import AppKit
 
 @main
-struct CorridorKeyProApp: App {
+struct CorridorKeyToolboxApp: App {
     var body: some Scene {
         WindowGroup("Corridor Key Toolbox") {
             WelcomeView()

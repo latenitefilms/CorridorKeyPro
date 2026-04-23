@@ -4,7 +4,7 @@
 //
 //  Swift-native representations of each choice parameter. The `rawValue` lines
 //  up with the `addPopupMenu` index order used in
-//  `CorridorKeyProPlugIn+Parameters.swift`; changing that order here will
+//  `CorridorKeyToolboxPlugIn+Parameters.swift`; changing that order here will
 //  invalidate saved user documents.
 //
 

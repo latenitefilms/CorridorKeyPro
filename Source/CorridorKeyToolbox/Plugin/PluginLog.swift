@@ -53,7 +53,7 @@ enum PluginLog {
 
         let versionString = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
         let buildString = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"
-        let logFile = logDirectory.appending(path: "CorridorKeyProRenderer-\(versionString)-\(buildString).log")
+        let logFile = logDirectory.appending(path: "CorridorKeyToolboxRenderer-\(versionString)-\(buildString).log")
 
         freopen(logFile.path.cString(using: .utf8), "a+", stderr)
         notice("--------- Corridor Key Toolbox Renderer \(versionString) (\(buildString)) ---------")

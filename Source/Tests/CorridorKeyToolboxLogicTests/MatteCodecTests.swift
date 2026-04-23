@@ -1,6 +1,6 @@
 //
 //  MatteCodecTests.swift
-//  CorridorKeyProLogicTests
+//  CorridorKeyToolboxLogicTests
 //
 //  Codec invariants for the persisted matte blob. Anything a user saves in
 //  their Final Cut Pro Library flows through this code, so small round-trip
@@ -9,7 +9,7 @@
 
 import Foundation
 import Testing
-@testable import CorridorKeyProLogic
+@testable import CorridorKeyToolboxLogic
 
 @Suite("MatteCodec")
 struct MatteCodecTests {

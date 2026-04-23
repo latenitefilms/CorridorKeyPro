@@ -1,6 +1,6 @@
 //
 //  AnalysisDataTests.swift
-//  CorridorKeyProLogicTests
+//  CorridorKeyToolboxLogicTests
 //
 //  Exercises the NSDictionary round-trip that the FxPlug custom parameter
 //  uses for on-disk persistence, plus the frame-index math the render path
@@ -10,7 +10,7 @@
 import Foundation
 import CoreMedia
 import Testing
-@testable import CorridorKeyProLogic
+@testable import CorridorKeyToolboxLogic
 
 @Suite("AnalysisData")
 struct AnalysisDataTests {
@@ -26,6 +26,7 @@ struct AnalysisDataTests {
             frameCount: 2,
             analyzedCount: 2,
             screenColorRaw: 0,
+            qualityModeRaw: QualityMode.maximum2048.rawValue,
             inferenceResolution: 1024,
             matteWidth: 1024,
             matteHeight: 1024,
@@ -43,6 +44,7 @@ struct AnalysisDataTests {
         #expect(restored?.matteHeight == 1024)
         #expect(restored?.mattes[0] == matteA)
         #expect(restored?.mattes[1] == matteB)
+        #expect(restored?.qualityModeRaw == QualityMode.maximum2048.rawValue)
         #expect(CMTimeCompare(restored?.frameDuration ?? .invalid, CMTime(value: 1, timescale: 30)) == 0)
         #expect(CMTimeCompare(restored?.firstFrameTime ?? .invalid, CMTime(value: 0, timescale: 30)) == 0)
     }
@@ -69,6 +71,7 @@ struct AnalysisDataTests {
             frameCount: 10,
             analyzedCount: 10,
             screenColorRaw: 0,
+            qualityModeRaw: QualityMode.draft512.rawValue,
             inferenceResolution: 512,
             matteWidth: 512,
             matteHeight: 512,
@@ -90,6 +93,7 @@ struct AnalysisDataTests {
             frameCount: 3,
             analyzedCount: 2,
             screenColorRaw: 0,
+            qualityModeRaw: QualityMode.draft512.rawValue,
             inferenceResolution: 512,
             matteWidth: 512,
             matteHeight: 512,

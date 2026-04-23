@@ -1,6 +1,6 @@
 //
 //  PluginStateDataTests.swift
-//  CorridorKeyProLogicTests
+//  CorridorKeyToolboxLogicTests
 //
 //  Covers the JSON hand-off contract between pluginState and render. FxPlug
 //  demands a fresh encoded blob per call, and saved FCP documents survive
@@ -10,7 +10,7 @@
 
 import Foundation
 import Testing
-@testable import CorridorKeyProLogic
+@testable import CorridorKeyToolboxLogic
 
 @Suite("PluginStateData")
 struct PluginStateDataTests {

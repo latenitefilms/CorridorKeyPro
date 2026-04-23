@@ -1,5 +1,5 @@
 //
-//  CorridorKeyProPlugIn+PluginState.swift
+//  CorridorKeyToolboxPlugIn+PluginState.swift
 //  Corridor Key Toolbox
 //
 //  Reads every parameter into a single value-type snapshot that the renderer
@@ -11,7 +11,7 @@
 import Foundation
 import CoreMedia
 
-extension CorridorKeyProPlugIn {
+extension CorridorKeyToolboxPlugIn {
 
     @objc(pluginState:atTime:quality:error:)
     func pluginState(

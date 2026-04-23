@@ -1,5 +1,5 @@
 //
-//  CorridorKeyProPlugIn+FxAnalyzer.swift
+//  CorridorKeyToolboxPlugIn+FxAnalyzer.swift
 //  Corridor Key Toolbox
 //
 //  Implements the `FxAnalyzer` protocol so the plug-in can run MLX inference
@@ -24,6 +24,7 @@ private final class AnalysisSessionState: @unchecked Sendable {
     var frameCount: Int = 0
     var analyzedCount: Int = 0
     var screenColorRaw: Int = 0
+    var qualityModeRaw: Int = 0
     var inferenceResolution: Int = 0
     var matteWidth: Int = 0
     var matteHeight: Int = 0
@@ -40,6 +41,7 @@ private final class AnalysisSessionState: @unchecked Sendable {
             frameCount: frameCount,
             analyzedCount: analyzedCount,
             screenColorRaw: screenColorRaw,
+            qualityModeRaw: qualityModeRaw,
             inferenceResolution: inferenceResolution,
             matteWidth: matteWidth,
             matteHeight: matteHeight,
@@ -53,6 +55,7 @@ private final class AnalysisSessionState: @unchecked Sendable {
         frameCount = 0
         analyzedCount = 0
         screenColorRaw = 0
+        qualityModeRaw = 0
         inferenceResolution = 0
         matteWidth = 0
         matteHeight = 0
@@ -67,7 +70,7 @@ private final class AnalysisStateRegistry: @unchecked Sendable {
     private let lock = NSLock()
     private var states: [ObjectIdentifier: AnalysisSessionState] = [:]
 
-    func state(for plugin: CorridorKeyProPlugIn) -> AnalysisSessionState {
+    func state(for plugin: CorridorKeyToolboxPlugIn) -> AnalysisSessionState {
         let identifier = ObjectIdentifier(plugin)
         lock.lock()
         defer { lock.unlock() }
@@ -82,11 +85,11 @@ private final class AnalysisStateRegistry: @unchecked Sendable {
 
 private let analysisStateRegistry = AnalysisStateRegistry()
 
-private func analysisState(for plugin: CorridorKeyProPlugIn) -> AnalysisSessionState {
+private func analysisState(for plugin: CorridorKeyToolboxPlugIn) -> AnalysisSessionState {
     analysisStateRegistry.state(for: plugin)
 }
 
-extension CorridorKeyProPlugIn {
+extension CorridorKeyToolboxPlugIn {
 
     // MARK: - Inspector wiring (called by the +Parameters extension)
 
@@ -201,6 +204,7 @@ extension CorridorKeyProPlugIn {
         session.firstFrameTime = analysisRange.start
         session.frameCount = frameCount
         session.screenColorRaw = screenColor.rawValue
+        session.qualityModeRaw = qualityMode.rawValue
         session.inferenceResolution = inferenceResolution
         session.matteWidth = inferenceResolution
         session.matteHeight = inferenceResolution

@@ -1,5 +1,5 @@
 //
-//  CorridorKeyProPlugIn+Properties.swift
+//  CorridorKeyToolboxPlugIn+Properties.swift
 //  Corridor Key Toolbox
 //
 //  Declares the static capabilities of the plug-in. Properties are fetched
@@ -9,7 +9,7 @@
 
 import Foundation
 
-extension CorridorKeyProPlugIn {
+extension CorridorKeyToolboxPlugIn {
 
     @objc(properties:error:)
     func properties(_ properties: AutoreleasingUnsafeMutablePointer<NSDictionary>?) throws {

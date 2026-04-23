@@ -1,5 +1,5 @@
 //
-//  CorridorKeyProPlugIn+RenderRects.swift
+//  CorridorKeyToolboxPlugIn+RenderRects.swift
 //  Corridor Key Toolbox
 //
 //  Tells FxPlug which parts of the input and output images we touch. The
@@ -11,7 +11,7 @@
 import Foundation
 import CoreMedia
 
-extension CorridorKeyProPlugIn {
+extension CorridorKeyToolboxPlugIn {
 
     @objc(destinationImageRect:sourceImages:destinationImage:pluginState:atTime:error:)
     func destinationImageRect(

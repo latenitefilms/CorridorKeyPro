@@ -107,19 +107,19 @@ struct WelcomeView: View {
     }
 
     private func openUserGuide() {
-        guard let url = URL(string: "https://github.com/latenitefilms/CorridorKeyForFinalCutPro") else { return }
+        guard let url = URL(string: "https://corridorkeytoolbox.fcp.cafe") else { return }
         NSWorkspace.shared.open(url)
     }
 
     /// Opens Finder at the renderer's log directory. The FxPlug renderer runs
     /// in its own sandbox container, so logs land at
-    /// `~/Library/Containers/com.latenitefilms.CorridorKeyPro.Renderer/
+    /// `~/Library/Containers/com.latenitefilms.CorridorKeyToolbox.Renderer/
     ///     Data/Library/Application Support/Corridor Key Toolbox/Logs`.
     /// NSWorkspace can reveal paths across sandbox boundaries because Finder
     /// performs the navigation in its own process.
     private func revealRendererLogs() {
         let rendererContainerURL = URL(fileURLWithPath: realUserHomePath())
-            .appending(path: "Library/Containers/com.latenitefilms.CorridorKeyPro.Renderer/Data/Library/Application Support/Corridor Key Toolbox/Logs", directoryHint: .isDirectory)
+            .appending(path: "Library/Containers/com.latenitefilms.CorridorKeyToolbox.Renderer/Data/Library/Application Support/Corridor Key Toolbox/Logs", directoryHint: .isDirectory)
 
         // If the directory doesn't exist yet (FCP hasn't launched the
         // renderer) let the user know rather than opening Finder at a

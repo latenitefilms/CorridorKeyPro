@@ -1,5 +1,5 @@
 //
-//  CorridorKeyProPlugIn+Parameters.swift
+//  CorridorKeyToolboxPlugIn+Parameters.swift
 //  Corridor Key Toolbox
 //
 //  Defines the entire inspector layout for the plug-in. Analyse / Reset /
@@ -14,7 +14,7 @@ import Foundation
 import AppKit
 import CoreMedia
 
-extension CorridorKeyProPlugIn {
+extension CorridorKeyToolboxPlugIn {
 
     /// Registers every control FxPlug should draw in Final Cut Pro's inspector.
     /// Called once by FxPlug for each new instance.
@@ -106,7 +106,7 @@ extension CorridorKeyProPlugIn {
         create.addPopupMenu(
             withName: "Quality",
             parameterID: ParameterIdentifier.qualityMode,
-            defaultValue: UInt32(QualityMode.automatic.rawValue),
+            defaultValue: UInt32(QualityMode.maximum2048.rawValue),
             menuEntries: QualityMode.allCases.map(\.displayName),
             parameterFlags: CorridorKeyParameterFlags.nonAnimatableChoice.fxFlags
         )
@@ -122,7 +122,7 @@ extension CorridorKeyProPlugIn {
         create.addPopupMenu(
             withName: "Upscale Method",
             parameterID: ParameterIdentifier.upscaleMethod,
-            defaultValue: UInt32(UpscaleMethod.bilinear.rawValue),
+            defaultValue: UInt32(UpscaleMethod.lanczos.rawValue),
             menuEntries: UpscaleMethod.allCases.map(\.displayName),
             parameterFlags: CorridorKeyParameterFlags.nonAnimatableChoice.fxFlags
         )

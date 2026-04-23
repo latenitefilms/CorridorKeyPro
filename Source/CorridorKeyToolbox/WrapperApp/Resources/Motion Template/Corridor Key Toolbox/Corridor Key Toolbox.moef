@@ -261,9 +261,9 @@
 				<baseFlags>8589934609</baseFlags>
 				<parameter name="Settings" id="100" flags="8589938704">
 					<parameter name="Screen Colour" id="1001" flags="12884901904" default="0" value="0"/>
-					<parameter name="Quality" id="1002" flags="12884901904" default="0" value="0"/>
+					<parameter name="Quality" id="1002" flags="12884901904" default="4" value="4"/>
 					<parameter name="Output" id="5001" flags="12884901904" default="0" value="0"/>
-					<parameter name="Upscale Method" id="6002" flags="12884901904" default="0" value="0"/>
+					<parameter name="Upscale Method" id="6002" flags="12884901904" default="1" value="1"/>
 				</parameter>
 				<parameter name="Interior Detail" id="110" flags="8589938704">
 					<parameter name="Source Passthrough" id="2001" flags="12884901904" default="1" value="1"/>

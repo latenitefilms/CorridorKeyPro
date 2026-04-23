@@ -9,7 +9,7 @@
 //
 //  Because the wrapper app runs inside the App Sandbox,
 //  `URL.moviesDirectory` resolves to the container's redirected copy at
-//  `~/Library/Containers/com.latenitefilms.CorridorKeyPro/Data/Movies/` —
+//  `~/Library/Containers/com.latenitefilms.CorridorKeyToolbox/Data/Movies/` —
 //  which Final Cut Pro never reads. We resolve the real user home with
 //  `getpwuid`, which bypasses the sandbox redirect, and rely on the
 //  `com.apple.security.assets.movies.read-write` entitlement to let the

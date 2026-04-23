@@ -4,7 +4,7 @@
 //
 //  Entry point for the FxPlug XPC service. `FxPrincipal.startServicePrincipal`
 //  hands control over to Final Cut Pro's plug-in host, which instantiates
-//  `CorridorKeyProPlugIn` on demand. We install file-based logging before
+//  `CorridorKeyToolboxPlugIn` on demand. We install file-based logging before
 //  handing off so a crash or early error is captured on disk.
 //
 
@@ -14,7 +14,7 @@ import Foundation
 /// the host bundle identifier and version to the renderer once the XPC channel
 /// is alive; recording it makes diagnosing Motion / Final Cut Pro specific
 /// issues a single log grep away.
-final class CorridorKeyProServiceDelegate: NSObject, FxPrincipalDelegate {
+final class CorridorKeyToolboxServiceDelegate: NSObject, FxPrincipalDelegate {
     func didEstablishConnection(withHost hostBundleIdentifier: String, version hostVersionString: String) {
         PluginLog.notice("FxPlug connected to host \(hostBundleIdentifier) (\(hostVersionString))")
     }
@@ -23,5 +23,5 @@ final class CorridorKeyProServiceDelegate: NSObject, FxPrincipalDelegate {
 PluginLog.installFileRedirect()
 PluginLog.notice("Corridor Key Toolbox Renderer launching.")
 
-let corridorKeyProServiceDelegate = CorridorKeyProServiceDelegate()
-FxPrincipal.startServicePrincipal(with: corridorKeyProServiceDelegate)
+let serviceDelegate = CorridorKeyToolboxServiceDelegate()
+FxPrincipal.startServicePrincipal(with: serviceDelegate)

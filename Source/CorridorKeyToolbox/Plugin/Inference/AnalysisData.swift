@@ -26,6 +26,7 @@ enum AnalysisDataKey {
     static let frameCount: String = "frameCount"
     static let analyzedCount: String = "analyzedCount"
     static let screenColorRaw: String = "screenColorRaw"
+    static let qualityModeRaw: String = "qualityModeRaw"
     static let inferenceResolution: String = "inferenceResolution"
     static let matteWidth: String = "matteWidth"
     static let matteHeight: String = "matteHeight"
@@ -39,11 +40,10 @@ struct AnalysisData: Sendable {
 
     /// Bump when the stored layout changes in a way that's incompatible with
     /// older plug-in versions. Readers treat mismatched versions as "no
-    /// cache" so Analyse Clip has to rebuild. Bumped to `2` after the
-    /// MLX-write orientation fix — matte bytes captured under the old rule
-    /// would render upside-down against the corrected compose path, so we
-    /// force those clips to re-analyse cleanly.
-    static let currentSchemaVersion: Int = 2
+    /// cache" so Analyse Clip has to rebuild. Bumped to `3` after adding
+    /// `qualityModeRaw` so the inspector can tell the user when a saved
+    /// cache no longer matches the Quality setting they've selected.
+    static let currentSchemaVersion: Int = 3
 
     let schemaVersion: Int
     let frameDuration: CMTime
@@ -51,6 +51,12 @@ struct AnalysisData: Sendable {
     let frameCount: Int
     let analyzedCount: Int
     let screenColorRaw: Int
+    /// Raw value of the `QualityMode` that was active when this cache was
+    /// built. If the user flips the Quality popup to a different rung, the
+    /// cached matte resolution no longer matches the rung they want — the
+    /// inspector header shows "Not analysed yet" so they know a re-analyse
+    /// is needed.
+    let qualityModeRaw: Int
     let inferenceResolution: Int
     let matteWidth: Int
     let matteHeight: Int
@@ -104,6 +110,7 @@ struct AnalysisData: Sendable {
         contents[AnalysisDataKey.frameCount] = NSNumber(value: frameCount)
         contents[AnalysisDataKey.analyzedCount] = NSNumber(value: analyzedCount)
         contents[AnalysisDataKey.screenColorRaw] = NSNumber(value: screenColorRaw)
+        contents[AnalysisDataKey.qualityModeRaw] = NSNumber(value: qualityModeRaw)
         contents[AnalysisDataKey.inferenceResolution] = NSNumber(value: inferenceResolution)
         contents[AnalysisDataKey.matteWidth] = NSNumber(value: matteWidth)
         contents[AnalysisDataKey.matteHeight] = NSNumber(value: matteHeight)
@@ -131,6 +138,7 @@ struct AnalysisData: Sendable {
         let frameCount = (dictionary[AnalysisDataKey.frameCount] as? NSNumber)?.intValue ?? 0
         let analyzedCount = (dictionary[AnalysisDataKey.analyzedCount] as? NSNumber)?.intValue ?? 0
         let screenColorRaw = (dictionary[AnalysisDataKey.screenColorRaw] as? NSNumber)?.intValue ?? 0
+        let qualityModeRaw = (dictionary[AnalysisDataKey.qualityModeRaw] as? NSNumber)?.intValue ?? 0
         let inferenceResolution = (dictionary[AnalysisDataKey.inferenceResolution] as? NSNumber)?.intValue ?? 0
         let matteWidth = (dictionary[AnalysisDataKey.matteWidth] as? NSNumber)?.intValue ?? 0
         let matteHeight = (dictionary[AnalysisDataKey.matteHeight] as? NSNumber)?.intValue ?? 0
@@ -159,6 +167,7 @@ struct AnalysisData: Sendable {
             frameCount: frameCount,
             analyzedCount: analyzedCount,
             screenColorRaw: screenColorRaw,
+            qualityModeRaw: qualityModeRaw,
             inferenceResolution: inferenceResolution,
             matteWidth: matteWidth,
             matteHeight: matteHeight,

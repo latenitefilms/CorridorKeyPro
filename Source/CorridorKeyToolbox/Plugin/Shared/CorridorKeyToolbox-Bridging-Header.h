@@ -1,15 +1,15 @@
 //
-//  CorridorKeyPro-Bridging-Header.h
+//  CorridorKeyToolbox-Bridging-Header.h
 //  Corridor Key Toolbox
 //
 //  Exposes the FxPlug SDK and our shared shader constants to Swift.
 //
 
-#ifndef CorridorKeyPro_Bridging_Header_h
-#define CorridorKeyPro_Bridging_Header_h
+#ifndef CorridorKeyToolbox_Bridging_Header_h
+#define CorridorKeyToolbox_Bridging_Header_h
 
 #import <FxPlug/FxPlugSDK.h>
 
 #import "CorridorKeyShaderTypes.h"
 
-#endif /* CorridorKeyPro_Bridging_Header_h */
+#endif /* CorridorKeyToolbox_Bridging_Header_h */

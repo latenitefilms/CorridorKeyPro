@@ -65,7 +65,7 @@ struct PluginStateData: Codable, Sendable {
 
     init(
         screenColor: ScreenColor = .green,
-        qualityMode: QualityMode = .draft512,
+        qualityMode: QualityMode = .maximum2048,
         sourcePassthroughEnabled: Bool = true,
         passthroughErodeNormalized: Double = 3.0,
         passthroughBlurNormalized: Double = 7.0,
@@ -79,7 +79,7 @@ struct PluginStateData: Codable, Sendable {
         despillStrength: Double = 0.5,
         spillMethod: SpillMethod = .average,
         outputMode: OutputMode = .processed,
-        upscaleMethod: UpscaleMethod = .bilinear,
+        upscaleMethod: UpscaleMethod = .lanczos,
         renderQualityLevel: Int = 2,
         longEdgeBaseline: Double = 1920.0,
         destinationLongEdgePixels: Int = 1920,

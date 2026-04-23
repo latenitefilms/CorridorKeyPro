@@ -1,5 +1,5 @@
 //
-//  CorridorKeyProPlugIn+Render.swift
+//  CorridorKeyToolboxPlugIn+Render.swift
 //  Corridor Key Toolbox
 //
 //  Hooks FxPlug's per-tile render callback into the Corridor Key render
@@ -11,7 +11,7 @@ import Foundation
 import CoreMedia
 import QuartzCore
 
-extension CorridorKeyProPlugIn {
+extension CorridorKeyToolboxPlugIn {
 
     @objc(renderDestinationImage:sourceImages:pluginState:atTime:error:)
     func renderDestinationImage(

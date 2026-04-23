@@ -1,6 +1,6 @@
 //
 //  AnalysisSnapshotTests.swift
-//  CorridorKeyProLogicTests
+//  CorridorKeyToolboxLogicTests
 //
 //  Invariants for the value-type snapshot the SwiftUI inspector header
 //  displays. SwiftUI is exercised via FxPlug's NSHostingView at runtime and
@@ -9,7 +9,7 @@
 //
 
 import Testing
-@testable import CorridorKeyProLogic
+@testable import CorridorKeyToolboxLogic
 
 @Suite("CorridorKeyAnalysisSnapshot")
 struct CorridorKeyAnalysisSnapshotTests {

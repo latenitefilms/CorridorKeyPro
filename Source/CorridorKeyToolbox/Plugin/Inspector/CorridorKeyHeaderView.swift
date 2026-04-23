@@ -16,9 +16,17 @@ import AppKit
 @MainActor
 struct CorridorKeyHeaderView: View {
 
-    @ObservedObject var bridge: CorridorKeyInspectorBridge
+    /// `@StateObject` pins the bridge to this view's identity so SwiftUI can
+    /// keep the ObservableObject subscription alive across re-renders. With
+    /// `@ObservedObject` the subscription was only as stable as the caller's
+    /// ownership — and when Final Cut Pro collapsed and re-expanded the
+    /// inspector row, the struct was recycled before the hosting view was,
+    /// dropping the Published timer and leaving the header blank.
+    @StateObject private var bridge: CorridorKeyInspectorBridge
 
-    @State private var pollingTimer: Timer?
+    init(bridge: CorridorKeyInspectorBridge) {
+        _bridge = StateObject(wrappedValue: bridge)
+    }
 
     private let applicationIcon: NSImage = CorridorKeyInspectorAssets.applicationIcon()
     private let versionLabel: String = {
@@ -52,8 +60,17 @@ struct CorridorKeyHeaderView: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 5)
-        .onAppear { startPolling() }
-        .onDisappear { stopPolling() }
+        .task(id: ObjectIdentifier(bridge)) {
+            // SwiftUI cancels this task automatically when the view leaves
+            // the hierarchy, which removes the Timer-retain-cycle risk the
+            // old `startPolling` / `stopPolling` pair had.
+            bridge.refreshSnapshot()
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(750))
+                if Task.isCancelled { break }
+                bridge.refreshSnapshot()
+            }
+        }
     }
 
     // MARK: - Subviews
@@ -80,11 +97,19 @@ struct CorridorKeyHeaderView: View {
     private var statusLine: some View {
         switch bridge.snapshot.state {
         case .notAnalysed:
-            if bridge.snapshot.totalFrameCount > 0 {
+            let analysed = bridge.snapshot.analyzedFrameCount
+            let total = bridge.snapshot.totalFrameCount
+            if total > 0 && analysed >= total {
+                statusBadge(
+                    systemImage: "checkmark.seal.fill",
+                    tint: .green,
+                    text: "Cached \(analysed) frames at \(bridge.snapshot.inferenceResolution)px."
+                )
+            } else if total > 0 {
                 statusBadge(
                     systemImage: "exclamationmark.triangle.fill",
                     tint: .orange,
-                    text: "Cached \(bridge.snapshot.analyzedFrameCount) of \(bridge.snapshot.totalFrameCount) frames at \(bridge.snapshot.inferenceResolution)px."
+                    text: "Cached \(analysed) of \(total) frames at \(bridge.snapshot.inferenceResolution)px."
                 )
             } else {
                 statusBadge(
@@ -151,20 +176,4 @@ struct CorridorKeyHeaderView: View {
         return "Analysing at \(snapshot.inferenceResolution)px…"
     }
 
-    private func startPolling() {
-        stopPolling()
-        bridge.refreshSnapshot()
-        let timer = Timer.scheduledTimer(withTimeInterval: 0.75, repeats: true) { _ in
-            Task { @MainActor in
-                bridge.refreshSnapshot()
-            }
-        }
-        RunLoop.main.add(timer, forMode: .common)
-        pollingTimer = timer
-    }
-
-    private func stopPolling() {
-        pollingTimer?.invalidate()
-        pollingTimer = nil
-    }
 }

@@ -1,5 +1,5 @@
 //
-//  CorridorKeyProPlugIn.swift
+//  CorridorKeyToolboxPlugIn.swift
 //  Corridor Key Toolbox
 //
 //  Main FxPlug entry point. Final Cut Pro instantiates this class through the
@@ -14,8 +14,8 @@ import Metal
 import CoreMedia
 import simd
 
-@objc(CorridorKeyProPlugIn)
-final class CorridorKeyProPlugIn: NSObject, FxTileableEffect, FxAnalyzer {
+@objc(CorridorKeyToolboxPlugIn)
+final class CorridorKeyToolboxPlugIn: NSObject, FxTileableEffect, FxAnalyzer {
 
     // MARK: - Stored properties
 
@@ -37,7 +37,7 @@ final class CorridorKeyProPlugIn: NSObject, FxTileableEffect, FxAnalyzer {
     @objc required init?(apiManager: any PROAPIAccessing) {
         self.apiManager = apiManager
         super.init()
-        PluginLog.notice("CorridorKeyProPlugIn instantiated.")
+        PluginLog.notice("CorridorKeyToolboxPlugIn instantiated.")
     }
 }
 
