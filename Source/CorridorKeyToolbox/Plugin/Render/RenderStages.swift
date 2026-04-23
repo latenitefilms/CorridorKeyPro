@@ -473,10 +473,17 @@ enum RenderStages {
         // `labelSpan` is used by the filter kernel as a raw bounds check
         // on the counts buffer, so it must equal `width * height + 1`
         // (labels are 1-indexed by the init pass).
+        //
+        // `matteThreshold` deliberately sits at a low 0.1 — components are
+        // taken to include every pixel the model thinks *might* be
+        // foreground. This keeps soft hair strands and transparent haloes
+        // attached to their parent subject instead of being amputated by a
+        // hard 0.5 cut, so the filter only deletes specks that are actually
+        // isolated from the subject.
         var params = CKCCLabelParams(
             areaThreshold: Int32(areaThreshold),
             labelSpan: Int32(width * height + 1),
-            matteThreshold: 0.5,
+            matteThreshold: 0.1,
             blurSigma: 0.0
         )
 
@@ -500,19 +507,17 @@ enum RenderStages {
             encoder.endEncoding()
         }
 
-        // Propagate: min-neighbour flood with 1-pixel stride. Each
-        // iteration extends a component's labels by one pixel, so a
-        // component of diameter D converges after D iterations. We cap
-        // at 256 iterations — enough for mattes up to ≈ 256 px across
-        // and a reasonable upper bound for GPU work even on 4K targets.
-        // Larger components with long connective tissue may not fully
-        // merge, but their size almost always exceeds the despeckle
-        // area threshold so they survive regardless.
+        // Propagation phase 1: min-neighbour flood with 1-pixel stride.
+        // 32 iterations is plenty to establish a full "chain" within every
+        // component — every pixel's label now points (transitively) to its
+        // component's global minimum. Each iteration is an 8-tap
+        // neighbourhood read, so on 4K this is under ~2 ms even at the
+        // high count.
         let maxDim = max(width, height)
-        let iterationCount = min(256, max(32, maxDim))
+        let propagateIterations = min(32, max(8, maxDim / 16))
         var sourceLabel = labelA
         var destinationLabel = labelB
-        for _ in 0..<iterationCount {
+        for _ in 0..<propagateIterations {
             if let encoder = commandBuffer.makeComputeCommandEncoder() {
                 encoder.label = "Corridor Key Toolbox CC Propagate"
                 encoder.setComputePipelineState(entry.computePipelines.ccLabelPropagate)
@@ -523,6 +528,33 @@ enum RenderStages {
                 dispatch(
                     encoder: encoder,
                     pipeline: entry.computePipelines.ccLabelPropagate,
+                    width: width,
+                    height: height
+                )
+                encoder.endEncoding()
+            }
+            swap(&sourceLabel, &destinationLabel)
+        }
+
+        // Propagation phase 2: classic doubling pointer-jump. Each
+        // iteration follows the parent link from each pixel's current
+        // label, so chains of length L collapse in ~log₂(L) iterations.
+        // `log₂(width * height)` caps the worst case (say 24 iterations
+        // on a 4K matte) which is still faster than adding a further few
+        // hundred stride-1 passes and — crucially — correct for large
+        // subjects where stride-1 alone can't reach the minimum label.
+        let pointerJumpIterations = max(8, Int(ceil(log2(Double(width * height + 1)))))
+        var widthParam = Int32(width)
+        for _ in 0..<pointerJumpIterations {
+            if let encoder = commandBuffer.makeComputeCommandEncoder() {
+                encoder.label = "Corridor Key Toolbox CC Pointer Jump"
+                encoder.setComputePipelineState(entry.computePipelines.ccLabelPointerJump)
+                encoder.setTexture(sourceLabel.texture, index: Int(CKTextureIndexMatte.rawValue))
+                encoder.setTexture(destinationLabel.texture, index: Int(CKTextureIndexOutput.rawValue))
+                encoder.setBytes(&widthParam, length: MemoryLayout<Int32>.size, index: 0)
+                dispatch(
+                    encoder: encoder,
+                    pipeline: entry.computePipelines.ccLabelPointerJump,
                     width: width,
                     height: height
                 )

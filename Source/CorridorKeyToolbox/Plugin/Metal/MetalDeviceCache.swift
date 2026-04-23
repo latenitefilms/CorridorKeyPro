@@ -62,6 +62,7 @@ final class CorridorKeyComputePipelines: Sendable {
     let edgeDecontaminate: any MTLComputePipelineState
     let ccLabelInit: any MTLComputePipelineState
     let ccLabelPropagate: any MTLComputePipelineState
+    let ccLabelPointerJump: any MTLComputePipelineState
     let ccLabelCount: any MTLComputePipelineState
     let ccLabelFilter: any MTLComputePipelineState
 
@@ -89,6 +90,7 @@ final class CorridorKeyComputePipelines: Sendable {
         edgeDecontaminate = try compute("corridorKeyEdgeDecontaminateKernel")
         ccLabelInit = try compute("corridorKeyCCLabelInitKernel")
         ccLabelPropagate = try compute("corridorKeyCCLabelPropagateKernel")
+        ccLabelPointerJump = try compute("corridorKeyCCLabelPointerJumpKernel")
         ccLabelCount = try compute("corridorKeyCCLabelCountKernel")
         ccLabelFilter = try compute("corridorKeyCCLabelFilterKernel")
     }

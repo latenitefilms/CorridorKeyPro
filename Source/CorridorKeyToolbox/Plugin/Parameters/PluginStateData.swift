@@ -83,7 +83,7 @@ struct PluginStateData: Codable, Sendable {
         alphaSoftnessNormalized: Double = 0.0,
         alphaGamma: Double = 1.0,
         autoDespeckleEnabled: Bool = false,
-        despeckleSize: Int = 400,
+        despeckleSize: Int = 100,
         refinerStrength: Double = 1.0,
         despillStrength: Double = 0.5,
         spillMethod: SpillMethod = .average,
@@ -177,7 +177,7 @@ struct PluginStateData: Codable, Sendable {
         self.alphaSoftnessNormalized = try container.decodeIfPresent(Double.self, forKey: .alphaSoftnessNormalized) ?? 0.0
         self.alphaGamma = try container.decodeIfPresent(Double.self, forKey: .alphaGamma) ?? 1.0
         self.autoDespeckleEnabled = try container.decodeIfPresent(Bool.self, forKey: .autoDespeckleEnabled) ?? false
-        self.despeckleSize = try container.decodeIfPresent(Int.self, forKey: .despeckleSize) ?? 400
+        self.despeckleSize = try container.decodeIfPresent(Int.self, forKey: .despeckleSize) ?? 100
         self.refinerStrength = try container.decodeIfPresent(Double.self, forKey: .refinerStrength) ?? 1.0
         self.despillStrength = try container.decodeIfPresent(Double.self, forKey: .despillStrength) ?? 0.5
         self.spillMethod = try container.decodeIfPresent(SpillMethod.self, forKey: .spillMethod) ?? .average

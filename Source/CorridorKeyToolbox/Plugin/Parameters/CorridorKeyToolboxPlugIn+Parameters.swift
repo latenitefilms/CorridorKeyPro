@@ -249,12 +249,12 @@ extension CorridorKeyToolboxPlugIn {
         create.addIntSlider(
             withName: "Despeckle Size",
             parameterID: ParameterIdentifier.despeckleSize,
-            defaultValue: 400,
-            parameterMin: 50,
+            defaultValue: 100,
+            parameterMin: 5,
             parameterMax: 2000,
-            sliderMin: 50,
-            sliderMax: 2000,
-            delta: 10,
+            sliderMin: 5,
+            sliderMax: 1000,
+            delta: 5,
             parameterFlags: CorridorKeyParameterFlags.nonAnimatableChoice.fxFlags
         )
 

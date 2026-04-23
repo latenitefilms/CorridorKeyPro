@@ -299,9 +299,13 @@ struct ShaderGoldenTests {
         let entry: MetalDeviceCacheEntry
         do { entry = try TestHarness.makeEntry() } catch { throw XCTSkipError("\(error)") }
 
-        // Build a 32×32 matte that is zero except for:
-        //   - a 20×20 block (large, keep)
-        //   - a single 1×1 speck (tiny, nuke)
+        // Build a 32×32 matte that covers three cases:
+        //   - a 20×20 solid block with alpha 1.0 (large, keep)
+        //   - a 5×5 speck of alpha 1.0 far from the block (total 25 pixels,
+        //     below the area threshold → must be nuked)
+        //   - a single lone sub-binarise-threshold pixel (alpha 0.08 < 0.1
+        //     so it has label 0 → must be preserved through the filter,
+        //     proving soft hair detail isn't destroyed)
         let width = 32
         let height = 32
         var pixels = [Float](repeating: 0, count: width * height)
@@ -310,7 +314,13 @@ struct ShaderGoldenTests {
                 pixels[y * width + x] = 1.0
             }
         }
-        pixels[28 * width + 28] = 1.0
+        for y in 26..<31 {
+            for x in 26..<31 {
+                pixels[y * width + x] = 1.0
+            }
+        }
+        // Soft, sub-threshold pixel far from any bright region.
+        pixels[1 * width + 30] = 0.08
 
         guard let matte = entry.texturePool.acquire(
             width: width, height: height, pixelFormat: .r32Float, storageMode: .shared
@@ -336,7 +346,7 @@ struct ShaderGoldenTests {
         }
         let pooled = try RenderStages.applyConnectedComponentsDespeckle(
             matte: matte.texture,
-            areaThreshold: 10,
+            areaThreshold: 100,
             entry: entry,
             commandBuffer: commandBuffer
         )
@@ -391,9 +401,15 @@ struct ShaderGoldenTests {
         // Kept: centre of the large block should still be ~1.0.
         let centreIndex = 10 * width + 10
         #expect(resultPixels[centreIndex] > 0.9, "Centre pixel lost: \(resultPixels[centreIndex])")
-        // Nuked: single-pixel speck should be 0.
+        // Nuked: the 5×5 speck should be gone (25 pixels < 100 threshold).
         let speckIndex = 28 * width + 28
         #expect(resultPixels[speckIndex] < 0.1, "Speck not removed: \(resultPixels[speckIndex])")
+        // Preserved: the lone sub-threshold pixel stays at its original
+        // alpha. This is the invariant that stops us destroying soft hair
+        // edges during despeckle.
+        let softEdgeIndex = 1 * width + 30
+        #expect(abs(resultPixels[softEdgeIndex] - 0.08) < 0.01,
+                "Soft edge was destroyed: expected 0.08, got \(resultPixels[softEdgeIndex])")
 
         pooled.returnManually()
         readbackTexture.returnManually()

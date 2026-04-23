@@ -105,7 +105,7 @@ extension CorridorKeyToolboxPlugIn {
             retrieval: retrieval,
             parameterID: ParameterIdentifier.despeckleSize,
             time: renderTime,
-            default: 400
+            default: 100
         )
         state.refinerStrength = floatValue(
             retrieval: retrieval,

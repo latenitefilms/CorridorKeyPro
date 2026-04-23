@@ -537,6 +537,44 @@ kernel void corridorKeyCCLabelPropagateKernel(
     labelOut.write(float4(best, 0.0, 0.0, 1.0), gid);
 }
 
+/// Doubling pointer-jump pass. After stride-1 propagation has linked
+/// each pixel to a lower-label "parent" within its local neighbourhood,
+/// this kernel classic-union-find-compresses the resulting chains:
+/// each pixel replaces its label with the label at the *pointed-to*
+/// position. Repeated `log₂(chain length)` times, every pixel ends up
+/// labelled with its component's global minimum. This is far cheaper
+/// than another `N` stride-1 iterations on a 4K matte.
+kernel void corridorKeyCCLabelPointerJumpKernel(
+    texture2d<float, access::read> labelIn [[texture(CKTextureIndexMatte)]],
+    texture2d<float, access::write> labelOut [[texture(CKTextureIndexOutput)]],
+    constant int &matteWidth [[buffer(0)]],
+    uint2 gid [[thread_position_in_grid]]
+) {
+    uint2 dims = uint2(labelOut.get_width(), labelOut.get_height());
+    if (gid.x >= dims.x || gid.y >= dims.y) { return; }
+
+    float current = labelIn.read(gid).r;
+    if (current <= 0.0) {
+        labelOut.write(float4(0.0, 0.0, 0.0, 1.0), gid);
+        return;
+    }
+    uint currentLabel = uint(current);
+    uint linearIndex = currentLabel - 1u;
+    uint width = uint(max(matteWidth, 1));
+    uint targetX = linearIndex % width;
+    uint targetY = linearIndex / width;
+    if (targetX >= dims.x || targetY >= dims.y) {
+        labelOut.write(float4(current, 0.0, 0.0, 1.0), gid);
+        return;
+    }
+    float pointed = labelIn.read(uint2(targetX, targetY)).r;
+    if (pointed > 0.0 && pointed < current) {
+        labelOut.write(float4(pointed, 0.0, 0.0, 1.0), gid);
+    } else {
+        labelOut.write(float4(current, 0.0, 0.0, 1.0), gid);
+    }
+}
+
 /// Counts pixels per component into a shared atomic buffer. The filter
 /// pass reads from the same buffer to zero components below threshold.
 /// Using atomics lets the whole CC despeckle fit on a single command
@@ -581,8 +619,13 @@ kernel void corridorKeyCCLabelFilterKernel(
 
     float alpha = matte.read(gid).r;
     float label = labelIn.read(gid).r;
+    // Pixel wasn't binarised as foreground (below `matteThreshold` at init
+    // time). These are soft-edge pixels — hair, transparent halos, the
+    // despill tail — and we MUST preserve their original alpha. The
+    // despeckle filter only targets confident-foreground specks that the
+    // neural model hallucinated.
     if (label <= 0.0) {
-        destination.write(float4(0.0, 0.0, 0.0, 1.0), gid);
+        destination.write(float4(alpha, 0.0, 0.0, 1.0), gid);
         return;
     }
     uint labelIndex = uint(label);
