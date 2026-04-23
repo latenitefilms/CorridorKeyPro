@@ -4,7 +4,7 @@
 
 This would NOT be possible without Niko's amazing [Corridor Key](https://github.com/nikopueringer/CorridorKey).
 
-HUGE thank you to [Alexandre Alvaro](https://huggingface.co/alexandrealvaro) for the [MLX Models](https://huggingface.co/alexandrealvaro/CorridorKey/tree/main/mlx).
+HUGE thank you to [Alexandre Alvaro](https://huggingface.co/alexandrealvaro) for the [MLX Models](https://huggingface.co/alexandrealvaro/corridorkey-models/tree/main).
 
 The temporary **Corridor Key Toolbox** icon was designed by the amazing [Matthew Skiles](http://matthewskiles.com).
 
