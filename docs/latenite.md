@@ -1,0 +1,8 @@
+---
+label: Explore LateNite's Tools!
+icon: zap
+order: 9999998
+image: static/thumbnail.png
+redirect: https://fcp.cafe/latenite/
+target: blank
+---
