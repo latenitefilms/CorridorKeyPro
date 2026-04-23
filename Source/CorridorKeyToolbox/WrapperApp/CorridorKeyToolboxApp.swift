@@ -28,6 +28,13 @@ struct CorridorKeyToolboxApp: App {
                     NSApp.orderFrontStandardAboutPanel(nil)
                 }
             }
+            CommandGroup(replacing: .help) {
+                Button("Corridor Key Toolbox Help") {
+                    if let url = URL(string: "https://corridorkeytoolbox.fcp.cafe") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }
+            }
         }
     }
 }
