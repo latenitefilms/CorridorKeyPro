@@ -11,6 +11,7 @@
 
 import Foundation
 import Metal
+import MetalPerformanceShaders
 
 enum MetalDeviceCacheError: Error, CustomStringConvertible {
     case missingDefaultLibrary
@@ -51,12 +52,18 @@ final class CorridorKeyComputePipelines: Sendable {
     let morphologyVertical: any MTLComputePipelineState
     let gaussianHorizontal: any MTLComputePipelineState
     let gaussianVertical: any MTLComputePipelineState
-    let roughMatte: any MTLComputePipelineState
     let greenHint: any MTLComputePipelineState
     let sourcePassthrough: any MTLComputePipelineState
     let applyScreenMatrix: any MTLComputePipelineState
     let resample: any MTLComputePipelineState
     let extractHint: any MTLComputePipelineState
+    let refinerBlend: any MTLComputePipelineState
+    let lightWrap: any MTLComputePipelineState
+    let edgeDecontaminate: any MTLComputePipelineState
+    let ccLabelInit: any MTLComputePipelineState
+    let ccLabelPropagate: any MTLComputePipelineState
+    let ccLabelCount: any MTLComputePipelineState
+    let ccLabelFilter: any MTLComputePipelineState
 
     init(device: any MTLDevice, library: any MTLLibrary) throws {
         func compute(_ name: String) throws -> any MTLComputePipelineState {
@@ -72,12 +79,18 @@ final class CorridorKeyComputePipelines: Sendable {
         morphologyVertical = try compute("corridorKeyMorphologyVerticalKernel")
         gaussianHorizontal = try compute("corridorKeyGaussianHorizontalKernel")
         gaussianVertical = try compute("corridorKeyGaussianVerticalKernel")
-        roughMatte = try compute("corridorKeyRoughMatteKernel")
         greenHint = try compute("corridorKeyGreenHintKernel")
         sourcePassthrough = try compute("corridorKeySourcePassthroughKernel")
         applyScreenMatrix = try compute("corridorKeyApplyScreenMatrixKernel")
         resample = try compute("corridorKeyResampleKernel")
         extractHint = try compute("corridorKeyExtractHintKernel")
+        refinerBlend = try compute("corridorKeyRefinerBlendKernel")
+        lightWrap = try compute("corridorKeyLightWrapKernel")
+        edgeDecontaminate = try compute("corridorKeyEdgeDecontaminateKernel")
+        ccLabelInit = try compute("corridorKeyCCLabelInitKernel")
+        ccLabelPropagate = try compute("corridorKeyCCLabelPropagateKernel")
+        ccLabelCount = try compute("corridorKeyCCLabelCountKernel")
+        ccLabelFilter = try compute("corridorKeyCCLabelFilterKernel")
     }
 }
 
@@ -104,11 +117,18 @@ final class CorridorKeyRenderPipelines: Sendable {
 }
 
 /// Per-device state: the shared Metal library, compiled compute pipelines,
-/// a pool of command queues, and a per-format cache of render pipelines.
+/// a pool of command queues, a per-format cache of render pipelines, a
+/// reusable intermediate-texture pool, and a small cache of Gaussian weight
+/// buffers.
 final class MetalDeviceCacheEntry {
     let device: any MTLDevice
     let library: any MTLLibrary
     let computePipelines: CorridorKeyComputePipelines
+
+    /// Reusable intermediate textures. Callers acquire via `texturePool` and
+    /// return either manually (tests) or via `PooledTexture.returnOnCompletion`
+    /// registered against a command buffer (renders).
+    let texturePool: IntermediateTexturePool
 
     private let queueLock = NSLock()
     private var commandQueues: [any MTLCommandQueue]
@@ -117,14 +137,40 @@ final class MetalDeviceCacheEntry {
     private let renderPipelinesLock = NSLock()
     private var renderPipelines: [MTLPixelFormat: CorridorKeyRenderPipelines] = [:]
 
-    init(device: any MTLDevice) throws {
-        self.device = device
+    private let weightsLock = NSLock()
+    private var weightBuffers: [GaussianWeightsKey: any MTLBuffer] = [:]
 
+    private let mpsLock = NSLock()
+    private var gaussianBlurs: [MPSGaussianKey: MPSImageGaussianBlur] = [:]
+    private var morphDilates: [MPSMorphologyKey: MPSImageDilate] = [:]
+    private var morphErodes: [MPSMorphologyKey: MPSImageErode] = [:]
+    private var lanczosScales: MPSImageLanczosScale?
+
+    /// Signals completion of command buffers back to CPU-waiting callers
+    /// without a busy-spin `waitUntilCompleted`. Every entry owns its own
+    /// event object; monotonic `signalledValue` means no reset ever needed.
+    let sharedEvent: any MTLSharedEvent
+    private let sharedEventValueLock = NSLock()
+    private var sharedEventNextValue: UInt64 = 1
+    let sharedEventListener: MTLSharedEventListener
+
+    convenience init(device: any MTLDevice) throws {
         guard let library = device.makeDefaultLibrary() else {
             throw MetalDeviceCacheError.missingDefaultLibrary
         }
+        try self.init(device: device, library: library)
+    }
+
+    /// Dependency-injected init used by the SPM test target, which compiles
+    /// the shader library from source at run-time instead of relying on the
+    /// bundle-embedded `default.metallib` that Xcode produces for the FxPlug
+    /// target. Production code should use the zero-argument convenience
+    /// init.
+    init(device: any MTLDevice, library: any MTLLibrary) throws {
+        self.device = device
         self.library = library
         self.computePipelines = try CorridorKeyComputePipelines(device: device, library: library)
+        self.texturePool = IntermediateTexturePool(device: device)
 
         let queueCount = 4
         var queues: [any MTLCommandQueue] = []
@@ -137,6 +183,17 @@ final class MetalDeviceCacheEntry {
         }
         self.commandQueues = queues
         self.availability = Array(repeating: true, count: queues.count)
+
+        // Shared-event machinery: the listener runs signal callbacks on a
+        // dedicated dispatch queue so completion handlers never run on the
+        // calling render thread.
+        guard let event = device.makeSharedEvent() else {
+            throw MetalDeviceCacheError.commandBufferCreationFailed
+        }
+        self.sharedEvent = event
+        self.sharedEventListener = MTLSharedEventListener(
+            dispatchQueue: DispatchQueue(label: "corridorkey.mtlsharedevent", qos: .userInitiated)
+        )
     }
 
     func borrowCommandQueue() -> (any MTLCommandQueue)? {
@@ -177,6 +234,10 @@ final class MetalDeviceCacheEntry {
     /// `.private` storage because most intermediates never cross the CPU.
     /// Inference engines require `.shared` so their input/output buffers can
     /// be read and written from the CPU.
+    ///
+    /// Prefer `texturePool.acquire(...)` for render-hot paths — this method
+    /// remains for call sites that want a one-shot texture (tests and a
+    /// handful of analysis helpers).
     func makeIntermediateTexture(
         width: Int,
         height: Int,
@@ -193,6 +254,191 @@ final class MetalDeviceCacheEntry {
         descriptor.usage = usage
         descriptor.storageMode = storageMode
         return device.makeTexture(descriptor: descriptor)
+    }
+
+    // MARK: - Gaussian blur weight cache
+
+    /// Key for the Gaussian weights cache. `radius` is the kernel radius in
+    /// taps; `sigmaTenths` is the sigma rounded to one decimal place so nearly
+    /// identical blurs share a buffer.
+    struct GaussianWeightsKey: Hashable, Sendable {
+        let radius: Int
+        let sigmaTenths: Int
+    }
+
+    /// Returns a shared MTLBuffer of normalised Gaussian weights for the
+    /// supplied radius and sigma. Safe to call concurrently from multiple
+    /// render threads.
+    func gaussianWeightsBuffer(radius: Int, sigma: Float) -> (buffer: any MTLBuffer, count: Int)? {
+        guard radius > 0 else { return nil }
+        let clampedSigma = max(sigma, 0.01)
+        let sigmaTenths = Int((clampedSigma * 10).rounded())
+        let key = GaussianWeightsKey(radius: radius, sigmaTenths: sigmaTenths)
+
+        weightsLock.lock()
+        if let existing = weightBuffers[key] {
+            weightsLock.unlock()
+            return (existing, radius + 1)
+        }
+        weightsLock.unlock()
+
+        let quantisedSigma = Float(max(sigmaTenths, 1)) * 0.1
+        let weights = Self.makeGaussianWeights(radius: radius, sigma: quantisedSigma)
+        guard let buffer = weights.withUnsafeBufferPointer({ pointer -> (any MTLBuffer)? in
+            guard let base = pointer.baseAddress else { return nil }
+            return device.makeBuffer(
+                bytes: base,
+                length: pointer.count * MemoryLayout<Float>.size,
+                options: .storageModeShared
+            )
+        }) else {
+            return nil
+        }
+        buffer.label = "CK Gaussian Weights r=\(radius) σ=\(quantisedSigma)"
+
+        weightsLock.lock()
+        // Another thread may have raced in and cached an equivalent buffer.
+        // Keep the first one to land so subsequent lookups hit the same
+        // object — two concurrent uses of `weights_of_same_radius` don't
+        // visually differ but reusing lets the pool stay tight.
+        if let existing = weightBuffers[key] {
+            weightsLock.unlock()
+            return (existing, radius + 1)
+        }
+        weightBuffers[key] = buffer
+        weightsLock.unlock()
+        return (buffer, radius + 1)
+    }
+
+    /// Computes a normalised 1-sided Gaussian kernel. Returns the centre tap
+    /// plus `radius` one-sided taps — the shader mirrors the taps around the
+    /// origin so the stored array has `radius + 1` entries.
+    static func makeGaussianWeights(radius: Int, sigma: Float) -> [Float] {
+        var weights = [Float]()
+        weights.reserveCapacity(radius + 1)
+        var total: Float = 0
+        let twoSigmaSquared = 2 * sigma * sigma
+        for index in 0...radius {
+            let offset = Float(index)
+            let weight = exp(-(offset * offset) / twoSigmaSquared)
+            weights.append(weight)
+            total += (index == 0) ? weight : weight * 2
+        }
+        if total > 0 {
+            for index in weights.indices { weights[index] /= total }
+        }
+        return weights
+    }
+
+    // MARK: - MPS kernel caches
+
+    struct MPSGaussianKey: Hashable, Sendable {
+        let sigmaTenths: Int
+    }
+
+    struct MPSMorphologyKey: Hashable, Sendable {
+        let kernelWidth: Int
+        let kernelHeight: Int
+    }
+
+    /// Returns a cached `MPSImageGaussianBlur` for the requested sigma,
+    /// creating one on first use. `sigma <= 0` returns `nil` — callers should
+    /// fall back to the identity path.
+    func mpsGaussianBlur(sigma: Float) -> MPSImageGaussianBlur? {
+        guard sigma > 0 else { return nil }
+        let sigmaTenths = max(Int((sigma * 10).rounded()), 1)
+        let key = MPSGaussianKey(sigmaTenths: sigmaTenths)
+        mpsLock.lock()
+        if let existing = gaussianBlurs[key] {
+            mpsLock.unlock()
+            return existing
+        }
+        let quantisedSigma = Float(sigmaTenths) * 0.1
+        let blur = MPSImageGaussianBlur(device: device, sigma: quantisedSigma)
+        blur.edgeMode = .clamp
+        gaussianBlurs[key] = blur
+        mpsLock.unlock()
+        return blur
+    }
+
+    /// Returns a cached `MPSImageDilate` of the supplied side length.
+    /// Size is always odd to keep the kernel centred; even values are
+    /// rounded up.
+    func mpsDilate(kernelSide: Int) -> MPSImageDilate? {
+        let side = Self.roundedToOdd(kernelSide)
+        guard side > 1 else { return nil }
+        let key = MPSMorphologyKey(kernelWidth: side, kernelHeight: side)
+        mpsLock.lock()
+        if let existing = morphDilates[key] {
+            mpsLock.unlock()
+            return existing
+        }
+        let values = [Float](repeating: 0, count: side * side)
+        let dilate = MPSImageDilate(
+            device: device,
+            kernelWidth: side,
+            kernelHeight: side,
+            values: values
+        )
+        dilate.edgeMode = .clamp
+        morphDilates[key] = dilate
+        mpsLock.unlock()
+        return dilate
+    }
+
+    /// Returns a cached `MPSImageErode` of the supplied side length.
+    func mpsErode(kernelSide: Int) -> MPSImageErode? {
+        let side = Self.roundedToOdd(kernelSide)
+        guard side > 1 else { return nil }
+        let key = MPSMorphologyKey(kernelWidth: side, kernelHeight: side)
+        mpsLock.lock()
+        if let existing = morphErodes[key] {
+            mpsLock.unlock()
+            return existing
+        }
+        let values = [Float](repeating: 0, count: side * side)
+        let erode = MPSImageErode(
+            device: device,
+            kernelWidth: side,
+            kernelHeight: side,
+            values: values
+        )
+        erode.edgeMode = .clamp
+        morphErodes[key] = erode
+        mpsLock.unlock()
+        return erode
+    }
+
+    /// Returns the shared `MPSImageLanczosScale` for this device.
+    func mpsLanczosScale() -> MPSImageLanczosScale {
+        mpsLock.lock()
+        if let existing = lanczosScales {
+            mpsLock.unlock()
+            return existing
+        }
+        let scaler = MPSImageLanczosScale(device: device)
+        lanczosScales = scaler
+        mpsLock.unlock()
+        return scaler
+    }
+
+    private static func roundedToOdd(_ value: Int) -> Int {
+        let clamped = max(value, 1)
+        return clamped % 2 == 0 ? clamped + 1 : clamped
+    }
+
+    // MARK: - Shared-event value allocation
+
+    /// Returns a new monotonically-increasing signal value for this entry's
+    /// shared event. Use this to pair `commandBuffer.encodeSignalEvent(...)`
+    /// with a matching `sharedEventListener.notify` callback so CPU-waiting
+    /// callers never spin on `waitUntilCompleted`.
+    func nextSharedEventValue() -> UInt64 {
+        sharedEventValueLock.lock()
+        defer { sharedEventValueLock.unlock() }
+        let value = sharedEventNextValue
+        sharedEventNextValue &+= 1
+        return value
     }
 }
 
@@ -219,21 +465,5 @@ final class MetalDeviceCache: @unchecked Sendable {
             return device
         }
         return nil
-    }
-
-    /// Maps the IOSurface pixel format FxPlug provides to the nearest Metal
-    /// pixel format. Modern Final Cut Pro hands us 16-bit half floats for
-    /// colour-managed output and BGRA8 for quick draft renders.
-    static func metalPixelFormat(for tile: FxImageTile) -> MTLPixelFormat {
-        switch tile.ioSurface.pixelFormat {
-        case kCVPixelFormatType_128RGBAFloat: return .rgba32Float
-        case kCVPixelFormatType_64RGBAHalf: return .rgba16Float
-        case kCVPixelFormatType_32BGRA: return .bgra8Unorm
-        default:
-            PluginLog.warning(
-                "Unexpected IOSurface pixel format \(String(tile.ioSurface.pixelFormat, radix: 16)); defaulting to rgba16Float."
-            )
-            return .rgba16Float
-        }
     }
 }

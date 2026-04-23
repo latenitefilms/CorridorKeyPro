@@ -168,6 +168,7 @@
 		<target object="10010" channel="./110" name="Interior"/>
 		<target object="10010" channel="./120" name="Matte"/>
 		<target object="10010" channel="./130" name="Edge Spill"/>
+		<target object="10010" channel="./140" name="Refinement"/>
 	</publishSettings>
 	<currentFrame>0 1 1 0</currentFrame>
 	<currentObject>10007</currentObject>

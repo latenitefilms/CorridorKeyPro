@@ -31,10 +31,18 @@ struct PluginStateData: Codable, Sendable {
     var alphaGamma: Double
     var autoDespeckleEnabled: Bool
     var despeckleSize: Int
+    var refinerStrength: Double
 
     // Edge and spill
     var despillStrength: Double
     var spillMethod: SpillMethod
+
+    // Edge refinement (Phase 4 — light wrap + edge decontamination)
+    var lightWrapEnabled: Bool
+    var lightWrapStrength: Double
+    var lightWrapRadius: Double
+    var edgeDecontaminateEnabled: Bool
+    var edgeDecontaminateStrength: Double
 
     // Output
     var outputMode: OutputMode
@@ -76,8 +84,14 @@ struct PluginStateData: Codable, Sendable {
         alphaGamma: Double = 1.0,
         autoDespeckleEnabled: Bool = false,
         despeckleSize: Int = 400,
+        refinerStrength: Double = 1.0,
         despillStrength: Double = 0.5,
         spillMethod: SpillMethod = .average,
+        lightWrapEnabled: Bool = false,
+        lightWrapStrength: Double = 0.25,
+        lightWrapRadius: Double = 10.0,
+        edgeDecontaminateEnabled: Bool = false,
+        edgeDecontaminateStrength: Double = 0.5,
         outputMode: OutputMode = .processed,
         upscaleMethod: UpscaleMethod = .lanczos,
         renderQualityLevel: Int = 2,
@@ -98,8 +112,14 @@ struct PluginStateData: Codable, Sendable {
         self.alphaGamma = alphaGamma
         self.autoDespeckleEnabled = autoDespeckleEnabled
         self.despeckleSize = despeckleSize
+        self.refinerStrength = refinerStrength
         self.despillStrength = despillStrength
         self.spillMethod = spillMethod
+        self.lightWrapEnabled = lightWrapEnabled
+        self.lightWrapStrength = lightWrapStrength
+        self.lightWrapRadius = lightWrapRadius
+        self.edgeDecontaminateEnabled = edgeDecontaminateEnabled
+        self.edgeDecontaminateStrength = edgeDecontaminateStrength
         self.outputMode = outputMode
         self.upscaleMethod = upscaleMethod
         self.renderQualityLevel = renderQualityLevel
@@ -107,6 +127,72 @@ struct PluginStateData: Codable, Sendable {
         self.destinationLongEdgePixels = destinationLongEdgePixels
         self.cachedMatteBlob = cachedMatteBlob
         self.cachedMatteInferenceResolution = cachedMatteInferenceResolution
+    }
+
+    // MARK: - Codable
+
+    /// Custom decoding so adding new fields in v1.0 (refiner strength,
+    /// light wrap, edge decontamination) doesn't invalidate saved documents
+    /// from earlier builds. Missing keys fall back to their default values.
+    enum CodingKeys: String, CodingKey {
+        case screenColor
+        case qualityMode
+        case sourcePassthroughEnabled
+        case passthroughErodeNormalized
+        case passthroughBlurNormalized
+        case alphaBlackPoint
+        case alphaWhitePoint
+        case alphaErodeNormalized
+        case alphaSoftnessNormalized
+        case alphaGamma
+        case autoDespeckleEnabled
+        case despeckleSize
+        case refinerStrength
+        case despillStrength
+        case spillMethod
+        case lightWrapEnabled
+        case lightWrapStrength
+        case lightWrapRadius
+        case edgeDecontaminateEnabled
+        case edgeDecontaminateStrength
+        case outputMode
+        case upscaleMethod
+        case renderQualityLevel
+        case longEdgeBaseline
+        case destinationLongEdgePixels
+        case cachedMatteBlob
+        case cachedMatteInferenceResolution
+    }
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.screenColor = try container.decodeIfPresent(ScreenColor.self, forKey: .screenColor) ?? .green
+        self.qualityMode = try container.decodeIfPresent(QualityMode.self, forKey: .qualityMode) ?? .maximum2048
+        self.sourcePassthroughEnabled = try container.decodeIfPresent(Bool.self, forKey: .sourcePassthroughEnabled) ?? true
+        self.passthroughErodeNormalized = try container.decodeIfPresent(Double.self, forKey: .passthroughErodeNormalized) ?? 3.0
+        self.passthroughBlurNormalized = try container.decodeIfPresent(Double.self, forKey: .passthroughBlurNormalized) ?? 7.0
+        self.alphaBlackPoint = try container.decodeIfPresent(Double.self, forKey: .alphaBlackPoint) ?? 0.0
+        self.alphaWhitePoint = try container.decodeIfPresent(Double.self, forKey: .alphaWhitePoint) ?? 1.0
+        self.alphaErodeNormalized = try container.decodeIfPresent(Double.self, forKey: .alphaErodeNormalized) ?? 0.0
+        self.alphaSoftnessNormalized = try container.decodeIfPresent(Double.self, forKey: .alphaSoftnessNormalized) ?? 0.0
+        self.alphaGamma = try container.decodeIfPresent(Double.self, forKey: .alphaGamma) ?? 1.0
+        self.autoDespeckleEnabled = try container.decodeIfPresent(Bool.self, forKey: .autoDespeckleEnabled) ?? false
+        self.despeckleSize = try container.decodeIfPresent(Int.self, forKey: .despeckleSize) ?? 400
+        self.refinerStrength = try container.decodeIfPresent(Double.self, forKey: .refinerStrength) ?? 1.0
+        self.despillStrength = try container.decodeIfPresent(Double.self, forKey: .despillStrength) ?? 0.5
+        self.spillMethod = try container.decodeIfPresent(SpillMethod.self, forKey: .spillMethod) ?? .average
+        self.lightWrapEnabled = try container.decodeIfPresent(Bool.self, forKey: .lightWrapEnabled) ?? false
+        self.lightWrapStrength = try container.decodeIfPresent(Double.self, forKey: .lightWrapStrength) ?? 0.25
+        self.lightWrapRadius = try container.decodeIfPresent(Double.self, forKey: .lightWrapRadius) ?? 10.0
+        self.edgeDecontaminateEnabled = try container.decodeIfPresent(Bool.self, forKey: .edgeDecontaminateEnabled) ?? false
+        self.edgeDecontaminateStrength = try container.decodeIfPresent(Double.self, forKey: .edgeDecontaminateStrength) ?? 0.5
+        self.outputMode = try container.decodeIfPresent(OutputMode.self, forKey: .outputMode) ?? .processed
+        self.upscaleMethod = try container.decodeIfPresent(UpscaleMethod.self, forKey: .upscaleMethod) ?? .lanczos
+        self.renderQualityLevel = try container.decodeIfPresent(Int.self, forKey: .renderQualityLevel) ?? 2
+        self.longEdgeBaseline = try container.decodeIfPresent(Double.self, forKey: .longEdgeBaseline) ?? 1920.0
+        self.destinationLongEdgePixels = try container.decodeIfPresent(Int.self, forKey: .destinationLongEdgePixels) ?? 1920
+        self.cachedMatteBlob = try container.decodeIfPresent(Data.self, forKey: .cachedMatteBlob)
+        self.cachedMatteInferenceResolution = try container.decodeIfPresent(Int.self, forKey: .cachedMatteInferenceResolution) ?? 0
     }
 
     /// Encodes the snapshot for hand-off to the FxPlug host. Binary plist is

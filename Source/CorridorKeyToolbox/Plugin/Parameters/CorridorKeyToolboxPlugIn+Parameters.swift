@@ -34,6 +34,7 @@ extension CorridorKeyToolboxPlugIn {
         try addInteriorDetailGroup(create: create)
         try addMatteGroup(create: create)
         try addEdgeAndSpillGroup(create: create)
+        try addEdgeRefinementGroup(create: create)
         PluginLog.notice("Parameters registered with Final Cut Pro.")
     }
 
@@ -257,6 +258,18 @@ extension CorridorKeyToolboxPlugIn {
             parameterFlags: CorridorKeyParameterFlags.nonAnimatableChoice.fxFlags
         )
 
+        create.addFloatSlider(
+            withName: "Refiner Strength",
+            parameterID: ParameterIdentifier.refinerStrength,
+            defaultValue: 1.0,
+            parameterMin: 0,
+            parameterMax: 2,
+            sliderMin: 0,
+            sliderMax: 2,
+            delta: 0.05,
+            parameterFlags: CorridorKeyParameterFlags.default.fxFlags
+        )
+
         create.endParameterSubGroup()
     }
 
@@ -290,16 +303,113 @@ extension CorridorKeyToolboxPlugIn {
         create.endParameterSubGroup()
     }
 
+    /// Phase 4 additions: light wrap and edge colour decontamination. Both
+    /// default to disabled so existing projects render the same on upgrade.
+    private func addEdgeRefinementGroup(create: any FxParameterCreationAPI_v5) throws {
+        create.startParameterSubGroup(
+            "Edge Refinement",
+            parameterID: ParameterIdentifier.edgeRefinementGroup,
+            parameterFlags: CorridorKeyParameterFlags.default.fxFlags
+        )
+
+        create.addToggleButton(
+            withName: "Light Wrap",
+            parameterID: ParameterIdentifier.lightWrapEnabled,
+            defaultValue: false,
+            parameterFlags: CorridorKeyParameterFlags.nonAnimatableChoice.fxFlags
+        )
+
+        create.addFloatSlider(
+            withName: "Wrap Strength",
+            parameterID: ParameterIdentifier.lightWrapStrength,
+            defaultValue: 0.25,
+            parameterMin: 0,
+            parameterMax: 1,
+            sliderMin: 0,
+            sliderMax: 1,
+            delta: 0.01,
+            parameterFlags: CorridorKeyParameterFlags.default.fxFlags
+        )
+
+        create.addFloatSlider(
+            withName: "Wrap Radius",
+            parameterID: ParameterIdentifier.lightWrapRadius,
+            defaultValue: 10,
+            parameterMin: 0,
+            parameterMax: 50,
+            sliderMin: 0,
+            sliderMax: 50,
+            delta: 0.5,
+            parameterFlags: CorridorKeyParameterFlags.default.fxFlags
+        )
+
+        create.addToggleButton(
+            withName: "Edge Decontaminate",
+            parameterID: ParameterIdentifier.edgeDecontaminateEnabled,
+            defaultValue: false,
+            parameterFlags: CorridorKeyParameterFlags.nonAnimatableChoice.fxFlags
+        )
+
+        create.addFloatSlider(
+            withName: "Decontam. Strength",
+            parameterID: ParameterIdentifier.edgeDecontaminateStrength,
+            defaultValue: 0.5,
+            parameterMin: 0,
+            parameterMax: 1,
+            sliderMin: 0,
+            sliderMax: 1,
+            delta: 0.01,
+            parameterFlags: CorridorKeyParameterFlags.default.fxFlags
+        )
+
+        create.endParameterSubGroup()
+    }
+
     // MARK: - Parameter change notifications
 
     /// Final Cut Pro invokes this method when the user edits a control. We
-    /// don't need to react per-parameter — the host will re-request the
-    /// plug-in state and re-render automatically — but having it defined
-    /// ensures FCP correctly invalidates any cached render when a control
-    /// changes.
+    /// use it to keep the inspector UI consistent — when the user toggles
+    /// Light Wrap or Edge Decontaminate off, the sub-sliders get disabled
+    /// so the panel clearly communicates which knobs are live.
     @objc(parameterChanged:atTime:error:)
     func parameterChanged(_ paramID: UInt32, atTime time: CMTime) throws {
-        // Intentionally empty. The host re-requests plug-in state and
-        // triggers a re-render automatically when parameters change.
+        updateDependentParameterEnablement(at: time)
+    }
+
+    /// Reads each Phase 4 toggle and disables / enables its sub-sliders
+    /// accordingly. Safe to call any time; no-ops when the parameter APIs
+    /// aren't available (e.g. during initial add-parameters).
+    private func updateDependentParameterEnablement(at time: CMTime) {
+        guard
+            let retrieval = apiManager.api(for: (any FxParameterRetrievalAPI_v6).self) as? any FxParameterRetrievalAPI_v6,
+            let setter = apiManager.api(for: (any FxParameterSettingAPI_v5).self) as? any FxParameterSettingAPI_v5
+        else { return }
+
+        let lightWrapOn = readBool(retrieval: retrieval, parameterID: ParameterIdentifier.lightWrapEnabled, at: time, default: false)
+        let decontamOn = readBool(retrieval: retrieval, parameterID: ParameterIdentifier.edgeDecontaminateEnabled, at: time, default: false)
+
+        setEnabled(setter: setter, parameterID: ParameterIdentifier.lightWrapStrength, enabled: lightWrapOn)
+        setEnabled(setter: setter, parameterID: ParameterIdentifier.lightWrapRadius, enabled: lightWrapOn)
+        setEnabled(setter: setter, parameterID: ParameterIdentifier.edgeDecontaminateStrength, enabled: decontamOn)
+    }
+
+    private func readBool(
+        retrieval: any FxParameterRetrievalAPI_v6,
+        parameterID: UInt32,
+        at time: CMTime,
+        default defaultValue: Bool
+    ) -> Bool {
+        var value = ObjCBool(defaultValue)
+        retrieval.getBoolValue(&value, fromParameter: parameterID, at: time)
+        return value.boolValue
+    }
+
+    private func setEnabled(
+        setter: any FxParameterSettingAPI_v5,
+        parameterID: UInt32,
+        enabled: Bool
+    ) {
+        let flags: CorridorKeyParameterFlags = enabled ? .default : [.default, .disabled]
+        _ = setter.setParameterFlags(flags.fxFlags, toParameter: parameterID)
     }
 }

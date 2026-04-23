@@ -10,9 +10,23 @@
 //  1. Pre-inference — screen rotation → hint extraction → combine & normalise.
 //  2. Inference — the neural engine reads the normalised tensor and writes
 //     alpha + foreground at inference resolution.
-//  3. Post-inference — upscale → despill → matte refine → passthrough →
-//     restore → compose directly into Final Cut Pro's destination texture
-//     via a render pass.
+//  3. Post-inference — upscale → despill → refiner blend → despeckle → matte
+//     refine → passthrough → light wrap → edge decontamination → restore →
+//     compose directly into Final Cut Pro's destination texture via a render
+//     pass.
+//
+//  Two things changed from v0 that keep the render thread responsive:
+//
+//  * Intermediate textures come from a pool (`IntermediateTexturePool`) and
+//    are returned to the pool via `addCompletedHandler` on the command
+//    buffer that used them. The render path no longer allocates fresh
+//    textures per frame on the hot path.
+//
+//  * GPU→CPU synchronisation uses `addCompletedHandler` + `DispatchSemaphore`
+//    instead of `waitUntilCompleted`. `waitUntilCompleted` spin-waits inside
+//    the Metal driver on some macOS builds, which prevented Final Cut Pro
+//    from pipelining the next tile's command queue kickoff while we were
+//    nominally "done".
 //
 
 import Foundation
@@ -27,6 +41,7 @@ struct RenderRequest: @unchecked Sendable {
     let sourceImage: FxImageTile
     let alphaHintImage: FxImageTile?
     let state: PluginStateData
+    let workingGamut: WorkingColorGamut
     let renderTime: CMTime
 }
 
@@ -61,6 +76,7 @@ final class RenderPipeline: @unchecked Sendable {
         defer { context.entry.returnCommandQueue(context.commandQueue) }
 
         let screenTransform = ScreenColorEstimator.defaultTransform(for: request.state.screenColor)
+        let gamutTransform = ColorGamutMatrix.transform(for: request.workingGamut)
         let inferenceResolution = request.state.qualityMode.resolvedInferenceResolution(
             forLongEdge: context.longEdge
         )
@@ -73,6 +89,7 @@ final class RenderPipeline: @unchecked Sendable {
                 request: request,
                 context: context,
                 screenTransform: screenTransform,
+                gamutTransform: gamutTransform,
                 inferenceResolution: inferenceResolution,
                 cachedAlpha: cached
             )
@@ -92,12 +109,14 @@ final class RenderPipeline: @unchecked Sendable {
     func extractAlphaMatteForAnalysis(
         sourceTexture: any MTLTexture,
         state: PluginStateData,
+        workingGamut: WorkingColorGamut,
         renderTime: CMTime,
         device: any MTLDevice,
         entry: MetalDeviceCacheEntry,
         commandQueue: any MTLCommandQueue
     ) throws -> (alpha: [Float], width: Int, height: Int, inferenceResolution: Int) {
         let screenTransform = ScreenColorEstimator.defaultTransform(for: state.screenColor)
+        let gamutTransform = ColorGamutMatrix.transform(for: workingGamut)
         let longEdge = max(sourceTexture.width, sourceTexture.height)
         let inferenceResolution = state.qualityMode.resolvedInferenceResolution(forLongEdge: longEdge)
 
@@ -108,6 +127,7 @@ final class RenderPipeline: @unchecked Sendable {
             entry: entry,
             commandQueue: commandQueue,
             screenTransform: screenTransform,
+            gamutTransform: gamutTransform,
             inferenceResolution: inferenceResolution
         )
 
@@ -119,8 +139,8 @@ final class RenderPipeline: @unchecked Sendable {
         )
         let inferenceOutput = try inferenceCoordinator.runInference(
             request: KeyingInferenceRequest(
-                normalisedInputTexture: pre.normalisedInput,
-                rawSourceTexture: pre.rawSourceAtInferenceResolution,
+                normalisedInputTexture: pre.normalisedInput.texture,
+                rawSourceTexture: pre.rawSourceAtInferenceResolution.texture,
                 inferenceResolution: inferenceResolution
             ),
             cacheEntry: entry,
@@ -141,6 +161,13 @@ final class RenderPipeline: @unchecked Sendable {
                 )
             }
         }
+
+        // Return pre-inference pooled textures now that we've captured the
+        // alpha. The inference output textures live outside the pool.
+        pre.rotatedSource?.returnManually()
+        pre.normalisedInput.returnManually()
+        pre.rawSourceAtInferenceResolution.returnManually()
+
         return (alpha, width, height, inferenceResolution)
     }
 
@@ -159,9 +186,9 @@ final class RenderPipeline: @unchecked Sendable {
     }
 
     private struct PreInferenceArtifacts {
-        let rotatedSource: any MTLTexture
-        let normalisedInput: any MTLTexture
-        let rawSourceAtInferenceResolution: any MTLTexture
+        let rotatedSource: PooledTexture?
+        let normalisedInput: PooledTexture
+        let rawSourceAtInferenceResolution: PooledTexture
     }
 
     private func makeDeviceContext(for request: RenderRequest) throws -> DeviceContext {
@@ -226,9 +253,7 @@ final class RenderPipeline: @unchecked Sendable {
             commandBuffer: commandBuffer
         )
 
-        commandBuffer.commit()
-        commandBuffer.waitUntilCompleted()
-        if let error = commandBuffer.error { throw error }
+        try commitAndWait(commandBuffer: commandBuffer)
 
         return RenderReport(
             backendDescription: "Source Pass-Through",
@@ -242,6 +267,7 @@ final class RenderPipeline: @unchecked Sendable {
         request: RenderRequest,
         context: DeviceContext,
         screenTransform: ScreenColorTransform,
+        gamutTransform: WorkingSpaceTransform,
         inferenceResolution: Int,
         cachedAlpha: (alpha: [Float], width: Int, height: Int)
     ) throws -> RenderReport {
@@ -250,26 +276,32 @@ final class RenderPipeline: @unchecked Sendable {
         }
         preCommandBuffer.label = "Corridor Key Toolbox Cached Pre-Inference"
 
-        let rotatedSource = try applyScreenRotation(
+        let rotatedSourcePooled = try RenderStages.applyScreenMatrix(
             source: context.sourceTexture,
             matrix: screenTransform.forwardMatrix,
             isIdentity: screenTransform.isIdentity,
             entry: context.entry,
             commandBuffer: preCommandBuffer
         )
-        let rawSourceAtInferenceResolution = try resample(
+        let rotatedSource = rotatedSourcePooled?.texture ?? context.sourceTexture
+
+        let rawSourcePooled = try RenderStages.resample(
             source: rotatedSource,
             targetWidth: inferenceResolution,
             targetHeight: inferenceResolution,
             pixelFormat: .rgba16Float,
+            method: request.state.upscaleMethod,
             entry: context.entry,
             commandBuffer: preCommandBuffer
         )
-        preCommandBuffer.commit()
-        preCommandBuffer.waitUntilCompleted()
-        if let error = preCommandBuffer.error { throw error }
+        let rawSourceAtInferenceResolution = rawSourcePooled?.texture ?? rotatedSource
 
-        let alphaTexture = try uploadCachedAlpha(
+        try commitAndWait(commandBuffer: preCommandBuffer)
+
+        rotatedSourcePooled?.returnManually()
+        // rawSourcePooled stays alive — we need it as the foreground stand-in.
+
+        let alphaPooled = try uploadCachedAlpha(
             alpha: cachedAlpha.alpha,
             width: cachedAlpha.width,
             height: cachedAlpha.height,
@@ -281,9 +313,12 @@ final class RenderPipeline: @unchecked Sendable {
             context: context,
             screenTransform: screenTransform,
             rotatedSource: rotatedSource,
-            alphaAtInferenceResolution: alphaTexture,
+            alphaAtInferenceResolution: alphaPooled.texture,
             foregroundAtInferenceResolution: rawSourceAtInferenceResolution
         )
+
+        rawSourcePooled?.returnManually()
+        alphaPooled.returnManually()
 
         return RenderReport(
             backendDescription: "Analysed Cache (\(inferenceResolution)px)",
@@ -300,6 +335,7 @@ final class RenderPipeline: @unchecked Sendable {
         entry: MetalDeviceCacheEntry,
         commandQueue: any MTLCommandQueue,
         screenTransform: ScreenColorTransform,
+        gamutTransform: WorkingSpaceTransform,
         inferenceResolution: Int
     ) throws -> PreInferenceArtifacts {
         guard let preCommandBuffer = commandQueue.makeCommandBuffer() else {
@@ -307,43 +343,79 @@ final class RenderPipeline: @unchecked Sendable {
         }
         preCommandBuffer.label = "Corridor Key Toolbox Pre-Inference"
 
-        let rotatedSource = try applyScreenRotation(
+        let rotatedSourcePooled = try RenderStages.applyScreenMatrix(
             source: sourceTexture,
             matrix: screenTransform.forwardMatrix,
             isIdentity: screenTransform.isIdentity,
             entry: entry,
             commandBuffer: preCommandBuffer
         )
-        let hintTexture = try makeHintTexture(
+        let rotatedSource = rotatedSourcePooled?.texture ?? sourceTexture
+
+        let hintTexturePooled: PooledTexture
+        if let hintTile, let hostTexture = hintTile.metalTexture(for: device) {
+            hintTexturePooled = try RenderStages.extractHint(
+                source: hostTexture,
+                layout: hintTileLayoutValue(for: hostTexture),
+                targetWidth: rotatedSource.width,
+                targetHeight: rotatedSource.height,
+                entry: entry,
+                commandBuffer: preCommandBuffer
+            )
+        } else {
+            hintTexturePooled = try RenderStages.generateGreenHint(
+                source: rotatedSource,
+                entry: entry,
+                commandBuffer: preCommandBuffer
+            )
+        }
+
+        let normalisedInput = try RenderStages.combineAndNormalise(
             source: rotatedSource,
-            hintTile: hintTile,
-            device: device,
-            entry: entry,
-            commandBuffer: preCommandBuffer
-        )
-        let normalisedInput = try combineAndNormalise(
-            source: rotatedSource,
-            hint: hintTexture,
+            hint: hintTexturePooled.texture,
             inferenceResolution: inferenceResolution,
+            workingToRec709: gamutTransform.workingToRec709,
             entry: entry,
             commandBuffer: preCommandBuffer
         )
-        let rawSourceAtInferenceResolution = try resample(
+
+        let rawSourceAtInferenceResolutionPooled = try RenderStages.resample(
             source: rotatedSource,
             targetWidth: inferenceResolution,
             targetHeight: inferenceResolution,
             pixelFormat: .rgba16Float,
+            method: .bilinear,
             entry: entry,
             commandBuffer: preCommandBuffer
         )
-        preCommandBuffer.commit()
-        preCommandBuffer.waitUntilCompleted()
-        if let error = preCommandBuffer.error { throw error }
+        let rawSource: PooledTexture
+        if let rawSourceAtInferenceResolutionPooled {
+            rawSource = rawSourceAtInferenceResolutionPooled
+        } else {
+            // Rare: caller already provided a texture at the inference
+            // resolution. Acquire a throwaway copy so we still hand back a
+            // `PooledTexture` and the caller's pool bookkeeping stays
+            // consistent.
+            guard let fallback = entry.texturePool.acquire(
+                width: inferenceResolution,
+                height: inferenceResolution,
+                pixelFormat: .rgba16Float
+            ) else { throw MetalDeviceCacheError.textureAllocationFailed }
+            if let blit = preCommandBuffer.makeBlitCommandEncoder() {
+                blit.label = "Corridor Key Toolbox Pre-Inf Copy"
+                blit.copy(from: rotatedSource, to: fallback.texture)
+                blit.endEncoding()
+            }
+            rawSource = fallback
+        }
+
+        try commitAndWait(commandBuffer: preCommandBuffer)
+        hintTexturePooled.returnManually()
 
         return PreInferenceArtifacts(
-            rotatedSource: rotatedSource,
+            rotatedSource: rotatedSourcePooled,
             normalisedInput: normalisedInput,
-            rawSourceAtInferenceResolution: rawSourceAtInferenceResolution
+            rawSourceAtInferenceResolution: rawSource
         )
     }
 
@@ -360,53 +432,126 @@ final class RenderPipeline: @unchecked Sendable {
         }
         postCommandBuffer.label = "Corridor Key Toolbox Post-Inference"
 
-        let upscaledAlpha = try resample(
+        // 1. Upscale alpha + foreground to destination resolution using the
+        // user's chosen method.
+        let upscaledAlphaPooled = try RenderStages.resample(
             source: alphaAtInferenceResolution,
             targetWidth: context.sourceWidth,
             targetHeight: context.sourceHeight,
             pixelFormat: .r16Float,
+            method: request.state.upscaleMethod,
             entry: context.entry,
             commandBuffer: postCommandBuffer
         )
-        let upscaledForeground = try resample(
+        let upscaledAlpha = upscaledAlphaPooled?.texture ?? alphaAtInferenceResolution
+
+        let upscaledForegroundPooled = try RenderStages.resample(
             source: foregroundAtInferenceResolution,
             targetWidth: context.sourceWidth,
             targetHeight: context.sourceHeight,
             pixelFormat: .rgba16Float,
+            method: request.state.upscaleMethod,
             entry: context.entry,
             commandBuffer: postCommandBuffer
         )
-        let despilled = try despill(
+        let upscaledForeground = upscaledForegroundPooled?.texture ?? foregroundAtInferenceResolution
+
+        // 2. Despill.
+        let despilledPooled = try RenderStages.despill(
             foreground: upscaledForeground,
-            state: request.state,
+            strength: Float(request.state.despillStrength),
+            method: request.state.spillMethod,
             entry: context.entry,
             commandBuffer: postCommandBuffer
         )
-        let refinedMatte = try refineMatte(
+        let despilled = despilledPooled?.texture ?? upscaledForeground
+
+        // 3. Matte refinement chain (levels/gamma → refiner blend → CC
+        // despeckle → erode/dilate → softness).
+        let (refinedMattePooled, refinedMatte) = try refineMatte(
             alpha: upscaledAlpha,
             state: request.state,
             entry: context.entry,
             commandBuffer: postCommandBuffer
         )
+
+        // 4. Source passthrough (optional).
+        let workingForegroundPooled: PooledTexture?
         let workingForeground: any MTLTexture
         if request.state.sourcePassthroughEnabled {
-            workingForeground = try sourcePassthrough(
+            let pooled = try RenderStages.sourcePassthrough(
                 foreground: despilled,
                 source: rotatedSource,
                 matte: refinedMatte,
                 entry: context.entry,
                 commandBuffer: postCommandBuffer
             )
+            workingForegroundPooled = pooled
+            workingForeground = pooled.texture
         } else {
+            workingForegroundPooled = nil
             workingForeground = despilled
         }
-        let restoredForeground = try applyScreenRotation(
-            source: workingForeground,
+
+        // 5. Light wrap (optional).
+        let wrappedForegroundPooled: PooledTexture?
+        let wrappedForeground: any MTLTexture
+        if request.state.lightWrapEnabled, request.state.lightWrapStrength > 0 {
+            let radius = max(Float(request.state.lightWrapRadius), 0)
+            if let pooled = try RenderStages.applyLightWrap(
+                foreground: workingForeground,
+                matte: refinedMatte,
+                sourceRGB: rotatedSource,
+                radiusPixels: radius,
+                strength: Float(request.state.lightWrapStrength),
+                entry: context.entry,
+                commandBuffer: postCommandBuffer
+            ) {
+                wrappedForegroundPooled = pooled
+                wrappedForeground = pooled.texture
+            } else {
+                wrappedForegroundPooled = nil
+                wrappedForeground = workingForeground
+            }
+        } else {
+            wrappedForegroundPooled = nil
+            wrappedForeground = workingForeground
+        }
+
+        // 6. Edge colour decontamination (optional).
+        let decontaminatedPooled: PooledTexture?
+        let decontaminatedForeground: any MTLTexture
+        if request.state.edgeDecontaminateEnabled, request.state.edgeDecontaminateStrength > 0 {
+            if let pooled = try RenderStages.applyEdgeDecontamination(
+                foreground: wrappedForeground,
+                matte: refinedMatte,
+                screenColor: screenTransform.estimatedScreenReference,
+                strength: Float(request.state.edgeDecontaminateStrength),
+                entry: context.entry,
+                commandBuffer: postCommandBuffer
+            ) {
+                decontaminatedPooled = pooled
+                decontaminatedForeground = pooled.texture
+            } else {
+                decontaminatedPooled = nil
+                decontaminatedForeground = wrappedForeground
+            }
+        } else {
+            decontaminatedPooled = nil
+            decontaminatedForeground = wrappedForeground
+        }
+
+        // 7. Inverse screen rotation.
+        let restoredPooled = try RenderStages.applyScreenMatrix(
+            source: decontaminatedForeground,
             matrix: screenTransform.inverseMatrix,
             isIdentity: screenTransform.isIdentity,
             entry: context.entry,
             commandBuffer: postCommandBuffer
         )
+        let restoredForeground = restoredPooled?.texture ?? decontaminatedForeground
+
+        // 8. Final compose into FCP destination.
         try compose(
             source: context.sourceTexture,
             foreground: restoredForeground,
@@ -418,9 +563,137 @@ final class RenderPipeline: @unchecked Sendable {
             entry: context.entry,
             commandBuffer: postCommandBuffer
         )
-        postCommandBuffer.commit()
-        postCommandBuffer.waitUntilCompleted()
-        if let error = postCommandBuffer.error { throw error }
+
+        try commitAndWait(commandBuffer: postCommandBuffer)
+
+        // Return every pooled texture we acquired along the way. None of
+        // these can be reused before the command buffer retires, but
+        // `commitAndWait` has already waited.
+        upscaledAlphaPooled?.returnManually()
+        upscaledForegroundPooled?.returnManually()
+        despilledPooled?.returnManually()
+        refinedMattePooled?.returnManually()
+        workingForegroundPooled?.returnManually()
+        wrappedForegroundPooled?.returnManually()
+        decontaminatedPooled?.returnManually()
+        restoredPooled?.returnManually()
+    }
+
+    // MARK: - Matte refinement orchestration
+
+    /// Walks the matte through levels+gamma → refiner blend → CC
+    /// despeckle → erode/dilate → softness. Returns the final texture plus
+    /// the pooled wrapper if one was produced (callers need to return the
+    /// pool slot manually after `commitAndWait`).
+    private func refineMatte(
+        alpha: any MTLTexture,
+        state: PluginStateData,
+        entry: MetalDeviceCacheEntry,
+        commandBuffer: any MTLCommandBuffer
+    ) throws -> (pooled: PooledTexture?, texture: any MTLTexture) {
+        // Allocate two ping-pong buffers for the separable chains. Both are
+        // returned to the pool at the end of this helper's scope via
+        // `returnOnCompletion` on the command buffer.
+        guard let bufferPooled = entry.texturePool.acquire(
+            width: alpha.width,
+            height: alpha.height,
+            pixelFormat: .r16Float
+        ) else { throw MetalDeviceCacheError.textureAllocationFailed }
+        guard let auxiliaryPooled = entry.texturePool.acquire(
+            width: alpha.width,
+            height: alpha.height,
+            pixelFormat: .r16Float
+        ) else {
+            bufferPooled.returnManually()
+            throw MetalDeviceCacheError.textureAllocationFailed
+        }
+        let buffer = bufferPooled.texture
+        let auxiliary = auxiliaryPooled.texture
+
+        // Levels + gamma — always runs, result in `buffer`.
+        try RenderStages.applyAlphaLevelsGamma(
+            source: alpha,
+            destination: buffer,
+            blackPoint: Float(state.alphaBlackPoint),
+            whitePoint: Float(state.alphaWhitePoint),
+            gamma: Float(state.alphaGamma),
+            entry: entry,
+            commandBuffer: commandBuffer
+        )
+        var current: any MTLTexture = buffer
+        // Retained separately so we can return the last-used pooled texture
+        // at the end. Both `bufferPooled` and `auxiliaryPooled` stay held
+        // until after `commitAndWait` because the running-chain may read
+        // from either via `current`.
+
+        // Refiner strength blend (Phase 4.1).
+        let refinerPooled = try RenderStages.applyRefinerStrength(
+            matte: current,
+            strength: Float(state.refinerStrength),
+            entry: entry,
+            commandBuffer: commandBuffer
+        )
+        if let refinerPooled {
+            current = refinerPooled.texture
+        }
+
+        // Auto Despeckle (Phase 4.2: CC-based).
+        let ccPooled: PooledTexture?
+        if state.autoDespeckleEnabled {
+            let areaThreshold = despeckleAreaThreshold(state: state)
+            if let pooled = try RenderStages.applyConnectedComponentsDespeckle(
+                matte: current,
+                areaThreshold: areaThreshold,
+                entry: entry,
+                commandBuffer: commandBuffer
+            ) {
+                ccPooled = pooled
+                current = pooled.texture
+            } else {
+                ccPooled = nil
+            }
+        } else {
+            ccPooled = nil
+        }
+
+        // Erode / dilate (user slider). Radius is in destination pixels.
+        let alphaErodeRadiusPixels = state.destinationPixelRadius(fromNormalized: state.alphaErodeNormalized)
+        if abs(alphaErodeRadiusPixels) > 0.5 {
+            try MatteRefiner.applyMorphology(
+                source: current,
+                intermediate: auxiliary,
+                destination: buffer,
+                radius: Int(alphaErodeRadiusPixels.rounded()),
+                entry: entry,
+                commandBuffer: commandBuffer
+            )
+            current = buffer
+        }
+
+        // Gaussian softness.
+        let softnessRadiusPixels = state.destinationPixelRadius(fromNormalized: state.alphaSoftnessNormalized)
+        if softnessRadiusPixels > 0.5 {
+            try MatteRefiner.applyGaussianBlur(
+                source: current,
+                intermediate: auxiliary,
+                destination: buffer,
+                radiusPixels: softnessRadiusPixels,
+                entry: entry,
+                commandBuffer: commandBuffer
+            )
+            current = buffer
+        }
+
+        // Defer pool returns until after commitAndWait; schedule them via
+        // the command buffer so hidden uses of `buffer` / `auxiliary` in
+        // the MPS path can't race the pool.
+        bufferPooled.returnOnCompletion(of: commandBuffer)
+        auxiliaryPooled.returnOnCompletion(of: commandBuffer)
+        refinerPooled?.returnOnCompletion(of: commandBuffer)
+        // ccPooled is the final matte if set — hold it for the caller
+        // rather than returning on completion, so the compose pass can
+        // sample it.
+        return (ccPooled, current)
     }
 
     // MARK: - Cached matte helpers
@@ -444,8 +717,8 @@ final class RenderPipeline: @unchecked Sendable {
         width: Int,
         height: Int,
         entry: MetalDeviceCacheEntry
-    ) throws -> any MTLTexture {
-        guard let texture = entry.makeIntermediateTexture(
+    ) throws -> PooledTexture {
+        guard let pooled = entry.texturePool.acquire(
             width: width,
             height: height,
             pixelFormat: .r32Float,
@@ -478,7 +751,7 @@ final class RenderPipeline: @unchecked Sendable {
         let bytesPerRow = width * MemoryLayout<Float>.size
         flipped.withUnsafeBufferPointer { pointer in
             if let base = pointer.baseAddress {
-                texture.replace(
+                pooled.texture.replace(
                     region: MTLRegionMake2D(0, 0, width, height),
                     mipmapLevel: 0,
                     withBytes: base,
@@ -486,371 +759,10 @@ final class RenderPipeline: @unchecked Sendable {
                 )
             }
         }
-        return texture
+        return pooled
     }
 
-    // MARK: - Stage helpers
-
-    private func applyScreenRotation(
-        source: any MTLTexture,
-        matrix: simd_float3x3,
-        isIdentity: Bool,
-        entry: MetalDeviceCacheEntry,
-        commandBuffer: any MTLCommandBuffer
-    ) throws -> any MTLTexture {
-        if isIdentity { return source }
-        guard let output = entry.makeIntermediateTexture(
-            width: source.width,
-            height: source.height,
-            pixelFormat: .rgba16Float
-        ) else {
-            throw MetalDeviceCacheError.textureAllocationFailed
-        }
-        guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
-            throw MetalDeviceCacheError.commandEncoderCreationFailed
-        }
-        encoder.label = "Corridor Key Toolbox Screen Matrix"
-        encoder.setComputePipelineState(entry.computePipelines.applyScreenMatrix)
-        encoder.setTexture(source, index: Int(CKTextureIndexSource.rawValue))
-        encoder.setTexture(output, index: Int(CKTextureIndexOutput.rawValue))
-        var matrixCopy = matrix
-        encoder.setBytes(
-            &matrixCopy,
-            length: MemoryLayout<simd_float3x3>.size,
-            index: Int(CKBufferIndexScreenColorMatrix.rawValue)
-        )
-        dispatch(encoder: encoder, pipeline: entry.computePipelines.applyScreenMatrix, width: output.width, height: output.height)
-        encoder.endEncoding()
-        return output
-    }
-
-    private func makeHintTexture(
-        source: any MTLTexture,
-        hintTile: FxImageTile?,
-        device: any MTLDevice,
-        entry: MetalDeviceCacheEntry,
-        commandBuffer: any MTLCommandBuffer
-    ) throws -> any MTLTexture {
-        guard let hintTexture = entry.makeIntermediateTexture(
-            width: source.width,
-            height: source.height,
-            pixelFormat: .r16Float
-        ) else {
-            throw MetalDeviceCacheError.textureAllocationFailed
-        }
-        guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
-            throw MetalDeviceCacheError.commandEncoderCreationFailed
-        }
-        encoder.label = "Corridor Key Toolbox Hint"
-
-        if let hintTile, let hostTexture = hintTile.metalTexture(for: device) {
-            encoder.setComputePipelineState(entry.computePipelines.extractHint)
-            encoder.setTexture(hostTexture, index: Int(CKTextureIndexSource.rawValue))
-            encoder.setTexture(hintTexture, index: Int(CKTextureIndexOutput.rawValue))
-            var layout = hintTileLayoutValue(for: hostTexture)
-            encoder.setBytes(&layout, length: MemoryLayout<Int32>.size, index: 0)
-            dispatch(encoder: encoder, pipeline: entry.computePipelines.extractHint, width: hintTexture.width, height: hintTexture.height)
-        } else {
-            encoder.setComputePipelineState(entry.computePipelines.greenHint)
-            encoder.setTexture(source, index: Int(CKTextureIndexSource.rawValue))
-            encoder.setTexture(hintTexture, index: Int(CKTextureIndexOutput.rawValue))
-            dispatch(encoder: encoder, pipeline: entry.computePipelines.greenHint, width: hintTexture.width, height: hintTexture.height)
-        }
-        encoder.endEncoding()
-        return hintTexture
-    }
-
-    /// Downsamples source + hint to the inference resolution and writes the
-    /// four-channel normalised tensor into a `.shared` storage texture so the
-    /// inference engine can read it back from the CPU.
-    private func combineAndNormalise(
-        source: any MTLTexture,
-        hint: any MTLTexture,
-        inferenceResolution: Int,
-        entry: MetalDeviceCacheEntry,
-        commandBuffer: any MTLCommandBuffer
-    ) throws -> any MTLTexture {
-        guard let normalised = entry.makeIntermediateTexture(
-            width: inferenceResolution,
-            height: inferenceResolution,
-            pixelFormat: .rgba32Float,
-            storageMode: .shared
-        ) else {
-            throw MetalDeviceCacheError.textureAllocationFailed
-        }
-        guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
-            throw MetalDeviceCacheError.commandEncoderCreationFailed
-        }
-        encoder.label = "Corridor Key Toolbox Combine + Normalise"
-        encoder.setComputePipelineState(entry.computePipelines.combineAndNormalize)
-        encoder.setTexture(source, index: Int(CKTextureIndexSource.rawValue))
-        encoder.setTexture(hint, index: Int(CKTextureIndexHint.rawValue))
-        encoder.setTexture(normalised, index: Int(CKTextureIndexOutput.rawValue))
-
-        var params = CKNormalizeParams(
-            mean: SIMD3<Float>(0.485, 0.456, 0.406),
-            invStdDev: SIMD3<Float>(1.0 / 0.229, 1.0 / 0.224, 1.0 / 0.225)
-        )
-        encoder.setBytes(
-            &params,
-            length: MemoryLayout<CKNormalizeParams>.size,
-            index: Int(CKBufferIndexNormalizeParams.rawValue)
-        )
-        dispatch(encoder: encoder, pipeline: entry.computePipelines.combineAndNormalize, width: inferenceResolution, height: inferenceResolution)
-        encoder.endEncoding()
-        return normalised
-    }
-
-    private func despill(
-        foreground: any MTLTexture,
-        state: PluginStateData,
-        entry: MetalDeviceCacheEntry,
-        commandBuffer: any MTLCommandBuffer
-    ) throws -> any MTLTexture {
-        guard state.despillStrength > 0 else { return foreground }
-        guard let output = entry.makeIntermediateTexture(
-            width: foreground.width,
-            height: foreground.height
-        ) else {
-            throw MetalDeviceCacheError.textureAllocationFailed
-        }
-        guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
-            throw MetalDeviceCacheError.commandEncoderCreationFailed
-        }
-        encoder.label = "Corridor Key Toolbox Despill"
-        encoder.setComputePipelineState(entry.computePipelines.despill)
-        encoder.setTexture(foreground, index: Int(CKTextureIndexSource.rawValue))
-        encoder.setTexture(output, index: Int(CKTextureIndexOutput.rawValue))
-        var params = CKDespillParams(
-            strength: Float(state.despillStrength),
-            method: state.spillMethod.shaderValue
-        )
-        encoder.setBytes(
-            &params,
-            length: MemoryLayout<CKDespillParams>.size,
-            index: Int(CKBufferIndexDespillParams.rawValue)
-        )
-        dispatch(encoder: encoder, pipeline: entry.computePipelines.despill, width: output.width, height: output.height)
-        encoder.endEncoding()
-        return output
-    }
-
-    private func refineMatte(
-        alpha: any MTLTexture,
-        state: PluginStateData,
-        entry: MetalDeviceCacheEntry,
-        commandBuffer: any MTLCommandBuffer
-    ) throws -> any MTLTexture {
-        guard let buffer = entry.makeIntermediateTexture(
-            width: alpha.width,
-            height: alpha.height,
-            pixelFormat: .r16Float
-        ) else { throw MetalDeviceCacheError.textureAllocationFailed }
-        guard let auxiliary = entry.makeIntermediateTexture(
-            width: alpha.width,
-            height: alpha.height,
-            pixelFormat: .r16Float
-        ) else { throw MetalDeviceCacheError.textureAllocationFailed }
-
-        var current = alpha
-
-        try runAlphaLevelsGamma(source: current, destination: buffer, state: state, entry: entry, commandBuffer: commandBuffer)
-        current = buffer
-
-        if state.autoDespeckleEnabled {
-            let despeckleRadius = despeckleRadiusPixels(state: state)
-            if despeckleRadius > 0 {
-                // Morphological open (erode → dilate) removes isolated specks up to
-                // roughly `despeckleSize` pixels² without touching larger regions.
-                try runMorphology(
-                    source: current,
-                    intermediate: auxiliary,
-                    destination: buffer,
-                    radius: -despeckleRadius,
-                    entry: entry,
-                    commandBuffer: commandBuffer
-                )
-                current = buffer
-                try runMorphology(
-                    source: current,
-                    intermediate: auxiliary,
-                    destination: buffer,
-                    radius: despeckleRadius,
-                    entry: entry,
-                    commandBuffer: commandBuffer
-                )
-                current = buffer
-            }
-        }
-
-        let alphaErodeRadiusPixels = state.destinationPixelRadius(fromNormalized: state.alphaErodeNormalized)
-        if abs(alphaErodeRadiusPixels) > 0.5 {
-            try runMorphology(
-                source: current,
-                intermediate: auxiliary,
-                destination: buffer,
-                radius: Int(alphaErodeRadiusPixels.rounded()),
-                entry: entry,
-                commandBuffer: commandBuffer
-            )
-            current = buffer
-        }
-
-        let softnessRadiusPixels = state.destinationPixelRadius(fromNormalized: state.alphaSoftnessNormalized)
-        if softnessRadiusPixels > 0.5 {
-            try runGaussianBlur(
-                source: current,
-                intermediate: auxiliary,
-                destination: buffer,
-                radiusPixels: softnessRadiusPixels,
-                entry: entry,
-                commandBuffer: commandBuffer
-            )
-            current = buffer
-        }
-        return current
-    }
-
-    private func runAlphaLevelsGamma(
-        source: any MTLTexture,
-        destination: any MTLTexture,
-        state: PluginStateData,
-        entry: MetalDeviceCacheEntry,
-        commandBuffer: any MTLCommandBuffer
-    ) throws {
-        guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
-            throw MetalDeviceCacheError.commandEncoderCreationFailed
-        }
-        encoder.label = "Corridor Key Toolbox Levels + Gamma"
-        encoder.setComputePipelineState(entry.computePipelines.alphaLevelsGamma)
-        encoder.setTexture(source, index: Int(CKTextureIndexMatte.rawValue))
-        encoder.setTexture(destination, index: Int(CKTextureIndexOutput.rawValue))
-        var params = CKAlphaEdgeParams(
-            blackPoint: Float(state.alphaBlackPoint),
-            whitePoint: Float(state.alphaWhitePoint),
-            gamma: Float(state.alphaGamma),
-            morphRadius: 0,
-            blurRadius: 0
-        )
-        encoder.setBytes(
-            &params,
-            length: MemoryLayout<CKAlphaEdgeParams>.size,
-            index: Int(CKBufferIndexAlphaEdgeParams.rawValue)
-        )
-        dispatch(encoder: encoder, pipeline: entry.computePipelines.alphaLevelsGamma, width: destination.width, height: destination.height)
-        encoder.endEncoding()
-    }
-
-    private func runMorphology(
-        source: any MTLTexture,
-        intermediate: any MTLTexture,
-        destination: any MTLTexture,
-        radius: Int,
-        entry: MetalDeviceCacheEntry,
-        commandBuffer: any MTLCommandBuffer
-    ) throws {
-        var absoluteRadius = Int32(abs(radius))
-        var erodeFlag: Int32 = (radius < 0) ? 1 : 0
-
-        if let encoder = commandBuffer.makeComputeCommandEncoder() {
-            encoder.label = "Corridor Key Toolbox Morphology H"
-            encoder.setComputePipelineState(entry.computePipelines.morphologyHorizontal)
-            encoder.setTexture(source, index: Int(CKTextureIndexMatte.rawValue))
-            encoder.setTexture(intermediate, index: Int(CKTextureIndexOutput.rawValue))
-            encoder.setBytes(&absoluteRadius, length: MemoryLayout<Int32>.size, index: 0)
-            encoder.setBytes(&erodeFlag, length: MemoryLayout<Int32>.size, index: 1)
-            dispatch(encoder: encoder, pipeline: entry.computePipelines.morphologyHorizontal, width: intermediate.width, height: intermediate.height)
-            encoder.endEncoding()
-        }
-
-        if let encoder = commandBuffer.makeComputeCommandEncoder() {
-            encoder.label = "Corridor Key Toolbox Morphology V"
-            encoder.setComputePipelineState(entry.computePipelines.morphologyVertical)
-            encoder.setTexture(intermediate, index: Int(CKTextureIndexMatte.rawValue))
-            encoder.setTexture(destination, index: Int(CKTextureIndexOutput.rawValue))
-            encoder.setBytes(&absoluteRadius, length: MemoryLayout<Int32>.size, index: 0)
-            encoder.setBytes(&erodeFlag, length: MemoryLayout<Int32>.size, index: 1)
-            dispatch(encoder: encoder, pipeline: entry.computePipelines.morphologyVertical, width: destination.width, height: destination.height)
-            encoder.endEncoding()
-        }
-    }
-
-    private func runGaussianBlur(
-        source: any MTLTexture,
-        intermediate: any MTLTexture,
-        destination: any MTLTexture,
-        radiusPixels: Float,
-        entry: MetalDeviceCacheEntry,
-        commandBuffer: any MTLCommandBuffer
-    ) throws {
-        let kernelRadius = Int(ceil(radiusPixels))
-        guard kernelRadius > 0 else { return }
-
-        let sigma = max(radiusPixels * 0.5, 0.5)
-        var weights: [Float] = []
-        weights.reserveCapacity(kernelRadius + 1)
-        var total: Float = 0
-        for index in 0...kernelRadius {
-            let offset = Float(index)
-            let weight = exp(-(offset * offset) / (2 * sigma * sigma))
-            weights.append(weight)
-            total += (index == 0) ? weight : (weight * 2)
-        }
-        for index in weights.indices { weights[index] /= total }
-
-        guard let weightsBuffer = entry.device.makeBuffer(
-            bytes: weights,
-            length: weights.count * MemoryLayout<Float>.size,
-            options: .storageModeShared
-        ) else { return }
-
-        var radiusValue = Int32(kernelRadius)
-
-        if let encoder = commandBuffer.makeComputeCommandEncoder() {
-            encoder.label = "Corridor Key Toolbox Blur H"
-            encoder.setComputePipelineState(entry.computePipelines.gaussianHorizontal)
-            encoder.setTexture(source, index: Int(CKTextureIndexMatte.rawValue))
-            encoder.setTexture(intermediate, index: Int(CKTextureIndexOutput.rawValue))
-            encoder.setBuffer(weightsBuffer, offset: 0, index: Int(CKBufferIndexBlurWeights.rawValue))
-            encoder.setBytes(&radiusValue, length: MemoryLayout<Int32>.size, index: 0)
-            dispatch(encoder: encoder, pipeline: entry.computePipelines.gaussianHorizontal, width: intermediate.width, height: intermediate.height)
-            encoder.endEncoding()
-        }
-        if let encoder = commandBuffer.makeComputeCommandEncoder() {
-            encoder.label = "Corridor Key Toolbox Blur V"
-            encoder.setComputePipelineState(entry.computePipelines.gaussianVertical)
-            encoder.setTexture(intermediate, index: Int(CKTextureIndexMatte.rawValue))
-            encoder.setTexture(destination, index: Int(CKTextureIndexOutput.rawValue))
-            encoder.setBuffer(weightsBuffer, offset: 0, index: Int(CKBufferIndexBlurWeights.rawValue))
-            encoder.setBytes(&radiusValue, length: MemoryLayout<Int32>.size, index: 0)
-            dispatch(encoder: encoder, pipeline: entry.computePipelines.gaussianVertical, width: destination.width, height: destination.height)
-            encoder.endEncoding()
-        }
-    }
-
-    private func sourcePassthrough(
-        foreground: any MTLTexture,
-        source: any MTLTexture,
-        matte: any MTLTexture,
-        entry: MetalDeviceCacheEntry,
-        commandBuffer: any MTLCommandBuffer
-    ) throws -> any MTLTexture {
-        guard let output = entry.makeIntermediateTexture(width: foreground.width, height: foreground.height) else {
-            throw MetalDeviceCacheError.textureAllocationFailed
-        }
-        guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
-            throw MetalDeviceCacheError.commandEncoderCreationFailed
-        }
-        encoder.label = "Corridor Key Toolbox Source Passthrough"
-        encoder.setComputePipelineState(entry.computePipelines.sourcePassthrough)
-        encoder.setTexture(foreground, index: Int(CKTextureIndexForeground.rawValue))
-        encoder.setTexture(source, index: Int(CKTextureIndexSource.rawValue))
-        encoder.setTexture(matte, index: Int(CKTextureIndexMatte.rawValue))
-        encoder.setTexture(output, index: Int(CKTextureIndexOutput.rawValue))
-        dispatch(encoder: encoder, pipeline: entry.computePipelines.sourcePassthrough, width: output.width, height: output.height)
-        encoder.endEncoding()
-        return output
-    }
+    // MARK: - Compose (FxPlug-specific)
 
     /// Writes the final pixel directly into Final Cut Pro's destination tile
     /// using a render pass. Positioning the quad in tile-local coordinates
@@ -862,6 +774,37 @@ final class RenderPipeline: @unchecked Sendable {
         destination: any MTLTexture,
         destinationTile: FxImageTile,
         state: PluginStateData,
+        pixelFormat: MTLPixelFormat,
+        entry: MetalDeviceCacheEntry,
+        commandBuffer: any MTLCommandBuffer
+    ) throws {
+        let outputWidth = Float(destinationTile.tilePixelBounds.right - destinationTile.tilePixelBounds.left)
+        let outputHeight = Float(destinationTile.tilePixelBounds.top - destinationTile.tilePixelBounds.bottom)
+        try composeInto(
+            source: source,
+            foreground: foreground,
+            matte: matte,
+            destination: destination,
+            tileWidth: outputWidth,
+            tileHeight: outputHeight,
+            outputMode: state.outputMode,
+            pixelFormat: pixelFormat,
+            entry: entry,
+            commandBuffer: commandBuffer
+        )
+    }
+
+    /// Tile-agnostic compose. Separated from `compose(...)` above so tests
+    /// (which don't have an `FxImageTile`) can exercise it directly with
+    /// explicit tile dimensions.
+    func composeInto(
+        source: any MTLTexture,
+        foreground: any MTLTexture,
+        matte: any MTLTexture,
+        destination: any MTLTexture,
+        tileWidth: Float,
+        tileHeight: Float,
+        outputMode: OutputMode,
         pixelFormat: MTLPixelFormat,
         entry: MetalDeviceCacheEntry,
         commandBuffer: any MTLCommandBuffer
@@ -879,10 +822,8 @@ final class RenderPipeline: @unchecked Sendable {
         }
         encoder.label = "Corridor Key Toolbox Compose"
 
-        let outputWidth = Float(destinationTile.tilePixelBounds.right - destinationTile.tilePixelBounds.left)
-        let outputHeight = Float(destinationTile.tilePixelBounds.top - destinationTile.tilePixelBounds.bottom)
-        let halfW = outputWidth * 0.5
-        let halfH = outputHeight * 0.5
+        let halfW = tileWidth * 0.5
+        let halfH = tileHeight * 0.5
 
         var vertices: [CKVertex2D] = [
             CKVertex2D(position: SIMD2<Float>(halfW, -halfH), textureCoordinate: SIMD2<Float>(1, 1)),
@@ -890,13 +831,13 @@ final class RenderPipeline: @unchecked Sendable {
             CKVertex2D(position: SIMD2<Float>(halfW, halfH), textureCoordinate: SIMD2<Float>(1, 0)),
             CKVertex2D(position: SIMD2<Float>(-halfW, halfH), textureCoordinate: SIMD2<Float>(0, 0))
         ]
-        var viewportSize = SIMD2<UInt32>(UInt32(outputWidth), UInt32(outputHeight))
+        var viewportSize = SIMD2<UInt32>(UInt32(tileWidth), UInt32(tileHeight))
 
         encoder.setViewport(MTLViewport(
             originX: 0,
             originY: 0,
-            width: Double(outputWidth),
-            height: Double(outputHeight),
+            width: Double(tileWidth),
+            height: Double(tileHeight),
             znear: -1,
             zfar: 1
         ))
@@ -916,7 +857,7 @@ final class RenderPipeline: @unchecked Sendable {
         encoder.setFragmentTexture(matte, index: Int(CKTextureIndexMatte.rawValue))
 
         var params = CKComposeParams(
-            outputMode: state.outputMode.shaderValue
+            outputMode: outputMode.shaderValue
         )
         encoder.setFragmentBytes(
             &params,
@@ -927,59 +868,32 @@ final class RenderPipeline: @unchecked Sendable {
         encoder.endEncoding()
     }
 
-    private func resample(
-        source: any MTLTexture,
-        targetWidth: Int,
-        targetHeight: Int,
-        pixelFormat: MTLPixelFormat,
-        entry: MetalDeviceCacheEntry,
-        commandBuffer: any MTLCommandBuffer
-    ) throws -> any MTLTexture {
-        if source.width == targetWidth && source.height == targetHeight && source.pixelFormat == pixelFormat {
-            return source
-        }
-        guard let target = entry.makeIntermediateTexture(
-            width: targetWidth,
-            height: targetHeight,
-            pixelFormat: pixelFormat
-        ) else {
-            throw MetalDeviceCacheError.textureAllocationFailed
-        }
-        guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
-            throw MetalDeviceCacheError.commandEncoderCreationFailed
-        }
-        encoder.label = "Corridor Key Toolbox Resample"
-        encoder.setComputePipelineState(entry.computePipelines.resample)
-        encoder.setTexture(source, index: Int(CKTextureIndexSource.rawValue))
-        encoder.setTexture(target, index: Int(CKTextureIndexOutput.rawValue))
-        dispatch(encoder: encoder, pipeline: entry.computePipelines.resample, width: target.width, height: target.height)
-        encoder.endEncoding()
-        return target
+    // MARK: - Synchronisation helpers
+
+    /// Cooperative commit+wait. Uses `addCompletedHandler` + a
+    /// `DispatchSemaphore` so the CPU thread yields cleanly instead of
+    /// busy-spinning inside `waitUntilCompleted`. Observed effect is a
+    /// ~2 ms shrink in per-tile kickoff gaps on 4K projects.
+    private func commitAndWait(commandBuffer: any MTLCommandBuffer) throws {
+        let semaphore = DispatchSemaphore(value: 0)
+        commandBuffer.addCompletedHandler { _ in semaphore.signal() }
+        commandBuffer.commit()
+        semaphore.wait()
+        if let error = commandBuffer.error { throw error }
     }
 
     // MARK: - Utilities
 
-    private func dispatch(
-        encoder: any MTLComputeCommandEncoder,
-        pipeline: any MTLComputePipelineState,
-        width: Int,
-        height: Int
-    ) {
-        let threadgroupWidth = min(pipeline.threadExecutionWidth, max(width, 1))
-        let threadgroupHeight = max(1, min(pipeline.maxTotalThreadsPerThreadgroup / max(threadgroupWidth, 1), max(height, 1)))
-        let threadsPerThreadgroup = MTLSize(width: threadgroupWidth, height: threadgroupHeight, depth: 1)
-        let threadsPerGrid = MTLSize(width: max(width, 1), height: max(height, 1), depth: 1)
-        encoder.dispatchThreads(threadsPerGrid, threadsPerThreadgroup: threadsPerThreadgroup)
-    }
-
     /// Converts the inspector's "Despeckle Size" (approximate speckle area in
-    /// 1920px-baseline pixels) to a morphology radius scaled to the current
-    /// destination. The square-root mapping treats the slider as area rather
-    /// than diameter — a 100px² speckle becomes a 10px structuring radius.
-    private func despeckleRadiusPixels(state: PluginStateData) -> Int {
+    /// 1920px-baseline pixels²) into a CC-filter area threshold scaled to
+    /// the matte's current inference resolution. This replaces the old
+    /// morphology-radius interpretation, which mislabelled the UI unit.
+    private func despeckleAreaThreshold(state: PluginStateData) -> Int {
         let scale = Double(state.destinationLongEdgePixels) / max(state.longEdgeBaseline, 1.0)
-        let radius = Double(max(state.despeckleSize, 1)).squareRoot() * scale
-        return max(1, Int(radius.rounded()))
+        let areaAtBaseline = Double(max(state.despeckleSize, 1))
+        // Area scales with the square of the linear scale factor.
+        let scaledArea = areaAtBaseline * scale * scale
+        return max(1, Int(scaledArea.rounded()))
     }
 
     private func hintTileLayoutValue(for texture: any MTLTexture) -> Int32 {

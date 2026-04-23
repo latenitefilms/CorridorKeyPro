@@ -12,11 +12,11 @@ import Foundation
 
 /// Colour of the screen being keyed out. Blue is rotated into the green domain
 /// before inference and despill, then rotated back for output.
-enum ScreenColor: Int, Sendable, CaseIterable, Codable {
+public enum ScreenColor: Int, Sendable, CaseIterable, Codable {
     case green = 0
     case blue = 1
 
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .green: return "Green"
         case .blue: return "Blue"
@@ -26,7 +26,7 @@ enum ScreenColor: Int, Sendable, CaseIterable, Codable {
 
 /// Quality rung used for neural inference. `automatic` chooses a safe tier
 /// based on the input resolution.
-enum QualityMode: Int, Sendable, CaseIterable, Codable {
+public enum QualityMode: Int, Sendable, CaseIterable, Codable {
     case automatic = 0
     case draft512 = 1
     case high1024 = 2
@@ -36,7 +36,7 @@ enum QualityMode: Int, Sendable, CaseIterable, Codable {
     /// Returns the inference resolution that should be used for a given input
     /// frame long-edge. Mirrors the automatic rung mapping used by the OFX
     /// plugin so that behaviour matches across hosts.
-    func resolvedInferenceResolution(forLongEdge longEdgePixels: Int) -> Int {
+    public func resolvedInferenceResolution(forLongEdge longEdgePixels: Int) -> Int {
         switch self {
         case .automatic:
             switch longEdgePixels {
@@ -52,7 +52,7 @@ enum QualityMode: Int, Sendable, CaseIterable, Codable {
         }
     }
 
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .automatic: return "Recommended"
         case .draft512: return "Draft (512)"
@@ -65,14 +65,14 @@ enum QualityMode: Int, Sendable, CaseIterable, Codable {
 
 /// Despill redistribution strategy. Mirrors `SpillMethod` in the C++ reference
 /// and the `CorridorKeySpillMethod` enum on the shader side.
-enum SpillMethod: Int, Sendable, CaseIterable, Codable {
+public enum SpillMethod: Int, Sendable, CaseIterable, Codable {
     case average = 0
     case doubleLimit = 1
     case neutral = 2
 
-    var shaderValue: Int32 { Int32(rawValue) }
+    public var shaderValue: Int32 { Int32(rawValue) }
 
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .average: return "Average"
         case .doubleLimit: return "Double Limit"
@@ -82,16 +82,16 @@ enum SpillMethod: Int, Sendable, CaseIterable, Codable {
 }
 
 /// How the final composite is assembled and written to Final Cut Pro.
-enum OutputMode: Int, Sendable, CaseIterable, Codable {
+public enum OutputMode: Int, Sendable, CaseIterable, Codable {
     case processed = 0
     case matteOnly = 1
     case foregroundOnly = 2
     case sourcePlusMatte = 3
     case foregroundPlusMatte = 4
 
-    var shaderValue: Int32 { Int32(rawValue) }
+    public var shaderValue: Int32 { Int32(rawValue) }
 
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .processed: return "Processed"
         case .matteOnly: return "Matte Only"
@@ -103,11 +103,11 @@ enum OutputMode: Int, Sendable, CaseIterable, Codable {
 }
 
 /// Kernel used to resample between destination and inference resolutions.
-enum UpscaleMethod: Int, Sendable, CaseIterable, Codable {
+public enum UpscaleMethod: Int, Sendable, CaseIterable, Codable {
     case bilinear = 0
     case lanczos = 1
 
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .bilinear: return "Bilinear"
         case .lanczos: return "Lanczos"

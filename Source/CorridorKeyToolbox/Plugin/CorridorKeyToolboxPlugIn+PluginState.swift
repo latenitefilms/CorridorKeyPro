@@ -107,6 +107,44 @@ extension CorridorKeyToolboxPlugIn {
             time: renderTime,
             default: 400
         )
+        state.refinerStrength = floatValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.refinerStrength,
+            time: renderTime,
+            default: 1.0
+        )
+
+        // Edge refinement (Phase 4).
+        state.lightWrapEnabled = boolValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.lightWrapEnabled,
+            time: renderTime,
+            default: false
+        )
+        state.lightWrapStrength = floatValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.lightWrapStrength,
+            time: renderTime,
+            default: 0.25
+        )
+        state.lightWrapRadius = floatValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.lightWrapRadius,
+            time: renderTime,
+            default: 10
+        )
+        state.edgeDecontaminateEnabled = boolValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.edgeDecontaminateEnabled,
+            time: renderTime,
+            default: false
+        )
+        state.edgeDecontaminateStrength = floatValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.edgeDecontaminateStrength,
+            time: renderTime,
+            default: 0.5
+        )
 
         // Edge & spill
         state.despillStrength = floatValue(
@@ -133,7 +171,7 @@ extension CorridorKeyToolboxPlugIn {
             retrieval: retrieval,
             parameterID: ParameterIdentifier.upscaleMethod,
             time: renderTime,
-            default: .bilinear
+            default: .lanczos
         )
 
         // If FxAnalyzer has cached a matte for this frame, pack the

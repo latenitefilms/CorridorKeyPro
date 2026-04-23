@@ -45,13 +45,15 @@ final class RoughMatteKeyingEngine: KeyingInferenceEngine, @unchecked Sendable {
 
         // Derive the matte from the raw RGB source (not the ImageNet-normalised
         // tensor) so the green-detection math operates in 0..1 space and the
-        // fallback matches the reference CPU rough-matte exactly.
-        encoder.setComputePipelineState(cacheEntry.computePipelines.roughMatte)
+        // fallback matches the reference CPU rough-matte exactly. The
+        // `greenHint` kernel and the old standalone `roughMatte` kernel are
+        // byte-identical, so we dropped the latter and use the shared one.
+        encoder.setComputePipelineState(cacheEntry.computePipelines.greenHint)
         encoder.setTexture(request.rawSourceTexture, index: Int(CKTextureIndexSource.rawValue))
         encoder.setTexture(output.alphaTexture, index: Int(CKTextureIndexOutput.rawValue))
         dispatchThreads(
             encoder: encoder,
-            pipeline: cacheEntry.computePipelines.roughMatte,
+            pipeline: cacheEntry.computePipelines.greenHint,
             width: output.alphaTexture.width,
             height: output.alphaTexture.height
         )

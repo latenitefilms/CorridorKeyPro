@@ -259,9 +259,17 @@ extension CorridorKeyToolboxPlugIn {
                 ?? .automatic
         )
 
+        let workingGamut: WorkingColorGamut
+        if let gamutAPI = apiManager.api(for: (any FxColorGamutAPI_v2).self) as? any FxColorGamutAPI_v2 {
+            workingGamut = ColorGamutMatrix.gamut(fromColorPrimariesRaw: UInt(gamutAPI.colorPrimaries()))
+        } else {
+            workingGamut = .rec709
+        }
+
         let extracted = try renderPipeline.extractAlphaMatteForAnalysis(
             sourceTexture: sourceTexture,
             state: analyseState,
+            workingGamut: workingGamut,
             renderTime: frameTime,
             device: device,
             entry: entry,

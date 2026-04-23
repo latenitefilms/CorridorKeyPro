@@ -22,12 +22,39 @@ struct CorridorKeyAnalysisSnapshot: Equatable, Sendable {
     let analyzedFrameCount: Int
     let totalFrameCount: Int
     let inferenceResolution: Int
+    let warmup: WarmupStatus
+    /// Rolling ETA in seconds until analysis completes, or `nil` when we
+    /// don't have enough data yet. Populated from the coordinator's rolling
+    /// per-frame wall-time tracker.
+    let analysisETASeconds: Double?
+
+    /// Default-valued init so the legacy call sites (snapshot logic tests)
+    /// keep compiling. `warmup` defaults to `.cold` and `analysisETASeconds`
+    /// to `nil`, which matches the pre-v1.0 behaviour before this file
+    /// gained these fields.
+    init(
+        state: State,
+        analyzedFrameCount: Int,
+        totalFrameCount: Int,
+        inferenceResolution: Int,
+        warmup: WarmupStatus = .cold,
+        analysisETASeconds: Double? = nil
+    ) {
+        self.state = state
+        self.analyzedFrameCount = analyzedFrameCount
+        self.totalFrameCount = totalFrameCount
+        self.inferenceResolution = inferenceResolution
+        self.warmup = warmup
+        self.analysisETASeconds = analysisETASeconds
+    }
 
     static let empty = CorridorKeyAnalysisSnapshot(
         state: .notAnalysed,
         analyzedFrameCount: 0,
         totalFrameCount: 0,
-        inferenceResolution: 0
+        inferenceResolution: 0,
+        warmup: .cold,
+        analysisETASeconds: nil
     )
 
     /// Progress fraction in the range `0…1`. Returns `0` when no frames are

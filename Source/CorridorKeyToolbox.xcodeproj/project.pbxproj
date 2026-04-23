@@ -54,6 +54,12 @@
 		CK0100000000000000000061 /* CorridorKeyInspectorBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000061 /* CorridorKeyInspectorBridge.swift */; };
 		CK0100000000000000000062 /* CorridorKeyHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000062 /* CorridorKeyHeaderView.swift */; };
 		CK0100000000000000000063 /* CorridorKeyAnalysisSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000063 /* CorridorKeyAnalysisSnapshot.swift */; };
+		CK0100000000000000000070 /* IntermediateTexturePool.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000070 /* IntermediateTexturePool.swift */; };
+		CK0100000000000000000071 /* MatteRefiner.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000071 /* MatteRefiner.swift */; };
+		CK0100000000000000000072 /* ColorGamutMatrix.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000072 /* ColorGamutMatrix.swift */; };
+		CK0100000000000000000073 /* RenderStages.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000073 /* RenderStages.swift */; };
+		CK0100000000000000000074 /* WarmupStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000074 /* WarmupStatus.swift */; };
+		CK0100000000000000000075 /* FxImageTilePixelFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000075 /* FxImageTilePixelFormat.swift */; };
 		MX0200000000000000000002 /* MLXKeyingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = MX0100000000000000000003 /* MLXKeyingEngine.swift */; };
 		MX0500000000000000000001 /* MLX in Frameworks */ = {isa = PBXBuildFile; productRef = MX0400000000000000000001 /* MLX */; };
 		MX0500000000000000000002 /* MLXNN in Frameworks */ = {isa = PBXBuildFile; productRef = MX0400000000000000000002 /* MLXNN */; };
@@ -140,6 +146,12 @@
 		CK0200000000000000000061 /* CorridorKeyInspectorBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CorridorKeyInspectorBridge.swift; path = CorridorKeyToolbox/Plugin/Inspector/CorridorKeyInspectorBridge.swift; sourceTree = "<group>"; };
 		CK0200000000000000000062 /* CorridorKeyHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CorridorKeyHeaderView.swift; path = CorridorKeyToolbox/Plugin/Inspector/CorridorKeyHeaderView.swift; sourceTree = "<group>"; };
 		CK0200000000000000000063 /* CorridorKeyAnalysisSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CorridorKeyAnalysisSnapshot.swift; path = CorridorKeyToolbox/Plugin/Inspector/CorridorKeyAnalysisSnapshot.swift; sourceTree = "<group>"; };
+		CK0200000000000000000070 /* IntermediateTexturePool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = IntermediateTexturePool.swift; path = CorridorKeyToolbox/Plugin/Metal/IntermediateTexturePool.swift; sourceTree = "<group>"; };
+		CK0200000000000000000071 /* MatteRefiner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MatteRefiner.swift; path = CorridorKeyToolbox/Plugin/Metal/MatteRefiner.swift; sourceTree = "<group>"; };
+		CK0200000000000000000072 /* ColorGamutMatrix.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ColorGamutMatrix.swift; path = CorridorKeyToolbox/Plugin/PostProcess/ColorGamutMatrix.swift; sourceTree = "<group>"; };
+		CK0200000000000000000073 /* RenderStages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RenderStages.swift; path = CorridorKeyToolbox/Plugin/Render/RenderStages.swift; sourceTree = "<group>"; };
+		CK0200000000000000000074 /* WarmupStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WarmupStatus.swift; path = CorridorKeyToolbox/Plugin/Inspector/WarmupStatus.swift; sourceTree = "<group>"; };
+		CK0200000000000000000075 /* FxImageTilePixelFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FxImageTilePixelFormat.swift; path = CorridorKeyToolbox/Plugin/Metal/FxImageTilePixelFormat.swift; sourceTree = "<group>"; };
 		CK0300000000000000000001 /* Corridor Key Toolbox.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Corridor Key Toolbox.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CK0300000000000000000002 /* Corridor Key Toolbox Renderer.pluginkit */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Corridor Key Toolbox Renderer.pluginkit"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CK0400000000000000000001 /* FxPlug.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FxPlug.framework; path = /Library/Developer/Frameworks/FxPlug.framework; sourceTree = "<absolute>"; };
@@ -253,6 +265,7 @@
 			isa = PBXGroup;
 			children = (
 				CK0200000000000000000013 /* RenderPipeline.swift */,
+				CK0200000000000000000073 /* RenderStages.swift */,
 			);
 			name = Render;
 			sourceTree = "<group>";
@@ -314,6 +327,9 @@
 			isa = PBXGroup;
 			children = (
 				CK020000000000000000000C /* MetalDeviceCache.swift */,
+				CK0200000000000000000075 /* FxImageTilePixelFormat.swift */,
+				CK0200000000000000000070 /* IntermediateTexturePool.swift */,
+				CK0200000000000000000071 /* MatteRefiner.swift */,
 				CK020000000000000000000D /* CorridorKeyShaders.metal */,
 			);
 			name = Metal;
@@ -323,6 +339,7 @@
 			isa = PBXGroup;
 			children = (
 				CK020000000000000000000E /* ScreenColorEstimator.swift */,
+				CK0200000000000000000072 /* ColorGamutMatrix.swift */,
 			);
 			name = PostProcess;
 			sourceTree = "<group>";
@@ -351,6 +368,7 @@
 				CK0200000000000000000061 /* CorridorKeyInspectorBridge.swift */,
 				CK0200000000000000000062 /* CorridorKeyHeaderView.swift */,
 				CK0200000000000000000063 /* CorridorKeyAnalysisSnapshot.swift */,
+				CK0200000000000000000074 /* WarmupStatus.swift */,
 			);
 			name = Inspector;
 			sourceTree = "<group>";
@@ -531,6 +549,12 @@
 				CK0100000000000000000061 /* CorridorKeyInspectorBridge.swift in Sources */,
 				CK0100000000000000000062 /* CorridorKeyHeaderView.swift in Sources */,
 				CK0100000000000000000063 /* CorridorKeyAnalysisSnapshot.swift in Sources */,
+				CK0100000000000000000070 /* IntermediateTexturePool.swift in Sources */,
+				CK0100000000000000000071 /* MatteRefiner.swift in Sources */,
+				CK0100000000000000000072 /* ColorGamutMatrix.swift in Sources */,
+				CK0100000000000000000073 /* RenderStages.swift in Sources */,
+				CK0100000000000000000074 /* WarmupStatus.swift in Sources */,
+				CK0100000000000000000075 /* FxImageTilePixelFormat.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

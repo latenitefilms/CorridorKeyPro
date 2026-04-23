@@ -22,6 +22,13 @@ final class CorridorKeyInspectorBridge: ObservableObject {
     private let apiManager: any PROAPIAccessing
     private weak var plugin: CorridorKeyToolboxPlugIn?
 
+    /// Rolling EMA of per-frame analysis wall-time (seconds). Populated by
+    /// observing the frame count delta between refreshes; `nil` until we
+    /// have at least two samples under the same session.
+    private var lastAnalyzedCount: Int = 0
+    private var lastRefreshDate: Date?
+    private var smoothedPerFrameSeconds: Double?
+
     init(apiManager: any PROAPIAccessing, plugin: CorridorKeyToolboxPlugIn) {
         self.apiManager = apiManager
         self.plugin = plugin
@@ -37,6 +44,14 @@ final class CorridorKeyInspectorBridge: ObservableObject {
 
     func resetAnalysis() {
         plugin?.clearAnalysisCache()
+        refreshSnapshot()
+    }
+
+    /// Cancels in-flight MLX warm-up and resets the ETA estimator. The
+    /// warm-up Task is the primary cancelable work — a full forward-
+    /// analysis cancel is a host-level action (kFxAnalysisState_*).
+    func cancelWarmup() {
+        plugin?.renderPipeline.inferenceCoordinator.cancelWarmup()
         refreshSnapshot()
     }
 
@@ -66,12 +81,56 @@ final class CorridorKeyInspectorBridge: ObservableObject {
 
         let state = currentAnalysisState()
         let (analysed, total, resolution) = currentAnalysisCounts(for: state)
+        let warmup = plugin?.renderPipeline.inferenceCoordinator.warmupStatus ?? .cold
+        let eta = updatedETA(forState: state, analysed: analysed, total: total)
         return CorridorKeyAnalysisSnapshot(
             state: state,
             analyzedFrameCount: analysed,
             totalFrameCount: total,
-            inferenceResolution: resolution
+            inferenceResolution: resolution,
+            warmup: warmup,
+            analysisETASeconds: eta
         )
+    }
+
+    /// Updates the rolling per-frame timer and returns the ETA seconds for
+    /// the current snapshot. Resets when analysis isn't running.
+    private func updatedETA(forState state: CorridorKeyAnalysisSnapshot.State, analysed: Int, total: Int) -> Double? {
+        guard state == .running, analysed < total else {
+            lastAnalyzedCount = 0
+            lastRefreshDate = nil
+            smoothedPerFrameSeconds = nil
+            return nil
+        }
+        let now = Date()
+        defer {
+            lastAnalyzedCount = analysed
+            lastRefreshDate = now
+        }
+        guard let previousDate = lastRefreshDate else {
+            return nil
+        }
+        let deltaFrames = analysed - lastAnalyzedCount
+        let deltaSeconds = now.timeIntervalSince(previousDate)
+        guard deltaFrames > 0, deltaSeconds > 0 else {
+            // Hold the current estimate if we have one.
+            if let smoothed = smoothedPerFrameSeconds {
+                let remaining = max(total - analysed, 0)
+                return smoothed * Double(remaining)
+            }
+            return nil
+        }
+        let sample = deltaSeconds / Double(deltaFrames)
+        // Simple exponential moving average — responsive without being
+        // twitchy as frames complete at varying latencies.
+        let alpha = 0.3
+        if let smoothed = smoothedPerFrameSeconds {
+            smoothedPerFrameSeconds = smoothed * (1 - alpha) + sample * alpha
+        } else {
+            smoothedPerFrameSeconds = sample
+        }
+        let remaining = max(total - analysed, 0)
+        return (smoothedPerFrameSeconds ?? sample) * Double(remaining)
     }
 
     private func currentAnalysisState() -> CorridorKeyAnalysisSnapshot.State {

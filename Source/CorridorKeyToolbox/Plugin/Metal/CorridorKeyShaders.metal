@@ -5,9 +5,11 @@
 //  Metal kernels and vertex/fragment shaders that implement the Corridor Key
 //  per-frame GPU pipeline: screen-colour rotation, downsample & normalisation
 //  for neural inference, despill, alpha edge work (levels, gamma, erode/dilate,
-//  blur), source passthrough, and final compositing. The final compose is a
-//  render stage so the output goes straight to Final Cut Pro's destination
-//  texture (which is a render target, not a shader-writable texture).
+//  blur), source passthrough, advanced refinement (refiner-strength blend,
+//  light wrap, edge decontamination, connected-components despeckle), and
+//  final compositing. The final compose is a render stage so the output goes
+//  straight to Final Cut Pro's destination texture (which is a render target,
+//  not a shader-writable texture).
 //
 
 #include <metal_stdlib>
@@ -101,7 +103,9 @@ kernel void corridorKeyApplyScreenMatrixKernel(
 /// Downsamples source and hint to the inference resolution and produces the
 /// four-channel tensor the neural model expects (RGB mean/stddev normalised,
 /// hint packed into alpha). The destination texture's dimensions set the
-/// inference resolution; bilinear filtering handles the rescale.
+/// inference resolution; bilinear filtering handles the rescale. The
+/// `workingToRec709` matrix converts whatever working colour space the host
+/// provided into the Rec.709-linear sRGB the model was trained on.
 kernel void corridorKeyCombineAndNormalizeKernel(
     texture2d<float, access::sample> source [[texture(CKTextureIndexSource)]],
     texture2d<float, access::sample> hint [[texture(CKTextureIndexHint)]],
@@ -118,7 +122,8 @@ kernel void corridorKeyCombineAndNormalizeKernel(
     float4 rgba = source.sample(areaSampler, uv);
     float hintValue = hint.sample(areaSampler, uv).r;
 
-    float3 normalized = (rgba.rgb - params.mean) * params.invStdDev;
+    float3 rec709 = params.workingToRec709 * rgba.rgb;
+    float3 normalized = (rec709 - params.mean) * params.invStdDev;
     destination.write(float4(normalized, hintValue), gid);
 }
 
@@ -153,10 +158,18 @@ kernel void corridorKeyDespillKernel(
         float newG = g - effectiveSpill;
 
         if (params.method == CKSpillMethodNeutral) {
+            // Guard against division by near-zero on dark pixels. The
+            // reference CorridorKey-Runtime uses 1e-3 (src/post_process/
+            // despill.cpp) to avoid the noise amplification a 1e-6 floor
+            // produced on dark skin tones / hair.
             float gray = (r + newG + b) * (1.0 / 3.0);
             float fill = effectiveSpill * 0.5;
-            r = r + fill * (gray / max(r, 1e-6));
-            b = b + fill * (gray / max(b, 1e-6));
+            r = r + fill * (gray / max(r, 1e-3));
+            b = b + fill * (gray / max(b, 1e-3));
+            // Clamp the result to [0, 1] so extreme mixers can't blow out
+            // the foreground — matches the reference behaviour.
+            r = saturate(r);
+            b = saturate(b);
         } else {
             r = r + effectiveSpill * 0.5;
             b = b + effectiveSpill * 0.5;
@@ -187,7 +200,7 @@ kernel void corridorKeyAlphaLevelsGammaKernel(
     destination.write(float4(alpha, 0.0, 0.0, 1.0), gid);
 }
 
-// MARK: - Morphology (separable erode / dilate)
+// MARK: - Morphology (separable erode / dilate — fallback for tiny radii)
 
 kernel void corridorKeyMorphologyHorizontalKernel(
     texture2d<float, access::sample> source [[texture(CKTextureIndexMatte)]],
@@ -243,7 +256,7 @@ kernel void corridorKeyMorphologyVerticalKernel(
     destination.write(float4(best, 0.0, 0.0, 1.0), gid);
 }
 
-// MARK: - Gaussian blur (separable)
+// MARK: - Gaussian blur (separable — fallback for tiny radii)
 
 kernel void corridorKeyGaussianHorizontalKernel(
     texture2d<float, access::sample> source [[texture(CKTextureIndexMatte)]],
@@ -293,14 +306,16 @@ kernel void corridorKeyGaussianVerticalKernel(
     destination.write(float4(acc, 0.0, 0.0, 1.0), gid);
 }
 
-// MARK: - Green screen detection & rough matte fallback
+// MARK: - Green screen detection / rough matte fallback
 
 /// Coarse alpha-hint for the neural model. Matches the CorridorKey-Runtime
 /// reference (`ColorUtils::generate_rough_matte` in
 /// src/post_process/color_utils.cpp): the hint uses matte convention —
 /// `1.0` means foreground/keep, `0.0` means screen/remove — so the trained
 /// network reads it the same way it was trained. Sending raw greenness
-/// here flips the model's output and the whole key inverts.
+/// here flips the model's output and the whole key inverts. This single
+/// kernel replaces the previous separate `roughMatte` / `greenHint` kernels
+/// which were byte-identical.
 kernel void corridorKeyGreenHintKernel(
     texture2d<float, access::read> source [[texture(CKTextureIndexSource)]],
     texture2d<float, access::write> destination [[texture(CKTextureIndexOutput)]],
@@ -313,24 +328,6 @@ kernel void corridorKeyGreenHintKernel(
     float greenBias = rgba.g - max(rgba.r, rgba.b);
     float matte = 1.0 - saturate(greenBias * 2.0);
     destination.write(float4(matte, 0.0, 0.0, 1.0), gid);
-}
-
-/// Produces a fallback alpha matte where 1 = foreground (opaque) and 0 =
-/// green screen (transparent). Used when no MLX bridge is loaded. Matches
-/// the CorridorKey-Runtime green-bias formula exactly so the fallback matte
-/// and the MLX-ready hint line up pixel-for-pixel.
-kernel void corridorKeyRoughMatteKernel(
-    texture2d<float, access::read> source [[texture(CKTextureIndexSource)]],
-    texture2d<float, access::write> destination [[texture(CKTextureIndexOutput)]],
-    uint2 gid [[thread_position_in_grid]]
-) {
-    uint2 dims = uint2(destination.get_width(), destination.get_height());
-    if (gid.x >= dims.x || gid.y >= dims.y) { return; }
-
-    float4 rgba = source.read(gid);
-    float greenBias = rgba.g - max(rgba.r, rgba.b);
-    float alpha = 1.0 - saturate(greenBias * 2.0);
-    destination.write(float4(alpha, 0.0, 0.0, 1.0), gid);
 }
 
 // MARK: - Source passthrough blending
@@ -356,7 +353,7 @@ kernel void corridorKeySourcePassthroughKernel(
     destination.write(float4(blended, 1.0), gid);
 }
 
-// MARK: - Resample (upscale / downscale)
+// MARK: - Resample (bilinear fallback; MPS Lanczos handles Quality = Lanczos)
 
 kernel void corridorKeyResampleKernel(
     texture2d<float, access::sample> source [[texture(CKTextureIndexSource)]],
@@ -391,4 +388,216 @@ kernel void corridorKeyExtractHintKernel(
         hint = rgba.r;
     }
     destination.write(float4(hint, 0.0, 0.0, 1.0), gid);
+}
+
+// MARK: - Refiner-strength blend (Phase 4.1)
+
+/// Blends the model's refined matte with a pre-blurred "coarse" stand-in
+/// produced by a Gaussian blur. `strength == 1.0` is a no-op (refined pass
+/// through). `strength < 1.0` biases toward the blurred stand-in (softer
+/// edges). `strength > 1.0` extrapolates toward sharper edges, clamped to
+/// [0, 1]. See the plan's phase 4.1 note on why this is a post-hoc
+/// approximation for the model's built-in refiner scale.
+kernel void corridorKeyRefinerBlendKernel(
+    texture2d<float, access::read> refined [[texture(CKTextureIndexMatte)]],
+    texture2d<float, access::read> coarse [[texture(CKTextureIndexCoarse)]],
+    texture2d<float, access::write> destination [[texture(CKTextureIndexOutput)]],
+    constant CKRefinerParams &params [[buffer(CKBufferIndexRefinerParams)]],
+    uint2 gid [[thread_position_in_grid]]
+) {
+    uint2 dims = uint2(destination.get_width(), destination.get_height());
+    if (gid.x >= dims.x || gid.y >= dims.y) { return; }
+
+    float refinedAlpha = refined.read(gid).r;
+    float coarseAlpha = coarse.read(gid).r;
+    float blended = coarseAlpha + (refinedAlpha - coarseAlpha) * params.strength;
+    destination.write(float4(saturate(blended), 0.0, 0.0, 1.0), gid);
+}
+
+// MARK: - Light wrap (Phase 4.3)
+
+/// Simulates environment lighting wrapping onto the subject near matte
+/// edges. `sourceBlur` is a pre-blurred copy of the original source RGB; the
+/// kernel reads that outside-the-matte colour and additively blends it into
+/// the foreground along the falloff `(1 - matte)`.
+kernel void corridorKeyLightWrapKernel(
+    texture2d<float, access::read> foreground [[texture(CKTextureIndexForeground)]],
+    texture2d<float, access::read> sourceBlur [[texture(CKTextureIndexSource)]],
+    texture2d<float, access::read> matte [[texture(CKTextureIndexMatte)]],
+    texture2d<float, access::write> destination [[texture(CKTextureIndexOutput)]],
+    constant CKLightWrapParams &params [[buffer(CKBufferIndexLightWrapParams)]],
+    uint2 gid [[thread_position_in_grid]]
+) {
+    uint2 dims = uint2(destination.get_width(), destination.get_height());
+    if (gid.x >= dims.x || gid.y >= dims.y) { return; }
+
+    float3 fg = foreground.read(gid).rgb;
+    float m = saturate(matte.read(gid).r);
+    // A thin ring near the matte edge gets the strongest wrap; interiors
+    // (`m` near 1) are untouched. `edgeBias` biases the falloff curve.
+    float falloff = 1.0 - m;
+    float biased = pow(falloff, mix(1.0, 4.0, saturate(params.edgeBias)));
+    float3 wrap = sourceBlur.read(gid).rgb;
+    float3 blended = fg + wrap * biased * params.strength * m;
+    destination.write(float4(blended, 1.0), gid);
+}
+
+// MARK: - Edge colour decontamination (Phase 4.4)
+
+/// Removes residual screen colour from foreground RGB in the matte edge
+/// band (where `0 < matte < 1`). Applies a per-pixel screen-colour subtract
+/// weighted by `(1 - matte) * strength`. The opaque interior stays
+/// untouched, and the fully transparent regions don't contribute to the
+/// composite anyway.
+kernel void corridorKeyEdgeDecontaminateKernel(
+    texture2d<float, access::read> foreground [[texture(CKTextureIndexForeground)]],
+    texture2d<float, access::read> matte [[texture(CKTextureIndexMatte)]],
+    texture2d<float, access::write> destination [[texture(CKTextureIndexOutput)]],
+    constant CKEdgeDecontaminateParams &params [[buffer(CKBufferIndexEdgeDecontaminateParams)]],
+    uint2 gid [[thread_position_in_grid]]
+) {
+    uint2 dims = uint2(destination.get_width(), destination.get_height());
+    if (gid.x >= dims.x || gid.y >= dims.y) { return; }
+
+    float3 fg = foreground.read(gid).rgb;
+    float m = saturate(matte.read(gid).r);
+    // Weight by (1 - m) so the interior is untouched. The subtraction
+    // component is the "how much screen colour is still in this pixel" —
+    // we project fg onto the screen colour direction and scale.
+    float3 screen = params.screenColor;
+    float screenLen = max(length(screen), 1e-3);
+    float3 screenDir = screen / screenLen;
+    float residual = max(dot(fg, screenDir), 0.0);
+    float3 decont = fg - screenDir * residual * (1.0 - m) * params.strength;
+    destination.write(float4(max(decont, float3(0.0)), 1.0), gid);
+}
+
+// MARK: - Connected-components despeckle (Phase 4.2)
+
+/// Initialises the label texture from a binarised matte. Every foreground
+/// pixel receives a unique integer ID packed into the R32 channel; every
+/// background pixel receives `0`. The subsequent propagate pass flood-fills
+/// labels to the minimum ID inside each connected component.
+kernel void corridorKeyCCLabelInitKernel(
+    texture2d<float, access::read> matte [[texture(CKTextureIndexMatte)]],
+    texture2d<float, access::write> labelOut [[texture(CKTextureIndexOutput)]],
+    constant CKCCLabelParams &params [[buffer(CKBufferIndexCCLabelParams)]],
+    uint2 gid [[thread_position_in_grid]]
+) {
+    uint2 dims = uint2(labelOut.get_width(), labelOut.get_height());
+    if (gid.x >= dims.x || gid.y >= dims.y) { return; }
+
+    float alpha = matte.read(gid).r;
+    if (alpha < params.matteThreshold) {
+        labelOut.write(float4(0.0, 0.0, 0.0, 1.0), gid);
+        return;
+    }
+    // Labels are stored as linear (y * width + x) + 1, so 0 stays reserved
+    // for "background". We keep them in a float32 texture (r32Float) —
+    // labels up to ~16M are exactly representable, enough for a 4096² matte.
+    float label = float(gid.y * dims.x + gid.x + 1u);
+    labelOut.write(float4(label, 0.0, 0.0, 1.0), gid);
+}
+
+/// One iteration of label propagation: each pixel takes the minimum label
+/// of itself and its 8 neighbours sampled at `stride` texels away. Caller
+/// drives `stride = 1, 2, 4, 8, …` so the propagation "pointer-jumps" in
+/// `log₂(max(W, H))` iterations instead of `max(W, H)` — crucial for 4K
+/// mattes where the 1-pixel-stride version would need thousands of passes.
+kernel void corridorKeyCCLabelPropagateKernel(
+    texture2d<float, access::read> labelIn [[texture(CKTextureIndexMatte)]],
+    texture2d<float, access::write> labelOut [[texture(CKTextureIndexOutput)]],
+    constant int &stride [[buffer(0)]],
+    uint2 gid [[thread_position_in_grid]]
+) {
+    uint2 dims = uint2(labelOut.get_width(), labelOut.get_height());
+    if (gid.x >= dims.x || gid.y >= dims.y) { return; }
+
+    float current = labelIn.read(gid).r;
+    if (current <= 0.0) {
+        labelOut.write(float4(0.0, 0.0, 0.0, 1.0), gid);
+        return;
+    }
+    float best = current;
+    int s = max(stride, 1);
+    const int2 offsets[8] = {
+        int2(-s, -s), int2(0, -s), int2(s, -s),
+        int2(-s, 0),               int2(s, 0),
+        int2(-s, s),  int2(0, s),  int2(s, s)
+    };
+    for (int i = 0; i < 8; ++i) {
+        int2 neighbour = int2(gid) + offsets[i];
+        if (neighbour.x < 0 || neighbour.y < 0 ||
+            neighbour.x >= int(dims.x) || neighbour.y >= int(dims.y)) { continue; }
+        float value = labelIn.read(uint2(neighbour)).r;
+        if (value > 0.0 && value < best) {
+            best = value;
+        }
+    }
+    labelOut.write(float4(best, 0.0, 0.0, 1.0), gid);
+}
+
+/// Counts pixels per component into a shared atomic buffer. The filter
+/// pass reads from the same buffer to zero components below threshold.
+/// Using atomics lets the whole CC despeckle fit on a single command
+/// buffer without any CPU readback.
+kernel void corridorKeyCCLabelCountKernel(
+    texture2d<float, access::read> labelIn [[texture(CKTextureIndexLabel)]],
+    device atomic_uint *labelCounts [[buffer(CKBufferIndexCCLabelCounts)]],
+    constant CKCCLabelParams &params [[buffer(CKBufferIndexCCLabelParams)]],
+    uint2 gid [[thread_position_in_grid]]
+) {
+    uint2 dims = uint2(labelIn.get_width(), labelIn.get_height());
+    if (gid.x >= dims.x || gid.y >= dims.y) { return; }
+
+    float label = labelIn.read(gid).r;
+    if (label <= 0.0) { return; }
+    uint labelIndex = uint(label);
+    // `labelSpan` carries the raw capacity of the counts buffer (width *
+    // height + 1, to cover label values `1…width*height`). Swift sets it
+    // this way so non-square mattes work.
+    uint capacity = uint(params.labelSpan);
+    if (labelIndex >= capacity) { return; }
+    atomic_fetch_add_explicit(&labelCounts[labelIndex], 1u, memory_order_relaxed);
+}
+
+/// Applies the despeckle decision. Reads each pixel's (now stabilised)
+/// label and consults the `labelCounts` buffer — if the component's area is
+/// below `areaThreshold`, the pixel is zeroed; otherwise it passes
+/// through the original matte alpha. `labelCapacity` bounds-checks the
+/// counts buffer so a stray label value can't over-read. Both values live
+/// in the `CKCCLabelParams` slot — the Swift side packs `areaThreshold`
+/// and a capacity sentinel (`labelSpan * labelSpan`) into the struct.
+kernel void corridorKeyCCLabelFilterKernel(
+    texture2d<float, access::read> labelIn [[texture(CKTextureIndexLabel)]],
+    texture2d<float, access::read> matte [[texture(CKTextureIndexMatte)]],
+    texture2d<float, access::write> destination [[texture(CKTextureIndexOutput)]],
+    device const uint *labelCounts [[buffer(CKBufferIndexCCLabelCounts)]],
+    constant CKCCLabelParams &params [[buffer(CKBufferIndexCCLabelParams)]],
+    uint2 gid [[thread_position_in_grid]]
+) {
+    uint2 dims = uint2(destination.get_width(), destination.get_height());
+    if (gid.x >= dims.x || gid.y >= dims.y) { return; }
+
+    float alpha = matte.read(gid).r;
+    float label = labelIn.read(gid).r;
+    if (label <= 0.0) {
+        destination.write(float4(0.0, 0.0, 0.0, 1.0), gid);
+        return;
+    }
+    uint labelIndex = uint(label);
+    // `labelSpan` carries the raw capacity of the counts buffer (width *
+    // height + 1, to cover label values `1…width*height`). Swift sets it
+    // this way so non-square mattes work.
+    uint capacity = uint(params.labelSpan);
+    if (labelIndex >= capacity) {
+        destination.write(float4(alpha, 0.0, 0.0, 1.0), gid);
+        return;
+    }
+    uint area = labelCounts[labelIndex];
+    if (int(area) < params.areaThreshold) {
+        destination.write(float4(0.0, 0.0, 0.0, 1.0), gid);
+    } else {
+        destination.write(float4(alpha, 0.0, 0.0, 1.0), gid);
+    }
 }

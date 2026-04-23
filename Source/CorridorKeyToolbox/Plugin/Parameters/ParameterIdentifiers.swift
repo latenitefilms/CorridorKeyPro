@@ -11,16 +11,17 @@
 import Foundation
 
 enum ParameterIdentifier {
+    /// Custom-UI parameter that hosts the inspector header (app icon,
+    /// version, Analyse/Reset buttons, analysis status). Drawn as a SwiftUI
+    /// `NSHostingView` returned from `createViewForParameterID`.
+    static let headerSummary: UInt32 = 50
+
     // Subgroups
     static let settingsGroup: UInt32 = 100
     static let interiorGroup: UInt32 = 110
     static let matteGroup: UInt32 = 120
     static let edgeSpillGroup: UInt32 = 130
-
-    /// Custom-UI parameter that hosts the inspector header (app icon,
-    /// version, Analyse/Reset buttons, analysis status). Drawn as a SwiftUI
-    /// `NSHostingView` returned from `createViewForParameterID`.
-    static let headerSummary: UInt32 = 50
+    static let edgeRefinementGroup: UInt32 = 140
 
     // Settings
     static let screenColor: UInt32 = 1001
@@ -39,6 +40,11 @@ enum ParameterIdentifier {
     static let alphaGamma: UInt32 = 3005
     static let autoDespeckle: UInt32 = 3006
     static let despeckleSize: UInt32 = 3007
+    
+    /// Refiner strength — blends the neural refined alpha with a blurred
+    /// "coarse" stand-in. 1.0 = model refined pass-through; <1.0 softens;
+    /// >1.0 extrapolates toward harder edges (clamped).
+    static let refinerStrength: UInt32 = 3008
 
     // Edge and spill
     static let despillStrength: UInt32 = 4001
@@ -49,6 +55,13 @@ enum ParameterIdentifier {
 
     // Performance (also in the Settings group)
     static let upscaleMethod: UInt32 = 6002
+
+    // Edge refinement (Phase 4 additions — light wrap + edge decontamination).
+    static let lightWrapEnabled: UInt32 = 8001
+    static let lightWrapStrength: UInt32 = 8002
+    static let lightWrapRadius: UInt32 = 8003
+    static let edgeDecontaminateEnabled: UInt32 = 8004
+    static let edgeDecontaminateStrength: UInt32 = 8005
 
     /// Hidden custom parameter that persists the per-frame MLX mattes inside
     /// the Final Cut Pro Library so editors can move projects between

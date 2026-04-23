@@ -33,12 +33,14 @@ extension CorridorKeyToolboxPlugIn {
         let height = Int(destinationImage.imagePixelBounds.top - destinationImage.imagePixelBounds.bottom)
         state.destinationLongEdgePixels = max(width, height)
 
+        let gamut = currentWorkingGamut()
         let alphaHint = sourceImages.count > 1 ? sourceImages[1] : nil
         let request = RenderRequest(
             destinationImage: destinationImage,
             sourceImage: sourceImage,
             alphaHintImage: alphaHint,
             state: state,
+            workingGamut: gamut,
             renderTime: renderTime
         )
 
@@ -51,5 +53,16 @@ extension CorridorKeyToolboxPlugIn {
         }
         let elapsedMilliseconds = (CACurrentMediaTime() - startTime) * 1000
         lastFrameMilliseconds.set(elapsedMilliseconds)
+    }
+
+    /// Queries the FxPlug colour gamut API. Unknown / missing → Rec.709 so
+    /// the identity transform is used and behaviour matches the pre-v1.0
+    /// implementation for SDR timelines.
+    private func currentWorkingGamut() -> WorkingColorGamut {
+        guard let gamutAPI = apiManager.api(for: (any FxColorGamutAPI_v2).self) as? any FxColorGamutAPI_v2 else {
+            return .rec709
+        }
+        let raw = UInt(gamutAPI.colorPrimaries())
+        return ColorGamutMatrix.gamut(fromColorPrimariesRaw: raw)
     }
 }

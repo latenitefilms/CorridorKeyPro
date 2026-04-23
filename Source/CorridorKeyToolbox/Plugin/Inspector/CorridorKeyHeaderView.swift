@@ -12,7 +12,7 @@ import AppKit
 
 /// Inspector header the FxPlug custom-UI parameter hosts. Shows the app icon
 /// / version, exposes Analyse / Reset actions, and surfaces the current
-/// analysis status with a live progress line.
+/// warm-up + analysis status with a live progress line and ETA.
 @MainActor
 struct CorridorKeyHeaderView: View {
 
@@ -55,6 +55,8 @@ struct CorridorKeyHeaderView: View {
 
                 analyseControls
 
+                warmupBadge
+
                 statusLine
             }
         }
@@ -90,6 +92,35 @@ struct CorridorKeyHeaderView: View {
             .buttonStyle(.bordered)
             .controlSize(.small)
             .disabled(isAnalysisInFlight)
+
+            if case .warming = bridge.snapshot.warmup {
+                Button(action: bridge.cancelWarmup) {
+                    Label("Cancel", systemImage: "xmark.circle")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var warmupBadge: some View {
+        switch bridge.snapshot.warmup {
+        case .cold, .ready:
+            EmptyView()
+        case .warming(let resolution):
+            let resolutionText = resolution > 0 ? "\(resolution)px" : "neural model"
+            statusBadge(
+                systemImage: "hourglass",
+                tint: .blue,
+                text: "Loading \(resolutionText) — first play may stutter."
+            )
+        case .failed(let message):
+            statusBadge(
+                systemImage: "exclamationmark.triangle.fill",
+                tint: .red,
+                text: "Neural model unavailable: \(message)"
+            )
         }
     }
 
@@ -170,10 +201,35 @@ struct CorridorKeyHeaderView: View {
 
     private var runningStatusText: String {
         let snapshot = bridge.snapshot
+        let base: String
         if snapshot.totalFrameCount > 0 {
-            return "\(snapshot.analyzedFrameCount)/\(snapshot.totalFrameCount) frames at \(snapshot.inferenceResolution)px…"
+            base = "\(snapshot.analyzedFrameCount)/\(snapshot.totalFrameCount) frames at \(snapshot.inferenceResolution)px"
+        } else {
+            base = "Analysing at \(snapshot.inferenceResolution)px"
         }
-        return "Analysing at \(snapshot.inferenceResolution)px…"
+        if let eta = snapshot.analysisETASeconds, eta > 0 {
+            return "\(base) — \(formatETA(seconds: eta)) remaining"
+        }
+        return base + "…"
+    }
+
+    /// Formats seconds as a compact "mm:ss" / "h:mm:ss" string for the
+    /// inspector ETA badge. Returns `"<1s"` for sub-second estimates so the
+    /// badge doesn't dance across "0s" / "1s" every refresh.
+    private func formatETA(seconds: Double) -> String {
+        if seconds < 1 { return "<1s" }
+        let totalSeconds = Int(seconds.rounded())
+        let minutes = totalSeconds / 60
+        let remainderSeconds = totalSeconds % 60
+        if minutes >= 60 {
+            let hours = minutes / 60
+            let remainderMinutes = minutes % 60
+            return "\(hours)h \(remainderMinutes)m"
+        }
+        if minutes > 0 {
+            return "\(minutes)m \(remainderSeconds)s"
+        }
+        return "\(remainderSeconds)s"
     }
 
 }

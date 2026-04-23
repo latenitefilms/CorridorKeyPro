@@ -52,7 +52,7 @@ enum MatteCodecError: Error, CustomStringConvertible {
 /// Values are clamped to `[0, 1]` before encoding — the plug-in never stores
 /// negative or super-bright mattes so narrowing here wins space without any
 /// perceptible quality loss.
-enum MatteCodec {
+public enum MatteCodec {
 
     /// 4-byte magic prefix. Changing this string bumps the on-disk format
     /// version; older blobs will fail to decode and `decoded(_:)` returns nil
@@ -67,7 +67,7 @@ enum MatteCodec {
 
     /// Encodes a float alpha buffer into a compact byte blob. `alpha.count`
     /// must equal `width * height`; values are clamped to 0..1.
-    static func encode(alpha: [Float], width: Int, height: Int) throws -> Data {
+    public static func encode(alpha: [Float], width: Int, height: Int) throws -> Data {
         guard width > 0, height > 0,
               width <= maximumSide, height <= maximumSide
         else {
@@ -104,7 +104,7 @@ enum MatteCodec {
     /// Decodes a previously-encoded blob into a float alpha buffer plus its
     /// dimensions. Returns nil for unknown magic or decompression failure —
     /// callers treat that as "no cache available" and fall back to live MLX.
-    static func decode(_ blob: Data) -> (alpha: [Float], width: Int, height: Int)? {
+    public static func decode(_ blob: Data) -> (alpha: [Float], width: Int, height: Int)? {
         guard blob.count >= magic.count + 8 else { return nil }
         let magicSlice = blob.prefix(magic.count)
         guard Array(magicSlice) == magic else { return nil }
@@ -181,7 +181,7 @@ enum MatteCodec {
     /// Converts a finite Float32 to IEEE 754 binary16 (round-to-nearest-even).
     /// Out-of-range inputs are clamped to 0 / max finite half / infinity as
     /// appropriate. We don't emit NaNs — the callers already clamp to [0, 1].
-    static func floatToHalf(_ value: Float) -> UInt16 {
+    public static func floatToHalf(_ value: Float) -> UInt16 {
         let bits = value.bitPattern
         let sign = UInt16((bits >> 16) & 0x8000)
         let exponent = Int32((bits >> 23) & 0xFF) - 127 + 15
@@ -212,7 +212,7 @@ enum MatteCodec {
     /// Converts IEEE 754 binary16 back to Float32. Subnormals and infinities
     /// are handled so round-tripped values land exactly on the half-precision
     /// grid.
-    static func halfToFloat(_ half: UInt16) -> Float {
+    public static func halfToFloat(_ half: UInt16) -> Float {
         let sign = UInt32(half & 0x8000) << 16
         var exponent = Int32((half >> 10) & 0x1F)
         var mantissa = UInt32(half & 0x3FF)

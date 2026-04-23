@@ -24,7 +24,9 @@ typedef enum CorridorKeyTextureIndex {
     CKTextureIndexHint = 3,
     CKTextureIndexTempA = 4,
     CKTextureIndexTempB = 5,
-    CKTextureIndexOutput = 6
+    CKTextureIndexOutput = 6,
+    CKTextureIndexCoarse = 7,
+    CKTextureIndexLabel = 8
 } CorridorKeyTextureIndex;
 
 // Fragment / compute argument buffer slots.
@@ -35,7 +37,12 @@ typedef enum CorridorKeyBufferIndex {
     CKBufferIndexScreenColorMatrix = 3,
     CKBufferIndexBlurWeights = 4,
     CKBufferIndexNormalizeParams = 5,
-    CKBufferIndexSourcePassthroughParams = 6
+    CKBufferIndexSourcePassthroughParams = 6,
+    CKBufferIndexRefinerParams = 7,
+    CKBufferIndexLightWrapParams = 8,
+    CKBufferIndexEdgeDecontaminateParams = 9,
+    CKBufferIndexCCLabelParams = 10,
+    CKBufferIndexCCLabelCounts = 11
 } CorridorKeyBufferIndex;
 
 // Mirrors the Swift `SpillMethod` enum.
@@ -78,7 +85,12 @@ typedef struct CKComposeParams {
     int outputMode; // CorridorKeyOutputMode
 } CKComposeParams;
 
+// Normalisation parameters for the neural input tensor. The working-space
+// matrix maps whatever colour space the host handed us (Rec.709, Rec.2020,
+// Display P3 linear, etc.) into the Rec.709-linear-sRGB space the model was
+// trained on, so the model sees consistent values regardless of project gamut.
 typedef struct CKNormalizeParams {
+    simd_float3x3 workingToRec709;
     vector_float3 mean;
     vector_float3 invStdDev;
 } CKNormalizeParams;
@@ -88,5 +100,46 @@ typedef struct CKSourcePassthroughParams {
     float blurRadius;
     float interiorThreshold;
 } CKSourcePassthroughParams;
+
+// Refiner-strength blend parameters. `strength` = 1.0 passes the model's
+// refined alpha through unchanged; `< 1.0` biases toward the blurred
+// "coarse" stand-in (softer edges); `> 1.0` extrapolates toward sharper
+// edges (clamped to [0, 1] afterwards).
+typedef struct CKRefinerParams {
+    float strength;
+} CKRefinerParams;
+
+// Light-wrap parameters. `strength` mixes wrap colour into the foreground
+// along `(1 - matte)` falloff. `edgeBias` biases toward the matte boundary
+// — zero = full wrap across transparent zones, higher values = only a thin
+// ring near the edges.
+typedef struct CKLightWrapParams {
+    float strength;
+    float edgeBias;
+} CKLightWrapParams;
+
+// Edge colour decontamination parameters. Subtracts screen-colour residual
+// from the foreground RGB, weighted by `(1 - matte)` so the opaque interior
+// is never touched. `screenColor` is the reference screen colour (green by
+// default, rotated from blue via `ScreenColorEstimator`).
+typedef struct CKEdgeDecontaminateParams {
+    float strength;
+    vector_float3 screenColor;
+} CKEdgeDecontaminateParams;
+
+// Connected-components despeckle parameters.
+// * `areaThreshold` — a component is preserved if its pixel count is at or
+//   above this value, zeroed otherwise.
+// * `matteThreshold` — threshold used to binarise the matte into the label
+//   texture at the init stage (0.5 by default).
+// * `labelSpan` — number of tiles along each axis in the label texture; the
+//   kernel multiplies coordinates by this to derive a unique integer label
+//   per pixel.
+typedef struct CKCCLabelParams {
+    int areaThreshold;
+    int labelSpan;
+    float matteThreshold;
+    float blurSigma;
+} CKCCLabelParams;
 
 #endif /* CorridorKeyShaderTypes_h */

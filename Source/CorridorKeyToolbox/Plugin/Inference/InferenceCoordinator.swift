@@ -60,6 +60,7 @@ final class InferenceCoordinator: @unchecked Sendable {
     private var mlxEngineLoading: Bool = false
     private var mlxLoadedResolution: Int = 0
     private var mlxCacheEntryID: ObjectIdentifier?
+    private var mlxFailureMessage: String?
 
     /// Single-frame cache of the latest MLX inference. The rough-matte path
     /// writes to freshly-allocated textures every frame so it's cheap enough
@@ -78,6 +79,37 @@ final class InferenceCoordinator: @unchecked Sendable {
             return roughMatteEngine.backendDisplayName
         }
         return "Idle"
+    }
+
+    /// Reference to the live warm-up Task so we can cancel from the UI.
+    /// Cleared by the task itself on completion or cancellation.
+    private var warmupTask: Task<Void, Never>?
+
+    /// Cancels the in-flight MLX warm-up, if any. Safe to call when no
+    /// warm-up is running — in that case it's a no-op.
+    func cancelWarmup() {
+        stateLock.lock()
+        let task = warmupTask
+        warmupTask = nil
+        stateLock.unlock()
+        task?.cancel()
+    }
+
+    /// Current warm-up status. The inspector bridge consumes this to render
+    /// the "Loading neural model…" badge during the first-play stall.
+    var warmupStatus: WarmupStatus {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        if let message = mlxFailureMessage {
+            return .failed(message)
+        }
+        if mlxEngineReady, mlxLoadedResolution > 0 {
+            return .ready(resolution: mlxLoadedResolution)
+        }
+        if mlxEngineLoading {
+            return .warming(resolution: mlxLoadedResolution)
+        }
+        return .cold
     }
 
     /// Runs inference for a single frame. Uses MLX when it's warm, otherwise
@@ -211,6 +243,7 @@ final class InferenceCoordinator: @unchecked Sendable {
         mlxEngine = nil
         mlxLoadedResolution = resolution
         mlxCacheEntryID = ObjectIdentifier(cacheEntry)
+        mlxFailureMessage = nil
         cachedMLXKey = nil
         cachedMLXOutput = nil
         stateLock.unlock()
@@ -226,16 +259,24 @@ final class InferenceCoordinator: @unchecked Sendable {
 
         PluginLog.notice("Queuing MLX warm-up for \(resolution)px on \(cacheEntry.device.name).")
         let cacheEntryID = ObjectIdentifier(cacheEntry)
-        Task.detached(priority: .userInitiated) { [weak self] in
+        let task = Task.detached(priority: .utility) { [weak self] in
             do {
+                try Task.checkCancellation()
                 try await engine.prepare(resolution: resolution)
+                try Task.checkCancellation()
                 self?.recordMLXWarmupSuccess(engine: engine, resolution: resolution, cacheEntryID: cacheEntryID)
                 PluginLog.notice("MLX warm-up complete for \(resolution)px.")
+            } catch is CancellationError {
+                self?.recordMLXWarmupFailure(message: "Warm-up cancelled.")
+                PluginLog.notice("MLX warm-up cancelled.")
             } catch {
-                self?.recordMLXWarmupFailure()
+                self?.recordMLXWarmupFailure(message: error.localizedDescription)
                 PluginLog.error("MLX warm-up failed: \(error.localizedDescription). Rough matte will continue to be used.")
             }
         }
+        stateLock.lock()
+        warmupTask = task
+        stateLock.unlock()
     }
 
     private func recordMLXWarmupSuccess(
@@ -249,16 +290,18 @@ final class InferenceCoordinator: @unchecked Sendable {
         mlxEngineReady = true
         mlxLoadedResolution = resolution
         mlxCacheEntryID = cacheEntryID
+        mlxFailureMessage = nil
         cachedMLXKey = nil
         cachedMLXOutput = nil
         stateLock.unlock()
     }
 
-    private func recordMLXWarmupFailure() {
+    private func recordMLXWarmupFailure(message: String) {
         stateLock.lock()
         mlxEngineLoading = false
         mlxEngine = nil
         mlxEngineReady = false
+        mlxFailureMessage = message
         cachedMLXKey = nil
         cachedMLXOutput = nil
         stateLock.unlock()
