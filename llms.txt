@@ -1,9 +1,9 @@
 ﻿# Corridor Key Toolbox
 
-> Corridor Key Toolbox brings Corridor Key to Final Cut Pro.
+> Corridor Key Toolbox is currently in development and preparing for release on Apple's TestFlight.
 
 - [Corridor Key Toolbox](https://CorridorKeyToolbox.fcp.cafe/readme.md): Corridor Key Toolbox
-- [Download](https://CorridorKeyToolbox.fcp.cafe/download.md): Corridor Key Toolbox is coming soon!
+- [Download](https://CorridorKeyToolbox.fcp.cafe/download.md): Corridor Key Toolbox is currently in development and preparing for release on Apple's TestFlight.
 - [System Requirements](https://CorridorKeyToolbox.fcp.cafe/system-requirements.md): ScriptStar requires Final Cut Pro 10.6.5 or later.
 - [How To Use](https://CorridorKeyToolbox.fcp.cafe/how-to-use.md): Coming soon!
 - [Support](https://CorridorKeyToolbox.fcp.cafe/support.md): The best place to get support is the FCP Cafe Discord.
