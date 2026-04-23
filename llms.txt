@@ -1,11 +1,11 @@
 ﻿# Corridor Key Toolbox
 
-> Corridor Key Toolbox is currently in development and preparing for release on Apple's TestFlight.
+> Corridor Key Toolbox is currently in a public beta testing phase.
 
 - [Corridor Key Toolbox](https://CorridorKeyToolbox.fcp.cafe/readme.md): Corridor Key Toolbox
-- [Download](https://CorridorKeyToolbox.fcp.cafe/download.md): Corridor Key Toolbox is currently in development and preparing for release on Apple's TestFlight.
+- [Download](https://CorridorKeyToolbox.fcp.cafe/download.md): Corridor Key Toolbox is currently in a public beta testing phase.
 - [System Requirements](https://CorridorKeyToolbox.fcp.cafe/system-requirements.md): Corridor Key Toolbox requires Final Cut Pro 11 or later on macOS 26 Tahoe.
-- [How To Use](https://CorridorKeyToolbox.fcp.cafe/how-to-use.md): Corridor Key Toolbox is currently in development and preparing for release on Apple's TestFlight.
+- [How To Use](https://CorridorKeyToolbox.fcp.cafe/how-to-use.md): Corridor Key Toolbox is currently in a public beta testing phase.
 - [Support](https://CorridorKeyToolbox.fcp.cafe/support.md): The best place to get support is the FCP Cafe Discord.
 - [Frequently Asked Questions](https://CorridorKeyToolbox.fcp.cafe/faq.md): Coming soon!
 - [Troubleshooting](https://CorridorKeyToolbox.fcp.cafe/troubleshooting.md): Apologies in advance if you have any trouble using Corridor Key Toolbox.

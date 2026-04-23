@@ -1,9 +1,11 @@
 # Corridor Key Toolbox
 
-!!!primary Currently in development!
-**Corridor Key Toolbox** is currently in development and preparing for release on Apple's TestFlight.
+!!!primary
+**Corridor Key Toolbox** is currently in a **public beta testing phase**.
 
 We're just using a placeholder icon for now (taken from [VFX Toolbox](https://vfxtoolbox.fcp.cafe)).
+
+Feedback welcome!
 !!!
 
 **Corridor Key Toolbox** brings [Corridor Key](https://github.com/nikopueringer/CorridorKey) to Final Cut Pro.

@@ -6,4 +6,6 @@ Please read this page first, and if the solutions here don't solve your problem,
 
 ---
 
-Coming soon!
+## It doesn't work?
+
+Make sure you're running macOS Tahoe 26 on a modern Apple Silicon Mac with as much RAM as you can.

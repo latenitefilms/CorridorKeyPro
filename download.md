@@ -1,12 +1,14 @@
 # Download
 
-!!!primary Currently in development!
-**Corridor Key Toolbox** is currently in development and preparing for release on Apple's TestFlight.
+!!!primary
+**Corridor Key Toolbox** is currently in a **public beta testing phase**.
 
 We're just using a placeholder icon for now (taken from [VFX Toolbox](https://vfxtoolbox.fcp.cafe)).
+
+Feedback welcome!
 !!!
 
-**Corridor Key Toolbox** is coming soon!
+You can download the latest **Corridor Key Toolbox** beta on [Apple's TestFlight](https://testflight.apple.com/join/2Xq4uckM).
 
 ---
 
