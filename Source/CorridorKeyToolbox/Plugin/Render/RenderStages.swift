@@ -453,6 +453,175 @@ enum RenderStages {
         return output
     }
 
+    // MARK: - Fused matte refine (levels + gamma + refiner blend)
+
+    /// Runs the fused `corridorKeyMatteRefineKernel` — one dispatch
+    /// instead of the old `applyAlphaLevelsGamma` → `applyRefinerStrength`
+    /// pair. Returns the output texture written (and, when refiner
+    /// blend is active, the pooled coarse-matte texture so the caller
+    /// can schedule its return).
+    ///
+    /// Always writes `destination`; does not touch the pool. The coarse
+    /// stand-in is generated here via `MatteRefiner.applyGaussianBlur`
+    /// when `refinerStrength` ≠ 1.0; otherwise the kernel skips the
+    /// read-from-coarse path inside the shader and we pass the matte
+    /// itself as a harmless dummy binding.
+    static func applyFusedMatteRefine(
+        matte: any MTLTexture,
+        destination: any MTLTexture,
+        blackPoint: Float,
+        whitePoint: Float,
+        gamma: Float,
+        refinerStrength: Float,
+        entry: MetalDeviceCacheEntry,
+        commandBuffer: any MTLCommandBuffer
+    ) throws -> (coarsePooled: PooledTexture?, intermediatePooled: PooledTexture?) {
+        let width = matte.width
+        let height = matte.height
+
+        // Build a coarse stand-in only when the refiner blend will
+        // actually use it. Otherwise pass `matte` itself as a dummy —
+        // the shader's `abs(strength - 1.0) > 1e-3` guard skips the
+        // read so the binding isn't actually consumed.
+        var coarseTexture: any MTLTexture = matte
+        var coarsePooled: PooledTexture?
+        var intermediatePooled: PooledTexture?
+        if abs(refinerStrength - 1.0) > 1e-3 {
+            guard let coarse = entry.texturePool.acquire(
+                width: width,
+                height: height,
+                pixelFormat: matte.pixelFormat
+            ) else { throw MetalDeviceCacheError.textureAllocationFailed }
+            guard let intermediate = entry.texturePool.acquire(
+                width: width,
+                height: height,
+                pixelFormat: matte.pixelFormat
+            ) else {
+                coarse.returnManually()
+                throw MetalDeviceCacheError.textureAllocationFailed
+            }
+            try MatteRefiner.applyGaussianBlur(
+                source: matte,
+                intermediate: intermediate.texture,
+                destination: coarse.texture,
+                radiusPixels: 3.0,
+                entry: entry,
+                commandBuffer: commandBuffer
+            )
+            coarseTexture = coarse.texture
+            coarsePooled = coarse
+            intermediatePooled = intermediate
+        }
+
+        guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
+            coarsePooled?.returnManually()
+            intermediatePooled?.returnManually()
+            throw MetalDeviceCacheError.commandEncoderCreationFailed
+        }
+        encoder.label = "Corridor Key Toolbox Matte Refine (Fused)"
+        encoder.setComputePipelineState(entry.computePipelines.matteRefineFused)
+        encoder.setTexture(matte, index: Int(CKTextureIndexMatte.rawValue))
+        encoder.setTexture(coarseTexture, index: Int(CKTextureIndexCoarse.rawValue))
+        encoder.setTexture(destination, index: Int(CKTextureIndexOutput.rawValue))
+        var params = CKMatteRefineParams(
+            blackPoint: blackPoint,
+            whitePoint: whitePoint,
+            gamma: gamma,
+            refinerStrength: refinerStrength
+        )
+        encoder.setBytes(
+            &params,
+            length: MemoryLayout<CKMatteRefineParams>.size,
+            index: 0
+        )
+        dispatch(
+            encoder: encoder,
+            pipeline: entry.computePipelines.matteRefineFused,
+            width: width,
+            height: height
+        )
+        encoder.endEncoding()
+        return (coarsePooled, intermediatePooled)
+    }
+
+    // MARK: - Fused foreground post-process
+
+    /// Config bundle for the fused foreground pass. Every field maps
+    /// directly onto `CKForegroundPostProcessParams`.
+    struct FusedForegroundConfig {
+        let sourcePassthrough: Bool
+        let lightWrapEnabled: Bool
+        let lightWrapStrength: Float
+        let lightWrapEdgeBias: Float
+        let edgeDecontaminateEnabled: Bool
+        let edgeDecontaminateStrength: Float
+        let screenColor: SIMD3<Float>
+        let inverseScreenMatrix: simd_float3x3
+        let applyInverseRotation: Bool
+    }
+
+    /// Runs the fused `corridorKeyForegroundPostProcessKernel`. Replaces
+    /// the separate `sourcePassthrough`, `applyLightWrap`,
+    /// `applyEdgeDecontamination`, and inverse-screen `applyScreenMatrix`
+    /// passes with a single compute dispatch. The caller supplies the
+    /// pre-blurred source (used only when `lightWrapEnabled` is true);
+    /// when light-wrap is off the shader never reads from that slot so
+    /// it's safe to bind `sourceRGB` itself as a placeholder.
+    static func applyFusedForegroundPostProcess(
+        foreground: any MTLTexture,
+        sourceRGB: any MTLTexture,
+        matte: any MTLTexture,
+        blurredSource: any MTLTexture,
+        config: FusedForegroundConfig,
+        entry: MetalDeviceCacheEntry,
+        commandBuffer: any MTLCommandBuffer
+    ) throws -> PooledTexture {
+        let width = foreground.width
+        let height = foreground.height
+        guard let output = entry.texturePool.acquire(
+            width: width,
+            height: height,
+            pixelFormat: foreground.pixelFormat
+        ) else { throw MetalDeviceCacheError.textureAllocationFailed }
+
+        guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
+            output.returnManually()
+            throw MetalDeviceCacheError.commandEncoderCreationFailed
+        }
+        encoder.label = "Corridor Key Toolbox Foreground Post-Process (Fused)"
+        encoder.setComputePipelineState(entry.computePipelines.foregroundPostProcess)
+        encoder.setTexture(foreground, index: Int(CKTextureIndexForeground.rawValue))
+        encoder.setTexture(sourceRGB, index: Int(CKTextureIndexSource.rawValue))
+        encoder.setTexture(matte, index: Int(CKTextureIndexMatte.rawValue))
+        encoder.setTexture(blurredSource, index: Int(CKTextureIndexHint.rawValue))
+        encoder.setTexture(output.texture, index: Int(CKTextureIndexOutput.rawValue))
+
+        var params = CKForegroundPostProcessParams(
+            inverseScreenMatrix: config.inverseScreenMatrix,
+            screenColor: config.screenColor,
+            lightWrapStrength: config.lightWrapStrength,
+            lightWrapEdgeBias: config.lightWrapEdgeBias,
+            edgeDecontaminateStrength: config.edgeDecontaminateStrength,
+            sourcePassthroughEnabled: config.sourcePassthrough ? 1 : 0,
+            lightWrapEnabled: config.lightWrapEnabled ? 1 : 0,
+            edgeDecontaminateEnabled: config.edgeDecontaminateEnabled ? 1 : 0,
+            applyInverseRotation: config.applyInverseRotation ? 1 : 0
+        )
+        encoder.setBytes(
+            &params,
+            length: MemoryLayout<CKForegroundPostProcessParams>.size,
+            index: 0
+        )
+        dispatch(
+            encoder: encoder,
+            pipeline: entry.computePipelines.foregroundPostProcess,
+            width: width,
+            height: height
+        )
+        encoder.endEncoding()
+        return output
+    }
+
     // MARK: - Phase 4.1: Refiner-strength blend
 
     /// Blends a Gaussian-blurred "coarse" copy of `matte` with the refined

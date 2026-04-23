@@ -467,7 +467,7 @@ final class RenderPipeline: @unchecked Sendable {
         )
         let despilled = despilledPooled?.texture ?? upscaledForeground
 
-        // 3. Matte refinement chain (levels/gamma → refiner blend → CC
+        // 3. Matte refinement chain (fused levels/gamma/refiner → CC
         // despeckle → erode/dilate → softness).
         let (refinedMattePooled, refinedMatte) = try refineMatte(
             alpha: upscaledAlpha,
@@ -476,86 +476,79 @@ final class RenderPipeline: @unchecked Sendable {
             commandBuffer: postCommandBuffer
         )
 
-        // 4. Source passthrough (optional).
-        let workingForegroundPooled: PooledTexture?
-        let workingForeground: any MTLTexture
-        if request.state.sourcePassthroughEnabled {
-            let pooled = try RenderStages.sourcePassthrough(
-                foreground: despilled,
+        // 4. Pre-blur the source once when light-wrap is on so the fused
+        // post-process pass has a blurred RGB input to sample.
+        var blurredSourcePooled: PooledTexture?
+        var blurredSourceIntermediatePooled: PooledTexture?
+        let blurredSourceTexture: any MTLTexture
+        let lightWrapActive = request.state.lightWrapEnabled
+            && request.state.lightWrapStrength > 0
+            && request.state.lightWrapRadius > 0
+        if lightWrapActive {
+            let radius = Float(request.state.lightWrapRadius)
+            guard let blurred = context.entry.texturePool.acquire(
+                width: despilled.width,
+                height: despilled.height,
+                pixelFormat: despilled.pixelFormat
+            ) else { throw MetalDeviceCacheError.textureAllocationFailed }
+            guard let intermediate = context.entry.texturePool.acquire(
+                width: despilled.width,
+                height: despilled.height,
+                pixelFormat: despilled.pixelFormat
+            ) else {
+                blurred.returnManually()
+                throw MetalDeviceCacheError.textureAllocationFailed
+            }
+            try MatteRefiner.applyGaussianBlur(
                 source: rotatedSource,
-                matte: refinedMatte,
+                intermediate: intermediate.texture,
+                destination: blurred.texture,
+                radiusPixels: radius,
                 entry: context.entry,
                 commandBuffer: postCommandBuffer
             )
-            workingForegroundPooled = pooled
-            workingForeground = pooled.texture
+            blurredSourcePooled = blurred
+            blurredSourceIntermediatePooled = intermediate
+            blurredSourceTexture = blurred.texture
         } else {
-            workingForegroundPooled = nil
-            workingForeground = despilled
+            // No light-wrap: bind something valid but inert in the fused
+            // kernel. The shader only reads this slot when the
+            // `lightWrapEnabled` flag is set, so passing `rotatedSource`
+            // here is safe and avoids a dead allocation.
+            blurredSourceTexture = rotatedSource
         }
 
-        // 5. Light wrap (optional).
-        let wrappedForegroundPooled: PooledTexture?
-        let wrappedForeground: any MTLTexture
-        if request.state.lightWrapEnabled, request.state.lightWrapStrength > 0 {
-            let radius = max(Float(request.state.lightWrapRadius), 0)
-            if let pooled = try RenderStages.applyLightWrap(
-                foreground: workingForeground,
-                matte: refinedMatte,
-                sourceRGB: rotatedSource,
-                radiusPixels: radius,
-                strength: Float(request.state.lightWrapStrength),
-                entry: context.entry,
-                commandBuffer: postCommandBuffer
-            ) {
-                wrappedForegroundPooled = pooled
-                wrappedForeground = pooled.texture
-            } else {
-                wrappedForegroundPooled = nil
-                wrappedForeground = workingForeground
-            }
-        } else {
-            wrappedForegroundPooled = nil
-            wrappedForeground = workingForeground
-        }
-
-        // 6. Edge colour decontamination (optional).
-        let decontaminatedPooled: PooledTexture?
-        let decontaminatedForeground: any MTLTexture
-        if request.state.edgeDecontaminateEnabled, request.state.edgeDecontaminateStrength > 0 {
-            if let pooled = try RenderStages.applyEdgeDecontamination(
-                foreground: wrappedForeground,
-                matte: refinedMatte,
-                screenColor: screenTransform.estimatedScreenReference,
-                strength: Float(request.state.edgeDecontaminateStrength),
-                entry: context.entry,
-                commandBuffer: postCommandBuffer
-            ) {
-                decontaminatedPooled = pooled
-                decontaminatedForeground = pooled.texture
-            } else {
-                decontaminatedPooled = nil
-                decontaminatedForeground = wrappedForeground
-            }
-        } else {
-            decontaminatedPooled = nil
-            decontaminatedForeground = wrappedForeground
-        }
-
-        // 7. Inverse screen rotation.
-        let restoredPooled = try RenderStages.applyScreenMatrix(
-            source: decontaminatedForeground,
-            matrix: screenTransform.inverseMatrix,
-            isIdentity: screenTransform.isIdentity,
+        // 5. Fused foreground post-process: source-passthrough +
+        // light-wrap + edge-decontam + inverse-rotation all in one
+        // dispatch. Saves three compute encoders and ~3 MB of
+        // intermediate-texture bandwidth per 4K frame vs. the unfused
+        // chain.
+        let fusedForegroundConfig = RenderStages.FusedForegroundConfig(
+            sourcePassthrough: request.state.sourcePassthroughEnabled,
+            lightWrapEnabled: lightWrapActive,
+            lightWrapStrength: Float(request.state.lightWrapStrength),
+            lightWrapEdgeBias: 0.6,
+            edgeDecontaminateEnabled: request.state.edgeDecontaminateEnabled
+                && request.state.edgeDecontaminateStrength > 0,
+            edgeDecontaminateStrength: Float(request.state.edgeDecontaminateStrength),
+            screenColor: screenTransform.estimatedScreenReference,
+            inverseScreenMatrix: screenTransform.inverseMatrix,
+            applyInverseRotation: !screenTransform.isIdentity
+        )
+        let restoredPooled = try RenderStages.applyFusedForegroundPostProcess(
+            foreground: despilled,
+            sourceRGB: rotatedSource,
+            matte: refinedMatte,
+            blurredSource: blurredSourceTexture,
+            config: fusedForegroundConfig,
             entry: context.entry,
             commandBuffer: postCommandBuffer
         )
-        let restoredForeground = restoredPooled?.texture ?? decontaminatedForeground
 
-        // 8. Final compose into FCP destination.
+        // 6. Final compose into FCP destination.
         try compose(
             source: context.sourceTexture,
-            foreground: restoredForeground,
+            foreground: restoredPooled.texture,
             matte: refinedMatte,
             destination: context.destinationTexture,
             destinationTile: request.destinationImage,
@@ -574,18 +567,17 @@ final class RenderPipeline: @unchecked Sendable {
         upscaledForegroundPooled?.returnManually()
         despilledPooled?.returnManually()
         refinedMattePooled?.returnManually()
-        workingForegroundPooled?.returnManually()
-        wrappedForegroundPooled?.returnManually()
-        decontaminatedPooled?.returnManually()
-        restoredPooled?.returnManually()
+        blurredSourcePooled?.returnManually()
+        blurredSourceIntermediatePooled?.returnManually()
+        restoredPooled.returnManually()
     }
 
     // MARK: - Matte refinement orchestration
 
-    /// Walks the matte through levels+gamma → refiner blend → CC
-    /// despeckle → erode/dilate → softness. Returns the final texture plus
-    /// the pooled wrapper if one was produced (callers need to return the
-    /// pool slot manually after `commitAndWait`).
+    /// Walks the matte through fused levels/gamma/refiner → CC
+    /// despeckle → erode/dilate → softness. Returns the final texture
+    /// plus the pooled wrapper if one was produced (callers need to
+    /// return the pool slot manually after `commitAndWait`).
     private func refineMatte(
         alpha: any MTLTexture,
         state: PluginStateData,
@@ -611,32 +603,23 @@ final class RenderPipeline: @unchecked Sendable {
         let buffer = bufferPooled.texture
         let auxiliary = auxiliaryPooled.texture
 
-        // Levels + gamma — always runs, result in `buffer`.
-        try RenderStages.applyAlphaLevelsGamma(
-            source: alpha,
+        // Fused levels + gamma + refiner-blend — one dispatch.
+        let refinerArtifacts = try RenderStages.applyFusedMatteRefine(
+            matte: alpha,
             destination: buffer,
             blackPoint: Float(state.alphaBlackPoint),
             whitePoint: Float(state.alphaWhitePoint),
             gamma: Float(state.alphaGamma),
+            refinerStrength: Float(state.refinerStrength),
             entry: entry,
             commandBuffer: commandBuffer
         )
         var current: any MTLTexture = buffer
-        // Retained separately so we can return the last-used pooled texture
-        // at the end. Both `bufferPooled` and `auxiliaryPooled` stay held
-        // until after `commitAndWait` because the running-chain may read
-        // from either via `current`.
-
-        // Refiner strength blend (Phase 4.1).
-        let refinerPooled = try RenderStages.applyRefinerStrength(
-            matte: current,
-            strength: Float(state.refinerStrength),
-            entry: entry,
-            commandBuffer: commandBuffer
-        )
-        if let refinerPooled {
-            current = refinerPooled.texture
-        }
+        // Release coarse + intermediate textures once the command buffer
+        // is retired. They feed the kernel once and are never touched
+        // again.
+        refinerArtifacts.coarsePooled?.returnOnCompletion(of: commandBuffer)
+        refinerArtifacts.intermediatePooled?.returnOnCompletion(of: commandBuffer)
 
         // Auto Despeckle (Phase 4.2: CC-based).
         let ccPooled: PooledTexture?
@@ -690,7 +673,6 @@ final class RenderPipeline: @unchecked Sendable {
         // the MPS path can't race the pool.
         bufferPooled.returnOnCompletion(of: commandBuffer)
         auxiliaryPooled.returnOnCompletion(of: commandBuffer)
-        refinerPooled?.returnOnCompletion(of: commandBuffer)
         // ccPooled is the final matte if set — hold it for the caller
         // rather than returning on completion, so the compose pass can
         // sample it.

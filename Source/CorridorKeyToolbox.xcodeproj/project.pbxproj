@@ -60,6 +60,7 @@
 		CK0100000000000000000073 /* RenderStages.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000073 /* RenderStages.swift */; };
 		CK0100000000000000000074 /* WarmupStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000074 /* WarmupStatus.swift */; };
 		CK0100000000000000000075 /* FxImageTilePixelFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000075 /* FxImageTilePixelFormat.swift */; };
+		CK0100000000000000000076 /* SharedMLXBridgeRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000076 /* SharedMLXBridgeRegistry.swift */; };
 		MX0200000000000000000002 /* MLXKeyingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = MX0100000000000000000003 /* MLXKeyingEngine.swift */; };
 		MX0500000000000000000001 /* MLX in Frameworks */ = {isa = PBXBuildFile; productRef = MX0400000000000000000001 /* MLX */; };
 		MX0500000000000000000002 /* MLXNN in Frameworks */ = {isa = PBXBuildFile; productRef = MX0400000000000000000002 /* MLXNN */; };
@@ -152,6 +153,7 @@
 		CK0200000000000000000073 /* RenderStages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RenderStages.swift; path = CorridorKeyToolbox/Plugin/Render/RenderStages.swift; sourceTree = "<group>"; };
 		CK0200000000000000000074 /* WarmupStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WarmupStatus.swift; path = CorridorKeyToolbox/Plugin/Inspector/WarmupStatus.swift; sourceTree = "<group>"; };
 		CK0200000000000000000075 /* FxImageTilePixelFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FxImageTilePixelFormat.swift; path = CorridorKeyToolbox/Plugin/Metal/FxImageTilePixelFormat.swift; sourceTree = "<group>"; };
+		CK0200000000000000000076 /* SharedMLXBridgeRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SharedMLXBridgeRegistry.swift; path = CorridorKeyToolbox/Plugin/Inference/SharedMLXBridgeRegistry.swift; sourceTree = "<group>"; };
 		CK0300000000000000000001 /* Corridor Key Toolbox.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Corridor Key Toolbox.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CK0300000000000000000002 /* Corridor Key Toolbox Renderer.pluginkit */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Corridor Key Toolbox Renderer.pluginkit"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CK0400000000000000000001 /* FxPlug.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FxPlug.framework; path = /Library/Developer/Frameworks/FxPlug.framework; sourceTree = "<absolute>"; };
@@ -316,6 +318,7 @@
 				CK020000000000000000000F /* KeyingInferenceEngine.swift */,
 				CK0200000000000000000010 /* RoughMatteKeyingEngine.swift */,
 				MX0100000000000000000003 /* MLXKeyingEngine.swift */,
+				CK0200000000000000000076 /* SharedMLXBridgeRegistry.swift */,
 				CK0200000000000000000012 /* InferenceCoordinator.swift */,
 				CK0200000000000000000051 /* AnalysisData.swift */,
 				CK0200000000000000000052 /* MatteCodec.swift */,
@@ -555,6 +558,7 @@
 				CK0100000000000000000073 /* RenderStages.swift in Sources */,
 				CK0100000000000000000074 /* WarmupStatus.swift in Sources */,
 				CK0100000000000000000075 /* FxImageTilePixelFormat.swift in Sources */,
+				CK0100000000000000000076 /* SharedMLXBridgeRegistry.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

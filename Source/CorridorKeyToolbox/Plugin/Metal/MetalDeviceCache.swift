@@ -68,6 +68,8 @@ final class CorridorKeyComputePipelines: Sendable {
     let ccLabelPointerJump: any MTLComputePipelineState
     let ccLabelCount: any MTLComputePipelineState
     let ccLabelFilter: any MTLComputePipelineState
+    let matteRefineFused: any MTLComputePipelineState
+    let foregroundPostProcess: any MTLComputePipelineState
 
     init(device: any MTLDevice, library: any MTLLibrary) throws {
         func compute(_ name: String) throws -> any MTLComputePipelineState {
@@ -99,6 +101,8 @@ final class CorridorKeyComputePipelines: Sendable {
         ccLabelPointerJump = try compute("corridorKeyCCLabelPointerJumpKernel")
         ccLabelCount = try compute("corridorKeyCCLabelCountKernel")
         ccLabelFilter = try compute("corridorKeyCCLabelFilterKernel")
+        matteRefineFused = try compute("corridorKeyMatteRefineKernel")
+        foregroundPostProcess = try compute("corridorKeyForegroundPostProcessKernel")
     }
 }
 
@@ -127,8 +131,10 @@ final class CorridorKeyRenderPipelines: Sendable {
 /// Per-device state: the shared Metal library, compiled compute pipelines,
 /// a pool of command queues, a per-format cache of render pipelines, a
 /// reusable intermediate-texture pool, and a small cache of Gaussian weight
-/// buffers.
-final class MetalDeviceCacheEntry {
+/// buffers. `@unchecked Sendable` because every mutable member is guarded
+/// by an `NSLock` (`queueLock`, `renderPipelinesLock`, `weightsLock`,
+/// `normalizedInputLock`, `mpsLock`, `sharedEventValueLock`).
+final class MetalDeviceCacheEntry: @unchecked Sendable {
     let device: any MTLDevice
     let library: any MTLLibrary
     let computePipelines: CorridorKeyComputePipelines

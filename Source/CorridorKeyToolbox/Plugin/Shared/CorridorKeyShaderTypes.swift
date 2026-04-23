@@ -165,4 +165,23 @@ struct CKCCLabelParams {
     var blurSigma: Float
 }
 
+struct CKMatteRefineParams {
+    var blackPoint: Float
+    var whitePoint: Float
+    var gamma: Float
+    var refinerStrength: Float
+}
+
+struct CKForegroundPostProcessParams {
+    var inverseScreenMatrix: simd_float3x3
+    var screenColor: SIMD3<Float>
+    var lightWrapStrength: Float
+    var lightWrapEdgeBias: Float
+    var edgeDecontaminateStrength: Float
+    var sourcePassthroughEnabled: Int32
+    var lightWrapEnabled: Int32
+    var edgeDecontaminateEnabled: Int32
+    var applyInverseRotation: Int32
+}
+
 #endif

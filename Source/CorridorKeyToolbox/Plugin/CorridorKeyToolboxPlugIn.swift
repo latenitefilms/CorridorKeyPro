@@ -46,6 +46,33 @@ final class CorridorKeyToolboxPlugIn: NSObject, FxTileableEffect, FxAnalyzer {
         self.apiManager = apiManager
         super.init()
         PluginLog.notice("CorridorKeyToolboxPlugIn instantiated.")
+
+        // Kick off MLX warm-up eagerly on the system default GPU so the
+        // bridge is compiled and resident in memory by the time the user
+        // clicks Analyse Clip or starts playback. The shared registry
+        // dedupes across multiple plug-in instances — adding the effect
+        // to ten clips still loads the model once, not ten times.
+        //
+        // We warm at the Maximum (2048) rung because that's the default
+        // Quality setting. If the user picks a smaller rung, the first
+        // analyse pass re-warms for that rung; warming the wrong rung
+        // eagerly costs a few hundred MB of memory temporarily but
+        // doesn't hurt correctness.
+        Self.kickOffDefaultWarmup()
+    }
+
+    /// Non-isolated helper that asks `SharedMLXBridgeRegistry` to warm
+    /// the default rung on the system default Metal device. Safe to call
+    /// from `init`; the registry handles concurrency + deduping.
+    private static func kickOffDefaultWarmup() {
+        guard let device = MTLCreateSystemDefaultDevice() else { return }
+        guard let entry = try? MetalDeviceCache.shared.entry(for: device) else { return }
+        let defaultRung = QualityMode.maximum2048.resolvedInferenceResolution(forLongEdge: 1920)
+        SharedMLXBridgeRegistry.shared.beginWarmup(
+            deviceRegistryID: device.registryID,
+            rung: defaultRung,
+            cacheEntry: entry
+        )
     }
 
     deinit {

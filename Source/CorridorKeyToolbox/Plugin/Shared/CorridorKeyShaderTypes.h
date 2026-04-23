@@ -142,4 +142,32 @@ typedef struct CKCCLabelParams {
     float blurSigma;
 } CKCCLabelParams;
 
+// Fused matte-refine params: levels + gamma + refiner blend in one pass.
+// `refinerStrength == 1` skips the refiner blend (no coarse read). `gamma
+// == 1` skips the gamma pow() call. Each combine reduces per-kernel
+// overhead relative to running three separate dispatches.
+typedef struct CKMatteRefineParams {
+    float blackPoint;
+    float whitePoint;
+    float gamma;
+    float refinerStrength;
+} CKMatteRefineParams;
+
+// Fused foreground post-process params: source passthrough + light wrap +
+// edge decontamination + inverse screen matrix in one pass. The enable
+// flags let callers avoid the downstream reads/work when a stage is off
+// — the GPU branches coherently across all threads so these cost almost
+// nothing when disabled.
+typedef struct CKForegroundPostProcessParams {
+    simd_float3x3 inverseScreenMatrix;
+    vector_float3 screenColor;
+    float lightWrapStrength;
+    float lightWrapEdgeBias;
+    float edgeDecontaminateStrength;
+    int sourcePassthroughEnabled;
+    int lightWrapEnabled;
+    int edgeDecontaminateEnabled;
+    int applyInverseRotation;
+} CKForegroundPostProcessParams;
+
 #endif /* CorridorKeyShaderTypes_h */

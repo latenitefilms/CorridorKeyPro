@@ -2,20 +2,17 @@
 //  InferenceCoordinator.swift
 //  Corridor Key Toolbox
 //
-//  Chooses a keying engine and manages warm-up. The render pipeline delegates
-//  the opaque "ask a model for a matte" problem to this coordinator so the
-//  orchestrator can stay linear and testable.
+//  Chooses a keying engine, manages the per-frame cache, and falls back
+//  to the rough-matte engine when MLX isn't ready yet. Engines live in
+//  `SharedMLXBridgeRegistry` — the coordinator no longer owns them —
+//  so multiple plug-in instances share a single warmed bridge per
+//  `(device, rung)`.
 //
-//  MLX is loaded **asynchronously** on a detached Task so the render pipeline
-//  is never blocked waiting for the bridge to compile. Until MLX is ready,
-//  the coordinator returns the `RoughMatteKeyingEngine` so FCP gets a matte
-//  immediately. Once warm-up completes the coordinator switches engines and
-//  subsequent frames render with the neural matte.
-//
-//  A single-frame MLX output cache is layered on top: if the user changes a
-//  post-process parameter (output mode, despill, matte sliders) without
-//  moving the playhead or swapping screen colour, the coordinator returns
-//  the previous MLX result instead of paying for another ~500 ms inference.
+//  A single-frame MLX output cache is layered on top: if the user
+//  changes a post-process parameter (output mode, despill, matte
+//  sliders) without moving the playhead or swapping screen colour, the
+//  coordinator returns the previous MLX result instead of paying for
+//  another ~500 ms inference.
 //
 
 import Foundation
@@ -48,19 +45,19 @@ struct InferenceCacheKey: Hashable, Sendable {
 
 final class InferenceCoordinator: @unchecked Sendable {
 
-    /// Enables the MLX bridge. When `true` the coordinator asynchronously
-    /// loads the bundled `.mlxfn` that matches the requested resolution and
+    /// Enables the MLX bridge. When `true` the coordinator asks the
+    /// shared registry to warm a bridge matching the requested rung;
     /// falls back to `RoughMatteKeyingEngine` on any error.
     private static let mlxEnabled = true
 
     private let stateLock = NSLock()
     private var roughMatteEngine: RoughMatteKeyingEngine?
-    private var mlxEngine: MLXKeyingEngine?
-    private var mlxEngineReady: Bool = false
-    private var mlxEngineLoading: Bool = false
-    private var mlxLoadedResolution: Int = 0
-    private var mlxCacheEntryID: ObjectIdentifier?
-    private var mlxFailureMessage: String?
+
+    /// The `(device, rung)` this coordinator most recently asked the
+    /// registry to warm. Used by `warmupStatus` and `cancelWarmup` to
+    /// target the right key.
+    private var trackedDeviceRegistryID: UInt64 = 0
+    private var trackedRung: Int = 0
 
     /// Single-frame cache of the latest MLX inference. The rough-matte path
     /// writes to freshly-allocated textures every frame so it's cheap enough
@@ -71,53 +68,49 @@ final class InferenceCoordinator: @unchecked Sendable {
     /// Human-readable backend summary for diagnostics.
     var backendDescription: String {
         stateLock.lock()
-        defer { stateLock.unlock() }
-        if mlxEngineReady, let mlxEngine {
-            return mlxEngine.backendDisplayName
+        let device = trackedDeviceRegistryID
+        let rung = trackedRung
+        let rough = roughMatteEngine
+        stateLock.unlock()
+        if rung > 0, let engine = SharedMLXBridgeRegistry.shared.readyEngine(deviceRegistryID: device, rung: rung) {
+            return engine.backendDisplayName
         }
-        if let roughMatteEngine {
-            return roughMatteEngine.backendDisplayName
+        if let rough {
+            return rough.backendDisplayName
         }
         return "Idle"
-    }
-
-    /// Reference to the live warm-up Task so we can cancel from the UI.
-    /// Cleared by the task itself on completion or cancellation.
-    private var warmupTask: Task<Void, Never>?
-
-    /// Cancels the in-flight MLX warm-up, if any. Safe to call when no
-    /// warm-up is running — in that case it's a no-op.
-    func cancelWarmup() {
-        stateLock.lock()
-        let task = warmupTask
-        warmupTask = nil
-        stateLock.unlock()
-        task?.cancel()
     }
 
     /// Current warm-up status. The inspector bridge consumes this to render
     /// the "Loading neural model…" badge during the first-play stall.
     var warmupStatus: WarmupStatus {
         stateLock.lock()
-        defer { stateLock.unlock() }
-        if let message = mlxFailureMessage {
-            return .failed(message)
-        }
-        if mlxEngineReady, mlxLoadedResolution > 0 {
-            return .ready(resolution: mlxLoadedResolution)
-        }
-        if mlxEngineLoading {
-            return .warming(resolution: mlxLoadedResolution)
-        }
-        return .cold
+        let device = trackedDeviceRegistryID
+        let rung = trackedRung
+        stateLock.unlock()
+        guard rung > 0 else { return .cold }
+        return SharedMLXBridgeRegistry.shared.status(deviceRegistryID: device, rung: rung)
     }
 
-    /// Runs inference for a single frame. Uses MLX when it's warm, otherwise
-    /// synchronously produces a rough matte. MLX warm-up is kicked off in
-    /// the background on the first frame so subsequent frames can use it.
+    /// Cancels the in-flight MLX warm-up tracked by this coordinator.
+    /// Safe when no warm-up is running — it's a no-op in that case.
+    func cancelWarmup() {
+        stateLock.lock()
+        let device = trackedDeviceRegistryID
+        let rung = trackedRung
+        stateLock.unlock()
+        guard rung > 0 else { return }
+        SharedMLXBridgeRegistry.shared.cancelWarmup(deviceRegistryID: device, rung: rung)
+    }
+
+    /// Runs inference for a single frame. Uses MLX when the shared
+    /// registry has a warm engine for the requested `(device, rung)`;
+    /// otherwise synchronously produces a rough matte. Warm-up is
+    /// requested in the background so subsequent frames can use MLX.
     ///
-    /// Passes `cacheKey` so we can short-circuit repeated inferences at the
-    /// same play-head when only post-process parameters have changed.
+    /// Passes `cacheKey` so we can short-circuit repeated inferences at
+    /// the same play-head when only post-process parameters have
+    /// changed.
     func runInference(
         request: KeyingInferenceRequest,
         cacheEntry: MetalDeviceCacheEntry,
@@ -129,25 +122,29 @@ final class InferenceCoordinator: @unchecked Sendable {
 
         let output = try makeOutputTextures(request: request, cacheEntry: cacheEntry)
 
-        // If the resolution has changed since the last warm-up we'll need a
-        // different bridge file. Invalidate and re-kick the warm-up.
         if Self.mlxEnabled {
-            kickOffMLXWarmupIfNeeded(
-                resolution: request.inferenceResolution,
+            let deviceRegistryID = cacheEntry.device.registryID
+            trackRequestedBridge(deviceRegistryID: deviceRegistryID, rung: request.inferenceResolution)
+            SharedMLXBridgeRegistry.shared.beginWarmup(
+                deviceRegistryID: deviceRegistryID,
+                rung: request.inferenceResolution,
                 cacheEntry: cacheEntry
             )
-        }
 
-        if let mlx = readyMLXEngine(for: request.inferenceResolution, cacheEntry: cacheEntry) {
-            do {
-                try mlx.run(request: request, output: output)
-                storeCachedOutput(output, for: cacheKey)
-                return output
-            } catch {
-                PluginLog.error(
-                    "MLX inference failed; using rough matte for this frame. Error: \(error.localizedDescription)"
-                )
-                // Intentional fall-through to the rough-matte path below.
+            if let mlx = SharedMLXBridgeRegistry.shared.readyEngine(
+                deviceRegistryID: deviceRegistryID,
+                rung: request.inferenceResolution
+            ) {
+                do {
+                    try mlx.run(request: request, output: output)
+                    storeCachedOutput(output, for: cacheKey)
+                    return output
+                } catch {
+                    PluginLog.error(
+                        "MLX inference failed; using rough matte for this frame. Error: \(error.localizedDescription)"
+                    )
+                    // Intentional fall-through to the rough-matte path below.
+                }
             }
         }
 
@@ -156,6 +153,20 @@ final class InferenceCoordinator: @unchecked Sendable {
         // The fallback path intentionally isn't cached — it's already cheap
         // and caching it would starve later MLX-ready frames of a valid slot.
         return output
+    }
+
+    /// Asks the shared registry to start warm-up for `(device, rung)`
+    /// without waiting. Used by `CorridorKeyToolboxPlugIn.init` to
+    /// pre-warm the default bridge the moment the effect is applied.
+    func requestEagerWarmup(rung: Int, cacheEntry: MetalDeviceCacheEntry) {
+        guard Self.mlxEnabled else { return }
+        let deviceRegistryID = cacheEntry.device.registryID
+        trackRequestedBridge(deviceRegistryID: deviceRegistryID, rung: rung)
+        SharedMLXBridgeRegistry.shared.beginWarmup(
+            deviceRegistryID: deviceRegistryID,
+            rung: rung,
+            cacheEntry: cacheEntry
+        )
     }
 
     // MARK: - MLX frame cache
@@ -173,6 +184,19 @@ final class InferenceCoordinator: @unchecked Sendable {
         stateLock.lock()
         cachedMLXKey = key
         cachedMLXOutput = output
+        stateLock.unlock()
+    }
+
+    // MARK: - Tracked bridge target
+
+    private func trackRequestedBridge(deviceRegistryID: UInt64, rung: Int) {
+        stateLock.lock()
+        if trackedDeviceRegistryID != deviceRegistryID || trackedRung != rung {
+            cachedMLXKey = nil
+            cachedMLXOutput = nil
+        }
+        trackedDeviceRegistryID = deviceRegistryID
+        trackedRung = rung
         stateLock.unlock()
     }
 
@@ -199,112 +223,6 @@ final class InferenceCoordinator: @unchecked Sendable {
             throw KeyingInferenceError.deviceUnavailable
         }
         return KeyingInferenceOutput(alphaTexture: alpha, foregroundTexture: foreground)
-    }
-
-    // MARK: - MLX lifecycle
-
-    /// Returns a ready MLX engine for the given resolution, or nil if warm-up
-    /// is still in flight. Checking is cheap — this is called per frame.
-    private func readyMLXEngine(
-        for resolution: Int,
-        cacheEntry: MetalDeviceCacheEntry
-    ) -> MLXKeyingEngine? {
-        stateLock.lock()
-        defer { stateLock.unlock() }
-        guard mlxEngineReady,
-              let mlx = mlxEngine,
-              mlxLoadedResolution == resolution,
-              mlxCacheEntryID == ObjectIdentifier(cacheEntry)
-        else {
-            return nil
-        }
-        return mlx
-    }
-
-    /// Starts (or re-starts) an MLX warm-up on a background Task if one isn't
-    /// already in flight for the current (resolution, device) combination.
-    private func kickOffMLXWarmupIfNeeded(
-        resolution: Int,
-        cacheEntry: MetalDeviceCacheEntry
-    ) {
-        stateLock.lock()
-        let alreadyLoadingOrLoaded =
-            mlxEngineLoading
-            || (mlxEngineReady
-                && mlxLoadedResolution == resolution
-                && mlxCacheEntryID == ObjectIdentifier(cacheEntry))
-        if alreadyLoadingOrLoaded {
-            stateLock.unlock()
-            return
-        }
-        // Resolution or device changed — reset and start a fresh warm-up.
-        mlxEngineReady = false
-        mlxEngineLoading = true
-        mlxEngine = nil
-        mlxLoadedResolution = resolution
-        mlxCacheEntryID = ObjectIdentifier(cacheEntry)
-        mlxFailureMessage = nil
-        cachedMLXKey = nil
-        cachedMLXOutput = nil
-        stateLock.unlock()
-
-        let engine = MLXKeyingEngine(cacheEntry: cacheEntry)
-        guard engine.supports(resolution: resolution) else {
-            PluginLog.notice("No MLX bridge bundled for \(resolution)px; rough matte will be used.")
-            stateLock.lock()
-            mlxEngineLoading = false
-            stateLock.unlock()
-            return
-        }
-
-        PluginLog.notice("Queuing MLX warm-up for \(resolution)px on \(cacheEntry.device.name).")
-        let cacheEntryID = ObjectIdentifier(cacheEntry)
-        let task = Task.detached(priority: .utility) { [weak self] in
-            do {
-                try Task.checkCancellation()
-                try await engine.prepare(resolution: resolution)
-                try Task.checkCancellation()
-                self?.recordMLXWarmupSuccess(engine: engine, resolution: resolution, cacheEntryID: cacheEntryID)
-                PluginLog.notice("MLX warm-up complete for \(resolution)px.")
-            } catch is CancellationError {
-                self?.recordMLXWarmupFailure(message: "Warm-up cancelled.")
-                PluginLog.notice("MLX warm-up cancelled.")
-            } catch {
-                self?.recordMLXWarmupFailure(message: error.localizedDescription)
-                PluginLog.error("MLX warm-up failed: \(error.localizedDescription). Rough matte will continue to be used.")
-            }
-        }
-        stateLock.lock()
-        warmupTask = task
-        stateLock.unlock()
-    }
-
-    private func recordMLXWarmupSuccess(
-        engine: MLXKeyingEngine,
-        resolution: Int,
-        cacheEntryID: ObjectIdentifier
-    ) {
-        stateLock.lock()
-        mlxEngineLoading = false
-        mlxEngine = engine
-        mlxEngineReady = true
-        mlxLoadedResolution = resolution
-        mlxCacheEntryID = cacheEntryID
-        mlxFailureMessage = nil
-        cachedMLXKey = nil
-        cachedMLXOutput = nil
-        stateLock.unlock()
-    }
-
-    private func recordMLXWarmupFailure(message: String) {
-        stateLock.lock()
-        mlxEngineLoading = false
-        mlxEngine = nil
-        mlxEngineReady = false
-        mlxFailureMessage = message
-        cachedMLXKey = nil
-        cachedMLXOutput = nil
-        stateLock.unlock()
     }
 
     // MARK: - Rough matte fallback
