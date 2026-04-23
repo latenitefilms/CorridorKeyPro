@@ -12,7 +12,7 @@ You can learn more about LateNite's creations over at [FCP Cafe](https://fcp.caf
 
 ## Acknowledgements
 
-Corridor Key Toolbox would NOT be possible without Niko's amazing [Corridor Key](https://github.com/nikopueringer/CorridorKey).
+**Corridor Key Toolbox** would NOT be possible without Niko's amazing [Corridor Key](https://github.com/nikopueringer/CorridorKey).
 
 Niko's Corridor Key repo integrates several open-source modules for Alpha Hint generation.
 
