@@ -70,6 +70,7 @@ final class CorridorKeyComputePipelines: Sendable {
     let ccLabelFilter: any MTLComputePipelineState
     let matteRefineFused: any MTLComputePipelineState
     let foregroundPostProcess: any MTLComputePipelineState
+    let temporalBlend: any MTLComputePipelineState
 
     init(device: any MTLDevice, library: any MTLLibrary) throws {
         func compute(_ name: String) throws -> any MTLComputePipelineState {
@@ -103,6 +104,7 @@ final class CorridorKeyComputePipelines: Sendable {
         ccLabelFilter = try compute("corridorKeyCCLabelFilterKernel")
         matteRefineFused = try compute("corridorKeyMatteRefineKernel")
         foregroundPostProcess = try compute("corridorKeyForegroundPostProcessKernel")
+        temporalBlend = try compute("corridorKeyTemporalBlendKernel")
     }
 }
 

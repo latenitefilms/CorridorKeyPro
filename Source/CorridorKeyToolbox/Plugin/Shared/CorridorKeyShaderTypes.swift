@@ -36,6 +36,8 @@ enum CorridorKeyTextureIndex: Int32 {
     case CKTextureIndexOutput = 6
     case CKTextureIndexCoarse = 7
     case CKTextureIndexLabel = 8
+    case CKTextureIndexPreviousMatte = 9
+    case CKTextureIndexPreviousSource = 10
 }
 
 let CKTextureIndexSource = CorridorKeyTextureIndex.CKTextureIndexSource
@@ -47,6 +49,8 @@ let CKTextureIndexTempB = CorridorKeyTextureIndex.CKTextureIndexTempB
 let CKTextureIndexOutput = CorridorKeyTextureIndex.CKTextureIndexOutput
 let CKTextureIndexCoarse = CorridorKeyTextureIndex.CKTextureIndexCoarse
 let CKTextureIndexLabel = CorridorKeyTextureIndex.CKTextureIndexLabel
+let CKTextureIndexPreviousMatte = CorridorKeyTextureIndex.CKTextureIndexPreviousMatte
+let CKTextureIndexPreviousSource = CorridorKeyTextureIndex.CKTextureIndexPreviousSource
 
 enum CorridorKeyBufferIndex: Int32 {
     case CKBufferIndexDespillParams = 0
@@ -61,6 +65,7 @@ enum CorridorKeyBufferIndex: Int32 {
     case CKBufferIndexEdgeDecontaminateParams = 9
     case CKBufferIndexCCLabelParams = 10
     case CKBufferIndexCCLabelCounts = 11
+    case CKBufferIndexTemporalBlendParams = 12
 }
 
 let CKBufferIndexDespillParams = CorridorKeyBufferIndex.CKBufferIndexDespillParams
@@ -75,6 +80,7 @@ let CKBufferIndexLightWrapParams = CorridorKeyBufferIndex.CKBufferIndexLightWrap
 let CKBufferIndexEdgeDecontaminateParams = CorridorKeyBufferIndex.CKBufferIndexEdgeDecontaminateParams
 let CKBufferIndexCCLabelParams = CorridorKeyBufferIndex.CKBufferIndexCCLabelParams
 let CKBufferIndexCCLabelCounts = CorridorKeyBufferIndex.CKBufferIndexCCLabelCounts
+let CKBufferIndexTemporalBlendParams = CorridorKeyBufferIndex.CKBufferIndexTemporalBlendParams
 
 // Spill method and output mode enums. Use Int32 so rawValue matches the
 // shader's signed int.
@@ -182,6 +188,11 @@ struct CKForegroundPostProcessParams {
     var lightWrapEnabled: Int32
     var edgeDecontaminateEnabled: Int32
     var applyInverseRotation: Int32
+}
+
+struct CKTemporalBlendParams {
+    var strength: Float
+    var motionThreshold: Float
 }
 
 #endif

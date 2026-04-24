@@ -35,6 +35,7 @@ extension CorridorKeyToolboxPlugIn {
         try addMatteGroup(create: create)
         try addEdgeAndSpillGroup(create: create)
         try addEdgeRefinementGroup(create: create)
+        try addTemporalStabilityGroup(create: create)
         PluginLog.notice("Parameters registered with Final Cut Pro.")
     }
 
@@ -365,6 +366,43 @@ extension CorridorKeyToolboxPlugIn {
         create.endParameterSubGroup()
     }
 
+    /// Phase 1 addition: temporal stability. Applied during the Analyse
+    /// Clip pass so the cached matte already reflects the blend — zero
+    /// hot-path cost at playback. Defaults to enabled so new projects
+    /// benefit immediately; saved projects from before this build fall
+    /// back to enabled via `PluginStateData.temporalStabilityEnabled`'s
+    /// `decodeIfPresent` default, preserving previous output on first
+    /// open (there is no cached matte yet, so the first analyse pass
+    /// writes a stabilised one).
+    private func addTemporalStabilityGroup(create: any FxParameterCreationAPI_v5) throws {
+        create.startParameterSubGroup(
+            "Temporal Stability",
+            parameterID: ParameterIdentifier.temporalStabilityGroup,
+            parameterFlags: CorridorKeyParameterFlags.default.fxFlags
+        )
+
+        create.addToggleButton(
+            withName: "Reduce Edge Flicker",
+            parameterID: ParameterIdentifier.temporalStabilityEnabled,
+            defaultValue: true,
+            parameterFlags: CorridorKeyParameterFlags.nonAnimatableChoice.fxFlags
+        )
+
+        create.addFloatSlider(
+            withName: "Stability Strength",
+            parameterID: ParameterIdentifier.temporalStabilityStrength,
+            defaultValue: 0.5,
+            parameterMin: 0,
+            parameterMax: 1,
+            sliderMin: 0,
+            sliderMax: 1,
+            delta: 0.01,
+            parameterFlags: CorridorKeyParameterFlags.default.fxFlags
+        )
+
+        create.endParameterSubGroup()
+    }
+
     // MARK: - Parameter change notifications
 
     /// Final Cut Pro invokes this method when the user edits a control. We
@@ -387,10 +425,12 @@ extension CorridorKeyToolboxPlugIn {
 
         let lightWrapOn = readBool(retrieval: retrieval, parameterID: ParameterIdentifier.lightWrapEnabled, at: time, default: false)
         let decontamOn = readBool(retrieval: retrieval, parameterID: ParameterIdentifier.edgeDecontaminateEnabled, at: time, default: false)
+        let temporalOn = readBool(retrieval: retrieval, parameterID: ParameterIdentifier.temporalStabilityEnabled, at: time, default: true)
 
         setEnabled(setter: setter, parameterID: ParameterIdentifier.lightWrapStrength, enabled: lightWrapOn)
         setEnabled(setter: setter, parameterID: ParameterIdentifier.lightWrapRadius, enabled: lightWrapOn)
         setEnabled(setter: setter, parameterID: ParameterIdentifier.edgeDecontaminateStrength, enabled: decontamOn)
+        setEnabled(setter: setter, parameterID: ParameterIdentifier.temporalStabilityStrength, enabled: temporalOn)
     }
 
     private func readBool(

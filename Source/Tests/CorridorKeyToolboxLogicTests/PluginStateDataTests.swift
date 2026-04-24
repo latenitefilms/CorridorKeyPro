@@ -33,6 +33,8 @@ struct PluginStateDataTests {
             despeckleSize: 850,
             despillStrength: 0.75,
             spillMethod: .doubleLimit,
+            temporalStabilityEnabled: false,
+            temporalStabilityStrength: 0.77,
             outputMode: .foregroundPlusMatte,
             upscaleMethod: .lanczos,
             renderQualityLevel: 3,
@@ -58,6 +60,8 @@ struct PluginStateDataTests {
         #expect(decoded.despeckleSize == 850)
         #expect(decoded.despillStrength == 0.75)
         #expect(decoded.spillMethod == .doubleLimit)
+        #expect(decoded.temporalStabilityEnabled == false)
+        #expect(decoded.temporalStabilityStrength == 0.77)
         #expect(decoded.outputMode == .foregroundPlusMatte)
         #expect(decoded.upscaleMethod == .lanczos)
         #expect(decoded.renderQualityLevel == 3)
@@ -65,6 +69,20 @@ struct PluginStateDataTests {
         #expect(decoded.destinationLongEdgePixels == 3840)
         #expect(decoded.cachedMatteBlob == matte)
         #expect(decoded.cachedMatteInferenceResolution == 1024)
+    }
+
+    @Test("Temporal stability defaults preserve backward compatibility")
+    func temporalStabilityDefaults() {
+        let defaults = PluginStateData()
+        #expect(defaults.temporalStabilityEnabled == true)
+        #expect(defaults.temporalStabilityStrength == 0.5)
+
+        // A blob written before these keys existed must still decode cleanly
+        // and inherit the new defaults — otherwise projects saved by an
+        // earlier build would refuse to open.
+        let decoded = PluginStateData.decoded(from: NSData())
+        #expect(decoded.temporalStabilityEnabled == true)
+        #expect(decoded.temporalStabilityStrength == 0.5)
     }
 
     @Test("Empty blob falls back to defaults")

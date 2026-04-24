@@ -702,6 +702,87 @@ enum RenderStages {
         return blended
     }
 
+    // MARK: - Phase 1: Temporal blend (matte flicker reduction)
+
+    /// Blends `currentMatte` toward `previousMatte` on pixels where the
+    /// `currentSource`/`previousSource` RGB has barely changed. All four
+    /// textures must be the same size and pixel format. Returns a new
+    /// pooled texture holding the blended matte.
+    ///
+    /// `strength` is the exponential-moving-average weight assigned to the
+    /// previous frame when the pixel is deemed stationary (0 disables the
+    /// blend entirely; 1 replaces the current alpha with the previous
+    /// alpha). `motionThreshold` is the max-channel absolute RGB delta at
+    /// which the gate drops to half strength; values at 2× threshold pass
+    /// the current alpha through unchanged. See the matching kernel in
+    /// `CorridorKeyShaders.metal` for the exact math.
+    ///
+    /// Returns `nil` when `strength <= 0` — the caller should use
+    /// `currentMatte` directly to avoid an unnecessary encoder round-trip.
+    static func applyTemporalBlend(
+        currentMatte: any MTLTexture,
+        previousMatte: any MTLTexture,
+        currentSource: any MTLTexture,
+        previousSource: any MTLTexture,
+        strength: Float,
+        motionThreshold: Float,
+        entry: MetalDeviceCacheEntry,
+        commandBuffer: any MTLCommandBuffer
+    ) throws -> PooledTexture? {
+        if strength <= 0 { return nil }
+        precondition(
+            currentMatte.width == previousMatte.width
+                && currentMatte.height == previousMatte.height,
+            "Matte textures must share dimensions for temporal blend"
+        )
+        precondition(
+            currentSource.width == currentMatte.width
+                && currentSource.height == currentMatte.height
+                && previousSource.width == currentMatte.width
+                && previousSource.height == currentMatte.height,
+            "Source and matte must share dimensions for temporal blend"
+        )
+
+        let width = currentMatte.width
+        let height = currentMatte.height
+
+        guard let output = entry.texturePool.acquire(
+            width: width,
+            height: height,
+            pixelFormat: currentMatte.pixelFormat
+        ) else {
+            throw MetalDeviceCacheError.textureAllocationFailed
+        }
+        guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
+            output.returnManually()
+            throw MetalDeviceCacheError.commandEncoderCreationFailed
+        }
+        encoder.label = "Corridor Key Toolbox Temporal Blend"
+        encoder.setComputePipelineState(entry.computePipelines.temporalBlend)
+        encoder.setTexture(currentMatte, index: Int(CKTextureIndexMatte.rawValue))
+        encoder.setTexture(previousMatte, index: Int(CKTextureIndexPreviousMatte.rawValue))
+        encoder.setTexture(currentSource, index: Int(CKTextureIndexSource.rawValue))
+        encoder.setTexture(previousSource, index: Int(CKTextureIndexPreviousSource.rawValue))
+        encoder.setTexture(output.texture, index: Int(CKTextureIndexOutput.rawValue))
+        var params = CKTemporalBlendParams(
+            strength: strength,
+            motionThreshold: max(motionThreshold, 1e-6)
+        )
+        encoder.setBytes(
+            &params,
+            length: MemoryLayout<CKTemporalBlendParams>.size,
+            index: Int(CKBufferIndexTemporalBlendParams.rawValue)
+        )
+        dispatch(
+            encoder: encoder,
+            pipeline: entry.computePipelines.temporalBlend,
+            width: width,
+            height: height
+        )
+        encoder.endEncoding()
+        return output
+    }
+
     // MARK: - Phase 4.2: Connected-components despeckle
 
     /// Runs a GPU-parallel connected-components labelling pass on the matte

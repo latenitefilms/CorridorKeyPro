@@ -42,6 +42,10 @@ let package = Package(
         .library(
             name: "CorridorKeyToolboxMetalStages",
             targets: ["CorridorKeyToolboxMetalStages"]
+        ),
+        .executable(
+            name: "BenchmarkRunner",
+            targets: ["BenchmarkRunner"]
         )
     ],
     targets: [
@@ -68,6 +72,7 @@ let package = Package(
                 "Inference/KeyingInferenceEngine.swift",
                 "Inference/MLXKeyingEngine.swift",
                 "Inference/RoughMatteKeyingEngine.swift",
+                "Inference/SharedMLXBridgeRegistry.swift",
                 "Inspector/CorridorKeyToolboxPlugIn+CustomViews.swift",
                 "Inspector/CorridorKeyInspectorBridge.swift",
                 "Inspector/CorridorKeyHeaderView.swift",
@@ -81,6 +86,7 @@ let package = Package(
                 "Parameters/PluginStateData.swift",
                 "PostProcess/ScreenColorEstimator.swift",
                 "PostProcess/ColorGamutMatrix.swift",
+                "PostProcess/TemporalBlender.swift",
                 "Inference/AnalysisData.swift",
                 "Inference/MatteCodec.swift",
                 "Inspector/CorridorKeyAnalysisSnapshot.swift",
@@ -131,6 +137,22 @@ let package = Package(
             swiftSettings: [
                 .swiftLanguageMode(.v6),
                 .define("CORRIDOR_KEY_SPM_MIRROR")
+            ]
+        ),
+        .executableTarget(
+            name: "BenchmarkRunner",
+            dependencies: ["CorridorKeyToolboxLogic"],
+            path: "BenchmarkRunner",
+            swiftSettings: [
+                .swiftLanguageMode(.v6)
+            ]
+        ),
+        .testTarget(
+            name: "BenchmarkRunnerTests",
+            dependencies: ["BenchmarkRunner"],
+            path: "Tests/BenchmarkRunnerTests",
+            swiftSettings: [
+                .swiftLanguageMode(.v6)
             ]
         ),
         .testTarget(

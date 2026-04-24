@@ -44,6 +44,10 @@ struct PluginStateData: Codable, Sendable {
     var edgeDecontaminateEnabled: Bool
     var edgeDecontaminateStrength: Double
 
+    // Temporal stability (Phase 1 — analysis-pass matte EMA with motion gate)
+    var temporalStabilityEnabled: Bool
+    var temporalStabilityStrength: Double
+
     // Output
     var outputMode: OutputMode
 
@@ -92,6 +96,8 @@ struct PluginStateData: Codable, Sendable {
         lightWrapRadius: Double = 10.0,
         edgeDecontaminateEnabled: Bool = false,
         edgeDecontaminateStrength: Double = 0.5,
+        temporalStabilityEnabled: Bool = true,
+        temporalStabilityStrength: Double = 0.5,
         outputMode: OutputMode = .processed,
         upscaleMethod: UpscaleMethod = .lanczos,
         renderQualityLevel: Int = 2,
@@ -120,6 +126,8 @@ struct PluginStateData: Codable, Sendable {
         self.lightWrapRadius = lightWrapRadius
         self.edgeDecontaminateEnabled = edgeDecontaminateEnabled
         self.edgeDecontaminateStrength = edgeDecontaminateStrength
+        self.temporalStabilityEnabled = temporalStabilityEnabled
+        self.temporalStabilityStrength = temporalStabilityStrength
         self.outputMode = outputMode
         self.upscaleMethod = upscaleMethod
         self.renderQualityLevel = renderQualityLevel
@@ -155,6 +163,8 @@ struct PluginStateData: Codable, Sendable {
         case lightWrapRadius
         case edgeDecontaminateEnabled
         case edgeDecontaminateStrength
+        case temporalStabilityEnabled
+        case temporalStabilityStrength
         case outputMode
         case upscaleMethod
         case renderQualityLevel
@@ -186,6 +196,8 @@ struct PluginStateData: Codable, Sendable {
         self.lightWrapRadius = try container.decodeIfPresent(Double.self, forKey: .lightWrapRadius) ?? 10.0
         self.edgeDecontaminateEnabled = try container.decodeIfPresent(Bool.self, forKey: .edgeDecontaminateEnabled) ?? false
         self.edgeDecontaminateStrength = try container.decodeIfPresent(Double.self, forKey: .edgeDecontaminateStrength) ?? 0.5
+        self.temporalStabilityEnabled = try container.decodeIfPresent(Bool.self, forKey: .temporalStabilityEnabled) ?? true
+        self.temporalStabilityStrength = try container.decodeIfPresent(Double.self, forKey: .temporalStabilityStrength) ?? 0.5
         self.outputMode = try container.decodeIfPresent(OutputMode.self, forKey: .outputMode) ?? .processed
         self.upscaleMethod = try container.decodeIfPresent(UpscaleMethod.self, forKey: .upscaleMethod) ?? .lanczos
         self.renderQualityLevel = try container.decodeIfPresent(Int.self, forKey: .renderQualityLevel) ?? 2

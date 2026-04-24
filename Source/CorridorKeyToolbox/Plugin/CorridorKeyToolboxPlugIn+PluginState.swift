@@ -146,6 +146,20 @@ extension CorridorKeyToolboxPlugIn {
             default: 0.5
         )
 
+        // Temporal stability (Phase 1).
+        state.temporalStabilityEnabled = boolValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.temporalStabilityEnabled,
+            time: renderTime,
+            default: true
+        )
+        state.temporalStabilityStrength = floatValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.temporalStabilityStrength,
+            time: renderTime,
+            default: 0.5
+        )
+
         // Edge & spill
         state.despillStrength = floatValue(
             retrieval: retrieval,

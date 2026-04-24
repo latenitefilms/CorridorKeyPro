@@ -101,11 +101,29 @@ final class RenderPipeline: @unchecked Sendable {
         return try renderSourcePassThrough(request: request, context: context)
     }
 
+    /// Raw output of the analysis pass. `alpha` is a width*height single-channel
+    /// float buffer; `source` is an optional width*height*4 interleaved RGBA
+    /// float buffer at the same resolution as the alpha (only produced when
+    /// `readbackSource` is true, used by the temporal-blend motion gate).
+    struct AnalysisExtraction {
+        let alpha: [Float]
+        let source: [Float]?
+        let width: Int
+        let height: Int
+        let inferenceResolution: Int
+    }
+
     /// Runs pre-inference + MLX (no post-processing) and returns the raw alpha
     /// matte on the CPU. Called by `FxAnalyzer.analyzeFrame` so the matte can
     /// be compressed and stored in the custom parameter. This path never reads
     /// from or writes to the per-frame cache — the custom parameter is the
     /// persistent cache.
+    ///
+    /// Pass `readbackSource: true` when temporal stability is enabled so the
+    /// caller can feed the current and previous source frames to the motion
+    /// gate. The extra readback is a single 4-channel copy at inference
+    /// resolution — ~64 MB on the Maximum rung, well below the pre-existing
+    /// 192 MB/frame MLX working set.
     func extractAlphaMatteForAnalysis(
         sourceTexture: any MTLTexture,
         state: PluginStateData,
@@ -113,8 +131,9 @@ final class RenderPipeline: @unchecked Sendable {
         renderTime: CMTime,
         device: any MTLDevice,
         entry: MetalDeviceCacheEntry,
-        commandQueue: any MTLCommandQueue
-    ) throws -> (alpha: [Float], width: Int, height: Int, inferenceResolution: Int) {
+        commandQueue: any MTLCommandQueue,
+        readbackSource: Bool = false
+    ) throws -> AnalysisExtraction {
         let screenTransform = ScreenColorEstimator.defaultTransform(for: state.screenColor)
         let gamutTransform = ColorGamutMatrix.transform(for: workingGamut)
         let longEdge = max(sourceTexture.width, sourceTexture.height)
@@ -162,6 +181,15 @@ final class RenderPipeline: @unchecked Sendable {
             }
         }
 
+        var sourceReadback: [Float]? = nil
+        if readbackSource {
+            sourceReadback = try readbackRGBATexture(
+                pre.rawSourceAtInferenceResolution.texture,
+                entry: entry,
+                commandQueue: commandQueue
+            )
+        }
+
         // Return pre-inference pooled textures now that we've captured the
         // alpha. The inference output textures live outside the pool, and
         // the normalised input buffer is cached per-rung on the entry so
@@ -169,7 +197,97 @@ final class RenderPipeline: @unchecked Sendable {
         pre.rotatedSource?.returnManually()
         pre.rawSourceAtInferenceResolution.returnManually()
 
-        return (alpha, width, height, inferenceResolution)
+        return AnalysisExtraction(
+            alpha: alpha,
+            source: sourceReadback,
+            width: width,
+            height: height,
+            inferenceResolution: inferenceResolution
+        )
+    }
+
+    /// Blits a pooled `.private`-storage texture into a shared-storage
+    /// throwaway, waits for the GPU, and returns the pixels as an RGBA float
+    /// array. Used by `extractAlphaMatteForAnalysis` so the CPU-side temporal
+    /// blender can see the source values without dropping the render path's
+    /// more efficient private storage.
+    private func readbackRGBATexture(
+        _ texture: any MTLTexture,
+        entry: MetalDeviceCacheEntry,
+        commandQueue: any MTLCommandQueue
+    ) throws -> [Float] {
+        let width = texture.width
+        let height = texture.height
+        let descriptor = MTLTextureDescriptor.texture2DDescriptor(
+            pixelFormat: texture.pixelFormat,
+            width: width,
+            height: height,
+            mipmapped: false
+        )
+        descriptor.usage = [.shaderRead]
+        descriptor.storageMode = .shared
+        guard let sharedTexture = entry.device.makeTexture(descriptor: descriptor) else {
+            throw MetalDeviceCacheError.textureAllocationFailed
+        }
+        guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+            throw MetalDeviceCacheError.commandBufferCreationFailed
+        }
+        guard let blitEncoder = commandBuffer.makeBlitCommandEncoder() else {
+            throw MetalDeviceCacheError.commandEncoderCreationFailed
+        }
+        blitEncoder.copy(
+            from: texture,
+            sourceSlice: 0,
+            sourceLevel: 0,
+            sourceOrigin: MTLOrigin(x: 0, y: 0, z: 0),
+            sourceSize: MTLSize(width: width, height: height, depth: 1),
+            to: sharedTexture,
+            destinationSlice: 0,
+            destinationLevel: 0,
+            destinationOrigin: MTLOrigin(x: 0, y: 0, z: 0)
+        )
+        blitEncoder.endEncoding()
+        try commitAndWait(commandBuffer: commandBuffer)
+
+        var pixels = [Float](repeating: 0, count: width * height * 4)
+        pixels.withUnsafeMutableBufferPointer { pointer in
+            if let base = pointer.baseAddress {
+                let bytesPerRow: Int
+                switch texture.pixelFormat {
+                case .rgba16Float:
+                    // Use a staging Float16 buffer then widen to Float32 so
+                    // downstream math doesn't depend on a specific pixel format.
+                    bytesPerRow = width * 4 * MemoryLayout<Float16>.size
+                    let halfCount = width * height * 4
+                    let halfStorage = UnsafeMutablePointer<Float16>.allocate(capacity: halfCount)
+                    defer { halfStorage.deallocate() }
+                    sharedTexture.getBytes(
+                        halfStorage,
+                        bytesPerRow: bytesPerRow,
+                        from: MTLRegionMake2D(0, 0, width, height),
+                        mipmapLevel: 0
+                    )
+                    for index in 0..<halfCount {
+                        base[index] = Float(halfStorage[index])
+                    }
+                case .rgba32Float:
+                    bytesPerRow = width * 4 * MemoryLayout<Float>.size
+                    sharedTexture.getBytes(
+                        base,
+                        bytesPerRow: bytesPerRow,
+                        from: MTLRegionMake2D(0, 0, width, height),
+                        mipmapLevel: 0
+                    )
+                default:
+                    // Every producer in the analysis path currently hands us
+                    // `.rgba16Float`; if a future path changes the format we
+                    // want the mismatch to surface loudly rather than emit
+                    // silent zeros, so leave `pixels` at its zero default.
+                    break
+                }
+            }
+        }
+        return pixels
     }
 
     // MARK: - Render sub-paths

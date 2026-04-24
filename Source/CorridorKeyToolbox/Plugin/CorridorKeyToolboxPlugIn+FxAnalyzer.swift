@@ -36,6 +36,24 @@ final class AnalysisSessionState: @unchecked Sendable {
     var matteHeight: Int = 0
     var mattes: [Int: Data] = [:]
 
+    /// Previous-frame buffers used by the Phase 1 temporal-stability blend.
+    /// These are the last frame's *blended* alpha (so the EMA accumulates
+    /// across the clip) and the raw RGBA source at the same resolution so
+    /// the motion gate can see whether a pixel actually moved.
+    ///
+    /// Reset when the session resets or when the inference resolution
+    /// changes (which drops previous-frame sizing and forces the blender
+    /// to restart from the next "current" frame).
+    var previousTemporalAlpha: [Float]?
+    var previousTemporalSource: [Float]?
+    var previousTemporalFrameIndex: Int?
+
+    /// Cached temporal-blend configuration captured at setup time. Reading
+    /// parameter values per frame would require a retrieval API round-trip
+    /// on the analysis thread, so we snapshot at the start of the pass.
+    var temporalStabilityEnabled: Bool = true
+    var temporalStabilityStrength: Double = 0.5
+
     /// Snapshot for lock-free packing into an `AnalysisData` value. Callers are
     /// expected to already hold the lock; the copy isolates the dictionary so
     /// downstream serialisation can happen outside the critical section.
@@ -66,6 +84,11 @@ final class AnalysisSessionState: @unchecked Sendable {
         matteWidth = 0
         matteHeight = 0
         mattes.removeAll(keepingCapacity: false)
+        previousTemporalAlpha = nil
+        previousTemporalSource = nil
+        previousTemporalFrameIndex = nil
+        temporalStabilityEnabled = true
+        temporalStabilityStrength = 0.5
     }
 }
 
@@ -176,6 +199,21 @@ extension CorridorKeyToolboxPlugIn {
         let longEdge = Int(1920)
         let inferenceResolution = qualityMode.resolvedInferenceResolution(forLongEdge: longEdge)
 
+        // Temporal stability settings are also snapshotted at setup so the
+        // per-frame analyser doesn't hit the parameter retrieval API from a
+        // background thread. These read with safe defaults if the project
+        // predates the parameter.
+        let temporalEnabled: Bool = {
+            var raw = ObjCBool(true)
+            retrieval.getBoolValue(&raw, fromParameter: ParameterIdentifier.temporalStabilityEnabled, at: analysisRange.start)
+            return raw.boolValue
+        }()
+        let temporalStrength: Double = {
+            var value: Double = 0.5
+            retrieval.getFloatValue(&value, fromParameter: ParameterIdentifier.temporalStabilityStrength, at: analysisRange.start)
+            return value
+        }()
+
         let frameCount = Self.frameCount(in: analysisRange, frameDuration: frameDuration)
         let session = analysisSession
         session.lock.lock()
@@ -188,6 +226,8 @@ extension CorridorKeyToolboxPlugIn {
         session.inferenceResolution = inferenceResolution
         session.matteWidth = inferenceResolution
         session.matteHeight = inferenceResolution
+        session.temporalStabilityEnabled = temporalEnabled
+        session.temporalStabilityStrength = temporalStrength
         session.lock.unlock()
 
         PluginLog.notice(
@@ -208,6 +248,11 @@ extension CorridorKeyToolboxPlugIn {
         let frameCount = session.frameCount
         let screenColorRaw = session.screenColorRaw
         let storedInferenceResolution = session.inferenceResolution
+        let temporalEnabled = session.temporalStabilityEnabled
+        let temporalStrength = session.temporalStabilityStrength
+        let cachedPreviousAlpha = session.previousTemporalAlpha
+        let cachedPreviousSource = session.previousTemporalSource
+        let cachedPreviousFrameIndex = session.previousTemporalFrameIndex
         session.lock.unlock()
 
         guard frameCount > 0 else {
@@ -266,6 +311,12 @@ extension CorridorKeyToolboxPlugIn {
             workingGamut = .rec709
         }
 
+        // Request a source readback only when temporal stability is armed
+        // and we either already have a previous frame (immediate blend) or
+        // might need one on the next frame. The readback adds a
+        // `.shared`-storage blit + 64 MB (Maximum rung) hand-off; skipping
+        // it when the user has disabled the feature removes that cost.
+        let needsTemporalReadback = temporalEnabled && temporalStrength > 0
         let extracted = try renderPipeline.extractAlphaMatteForAnalysis(
             sourceTexture: sourceTexture,
             state: analyseState,
@@ -273,11 +324,39 @@ extension CorridorKeyToolboxPlugIn {
             renderTime: frameTime,
             device: device,
             entry: entry,
-            commandQueue: commandQueue
+            commandQueue: commandQueue,
+            readbackSource: needsTemporalReadback
         )
 
+        // Apply the temporal blend when we have a valid previous frame at
+        // the same resolution. A change of inference resolution (user flipped
+        // Quality mid-pass) invalidates the prior state — drop it silently
+        // and let the next frame seed the EMA afresh.
+        var currentAlpha = extracted.alpha
+        if needsTemporalReadback,
+           let previousAlpha = cachedPreviousAlpha,
+           let previousSource = cachedPreviousSource,
+           let previousFrameIndex = cachedPreviousFrameIndex,
+           let currentSource = extracted.source,
+           previousAlpha.count == currentAlpha.count,
+           previousSource.count == currentSource.count,
+           previousFrameIndex + 1 == frameIndex {
+            TemporalBlender.applyInPlace(
+                currentAlpha: &currentAlpha,
+                previousAlpha: previousAlpha,
+                currentSource: currentSource,
+                previousSource: previousSource,
+                width: extracted.width,
+                height: extracted.height,
+                configuration: TemporalBlender.Configuration(
+                    strength: Float(temporalStrength),
+                    motionThreshold: 0.05
+                )
+            )
+        }
+
         let encoded = try MatteCodec.encode(
-            alpha: extracted.alpha,
+            alpha: currentAlpha,
             width: extracted.width,
             height: extracted.height
         )
@@ -288,6 +367,15 @@ extension CorridorKeyToolboxPlugIn {
         session.matteHeight = extracted.height
         session.mattes[frameIndex] = encoded
         session.analyzedCount = session.mattes.count
+        if needsTemporalReadback {
+            session.previousTemporalAlpha = currentAlpha
+            session.previousTemporalSource = extracted.source
+            session.previousTemporalFrameIndex = frameIndex
+        } else {
+            session.previousTemporalAlpha = nil
+            session.previousTemporalSource = nil
+            session.previousTemporalFrameIndex = nil
+        }
         let shouldFlush = (session.analyzedCount % 10) == 0 || session.analyzedCount == session.frameCount
         let snapshot = shouldFlush ? session.snapshotLocked() : nil
         session.lock.unlock()
@@ -307,9 +395,13 @@ extension CorridorKeyToolboxPlugIn {
         // The persisted copy inside the FCP Library is now the source of
         // truth for the render path — drop the in-memory mattes to free up
         // the working set. For a 2048px matte cache on a long clip this can
-        // reclaim hundreds of MB.
+        // reclaim hundreds of MB. Temporal state also drops here; the EMA
+        // belongs to a single analysis pass, not the lifetime of the plug-in.
         session.lock.lock()
         session.mattes.removeAll(keepingCapacity: false)
+        session.previousTemporalAlpha = nil
+        session.previousTemporalSource = nil
+        session.previousTemporalFrameIndex = nil
         session.lock.unlock()
         PluginLog.notice(
             "Analyse: complete — \(snapshot.analyzedCount) of \(snapshot.frameCount) frame(s) cached."

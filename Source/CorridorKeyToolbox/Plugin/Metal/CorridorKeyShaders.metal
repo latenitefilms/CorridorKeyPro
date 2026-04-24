@@ -597,6 +597,55 @@ kernel void corridorKeyRefinerBlendKernel(
     destination.write(float4(saturate(blended), 0.0, 0.0, 1.0), gid);
 }
 
+// MARK: - Temporal blend (Phase 1 — matte flicker reduction)
+
+/// Blends the current frame's alpha toward the previous frame's alpha on
+/// pixels where the input RGB barely changed — the classic symptom of
+/// per-frame neural inference noise. Runs at inference resolution during
+/// the analysis pass so playback renders inherit stabilised mattes with
+/// zero hot-path cost.
+///
+/// `motionThreshold` is the max-channel absolute RGB delta at which the
+/// gate reaches the first zero-blend step. Values above the threshold
+/// scale linearly down to zero at `2 × motionThreshold`, and any larger
+/// delta passes the current alpha through unchanged so fast action
+/// retains full per-frame fidelity.
+///
+/// The previous-frame textures are produced by the matching compute
+/// encoder on the previous analysis tick; `CorridorKeyToolboxPlugIn+FxAnalyzer`
+/// keeps them alive across ticks via a ring of two intermediate textures.
+kernel void corridorKeyTemporalBlendKernel(
+    texture2d<float, access::read> currentMatte     [[texture(CKTextureIndexMatte)]],
+    texture2d<float, access::read> previousMatte    [[texture(CKTextureIndexPreviousMatte)]],
+    texture2d<float, access::read> currentSource    [[texture(CKTextureIndexSource)]],
+    texture2d<float, access::read> previousSource   [[texture(CKTextureIndexPreviousSource)]],
+    texture2d<float, access::write> destination     [[texture(CKTextureIndexOutput)]],
+    constant CKTemporalBlendParams &params          [[buffer(CKBufferIndexTemporalBlendParams)]],
+    uint2 gid [[thread_position_in_grid]]
+) {
+    uint2 dims = uint2(destination.get_width(), destination.get_height());
+    if (gid.x >= dims.x || gid.y >= dims.y) { return; }
+
+    float currentAlpha = currentMatte.read(gid).r;
+    float previousAlpha = previousMatte.read(gid).r;
+
+    float3 currentRGB = currentSource.read(gid).rgb;
+    float3 previousRGB = previousSource.read(gid).rgb;
+    float3 deltaRGB = abs(currentRGB - previousRGB);
+    float motion = max(deltaRGB.x, max(deltaRGB.y, deltaRGB.z));
+
+    // Linear falloff: gate = 1 at motion == 0, gate = 0 at motion == 2 × threshold.
+    // Guard against a zero threshold — callers disable temporal blending
+    // entirely by setting `strength == 0`, but defensive clamping keeps
+    // the shader robust if a future code path forgets the guard.
+    float threshold = max(params.motionThreshold, 1e-6);
+    float motionGate = saturate(1.0 - motion / (2.0 * threshold));
+    float effectiveStrength = saturate(params.strength) * motionGate;
+
+    float blended = currentAlpha + (previousAlpha - currentAlpha) * effectiveStrength;
+    destination.write(float4(saturate(blended), 0.0, 0.0, 1.0), gid);
+}
+
 // MARK: - Light wrap (Phase 4.3)
 
 /// Simulates environment lighting wrapping onto the subject near matte

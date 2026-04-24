@@ -22,6 +22,7 @@ enum ParameterIdentifier {
     static let matteGroup: UInt32 = 120
     static let edgeSpillGroup: UInt32 = 130
     static let edgeRefinementGroup: UInt32 = 140
+    static let temporalStabilityGroup: UInt32 = 150
 
     // Settings
     static let screenColor: UInt32 = 1001
@@ -62,6 +63,14 @@ enum ParameterIdentifier {
     static let lightWrapRadius: UInt32 = 8003
     static let edgeDecontaminateEnabled: UInt32 = 8004
     static let edgeDecontaminateStrength: UInt32 = 8005
+
+    /// Temporal stability (Phase 1 — alpha EMA with motion gating). Runs
+    /// during the Analyse Clip pass and replaces each frame's matte with a
+    /// weighted blend against the previous frame's matte on pixels whose
+    /// source RGB has barely changed. Reduces edge flicker without
+    /// smearing real motion.
+    static let temporalStabilityEnabled: UInt32 = 8006
+    static let temporalStabilityStrength: UInt32 = 8007
 
     /// Hidden custom parameter that persists the per-frame MLX mattes inside
     /// the Final Cut Pro Library so editors can move projects between

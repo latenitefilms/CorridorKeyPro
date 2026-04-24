@@ -26,7 +26,12 @@ typedef enum CorridorKeyTextureIndex {
     CKTextureIndexTempB = 5,
     CKTextureIndexOutput = 6,
     CKTextureIndexCoarse = 7,
-    CKTextureIndexLabel = 8
+    CKTextureIndexLabel = 8,
+    // Temporal blend inputs: previous-frame alpha + previous-frame source.
+    // Separated from the standard CKTextureIndexSource/Matte slots so a
+    // single encoder can bind current and previous pairs at once.
+    CKTextureIndexPreviousMatte = 9,
+    CKTextureIndexPreviousSource = 10
 } CorridorKeyTextureIndex;
 
 // Fragment / compute argument buffer slots.
@@ -42,7 +47,8 @@ typedef enum CorridorKeyBufferIndex {
     CKBufferIndexLightWrapParams = 8,
     CKBufferIndexEdgeDecontaminateParams = 9,
     CKBufferIndexCCLabelParams = 10,
-    CKBufferIndexCCLabelCounts = 11
+    CKBufferIndexCCLabelCounts = 11,
+    CKBufferIndexTemporalBlendParams = 12
 } CorridorKeyBufferIndex;
 
 // Mirrors the Swift `SpillMethod` enum.
@@ -169,5 +175,20 @@ typedef struct CKForegroundPostProcessParams {
     int edgeDecontaminateEnabled;
     int applyInverseRotation;
 } CKForegroundPostProcessParams;
+
+// Temporal-blend parameters. The kernel runs *during analysis* over a
+// sequence of inference-resolution alpha textures, reading the previous
+// frame's alpha and source and blending the current frame's alpha toward
+// the previous value on pixels where the RGB has barely changed.
+//
+// `strength` is the blend weight when the pixel is deemed stationary
+// (`motion == 0`). `motionThreshold` is the max-channel absolute RGB
+// delta at which the gate reaches zero blend — values above imply real
+// motion, so the kernel passes the current alpha through unchanged.
+// Linear falloff between 0 and 2×threshold.
+typedef struct CKTemporalBlendParams {
+    float strength;
+    float motionThreshold;
+} CKTemporalBlendParams;
 
 #endif /* CorridorKeyShaderTypes_h */
