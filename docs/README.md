@@ -32,3 +32,11 @@ https://www.youtube.com/watch?v=Y3Dfw969itU
 https://www.youtube.com/watch?v=MR0vQjr-Avc
 
 https://www.youtube.com/watch?v=Bx5OMAav0IY
+
+---
+
+## What is EZ-CorridorKey?
+
+You can learn more about Corridor Key on their official [GitHub](https://github.com/edenaion/EZ-CorridorKey).
+
+https://www.youtube.com/watch?v=ezg_1oQzz7w
