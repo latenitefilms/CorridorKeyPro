@@ -213,7 +213,18 @@ final class MLXKeyingEngine: KeyingInferenceEngine, @unchecked Sendable {
     func run(request: KeyingInferenceRequest, output: KeyingInferenceOutput) throws {
         runLock.lock()
         defer { runLock.unlock() }
+        // Per-call autoreleasepool drops the local MLXArrays + their
+        // captured retain-boxes the moment we exit this method.
+        // Without it, the autoreleased Obj-C wrappers MLX returns
+        // hang around in the calling thread's outer pool — Final Cut
+        // Pro's analyse loop never drains that pool, which is what
+        // turned the cache into a 40+ GB sink in production.
+        try autoreleasepool {
+            try runBody(request: request, output: output)
+        }
+    }
 
+    private func runBody(request: KeyingInferenceRequest, output: KeyingInferenceOutput) throws {
         let (function, rung) = loadedState()
         guard let function, rung > 0 else {
             throw KeyingInferenceError.modelUnavailable("MLX bridge not prepared.")

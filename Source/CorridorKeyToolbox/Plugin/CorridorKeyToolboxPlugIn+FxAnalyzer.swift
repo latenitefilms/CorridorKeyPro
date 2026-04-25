@@ -417,16 +417,15 @@ extension CorridorKeyToolboxPlugIn {
         let snapshot = session.snapshotLocked()
         session.lock.unlock()
         persist(snapshot: snapshot)
-        // The persisted copy inside the FCP Library is now the source of
-        // truth for the render path — drop the in-memory mattes to free up
-        // the working set. For a 2048px matte cache on a long clip this can
-        // reclaim hundreds of MB. Temporal state also drops here; the EMA
-        // belongs to a single analysis pass, not the lifetime of the plug-in.
+        // Fully reset the session so the inspector header's
+        // `liveAnalysisProgress()` returns nil — clearing the in-flight
+        // progress bar in our custom UI even when Final Cut Pro itself
+        // cancelled the pass via its global progress bar (in which case
+        // the user never touched our Cancel button). The persisted
+        // matte cache lives in the Library blob, so this drop only
+        // affects in-memory state.
         session.lock.lock()
-        session.mattes.removeAll(keepingCapacity: false)
-        session.previousTemporalAlpha = nil
-        session.previousTemporalSource = nil
-        session.previousTemporalFrameIndex = nil
+        session.resetLocked()
         session.lock.unlock()
         // Release the Metal side of the readback cache on every device the
         // session touched. The analyser might run against a different GPU
@@ -444,7 +443,7 @@ extension CorridorKeyToolboxPlugIn {
         // hot path inside an analysis pass completely untouched.
         renderPipeline.inferenceCoordinator.releaseCacheBetweenSessions()
         PluginLog.notice(
-            "Analyse: complete — \(snapshot.analyzedCount) of \(snapshot.frameCount) frame(s) cached."
+            "Analyse: cleanup — \(snapshot.analyzedCount) of \(snapshot.frameCount) frame(s) persisted."
         )
     }
 

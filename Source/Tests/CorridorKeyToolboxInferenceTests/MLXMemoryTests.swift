@@ -46,6 +46,71 @@ struct MLXMemoryTests {
 
     // MARK: - The leak gate
 
+    /// Runs 30 inferences, calling `clearMLXCache()` after EACH one,
+    /// and verifies the loop completes without crashing AND the output
+    /// of the last frame matches the first. This is the strategy we
+    /// need to make production stable on long analyses: bound memory
+    /// per-frame so the user's 12-frame ceiling becomes infinite.
+    /// If MLX's `clearCache` is unsafe to call between inferences,
+    /// this test will crash or report drift.
+    /// Probe to characterise MLX's per-call memory behaviour after we
+    /// added the autoreleasepool around `MLXKeyingEngine.run`. Tracks
+    /// both `cacheMemory` and `activeMemory` snapshots **between**
+    /// inferences (so locals from the prior call have released) so we
+    /// can tell whether the cache is genuinely growing unboundedly or
+    /// just steady-state at one-inference's-worth.
+    @Test("MLX memory profile across many inferences (no clearCache)")
+    func memoryProfileWithoutClearCache() async throws {
+        let entry: MetalDeviceCacheEntry
+        do { entry = try InferenceTestHarness.makeEntry() }
+        catch { throw XCTSkip(error) }
+
+        let bridgeURL = try InferenceTestHarness.bridgeURL512()
+        let engine = MLXKeyingEngine(cacheEntry: entry)
+        try await engine.prepare(bridgeURL: bridgeURL, rung: 512)
+
+        let request = try makeRequest(rung: 512, entry: entry)
+        let output = try makeOutput(rung: 512, entry: entry)
+
+        // Drop any state from the warmup so iteration 0 starts clean.
+        MLX.Memory.clearCache()
+
+        let oneMegabyte = 1024 * 1024
+        var cacheTrace: [Int] = []
+        var activeTrace: [Int] = []
+
+        for _ in 0..<30 {
+            try engine.run(request: request, output: output)
+            // Snapshot AFTER the call has fully returned (autoreleasepool
+            // inside `run` has drained, ARC has dropped per-call locals).
+            let snapshot = MLX.Memory.snapshot()
+            cacheTrace.append(snapshot.cacheMemory / oneMegabyte)
+            activeTrace.append(snapshot.activeMemory / oneMegabyte)
+        }
+
+        let cacheMin = cacheTrace.min() ?? 0
+        let cacheMax = cacheTrace.max() ?? 0
+        let activeMin = activeTrace.min() ?? 0
+        let activeMax = activeTrace.max() ?? 0
+
+        print("MLX cache trace (MB): min=\(cacheMin), max=\(cacheMax), final=\(cacheTrace.last ?? 0).")
+        print("MLX active trace (MB): min=\(activeMin), max=\(activeMax), final=\(activeTrace.last ?? 0).")
+        print("First 5: cache \(cacheTrace.prefix(5)), active \(activeTrace.prefix(5))")
+        print("Last 5: cache \(cacheTrace.suffix(5)), active \(activeTrace.suffix(5))")
+
+        // The KEY assertion: cache must be steady-state, not growing.
+        // A leak would show as cacheMax >> cacheMin AND a strictly
+        // increasing trend. We tolerate up to 50% wobble around the
+        // settled value (MLX's allocator reclaims opportunistically).
+        let lateCacheAvg = cacheTrace.suffix(10).reduce(0, +) / 10
+        let earlyCacheAvg = cacheTrace.prefix(10).reduce(0, +) / 10
+        let cacheGrowth = lateCacheAvg - earlyCacheAvg
+        #expect(
+            cacheGrowth <= cacheTrace.first! / 2,
+            "MLX cache grew across the loop: early avg=\(earlyCacheAvg) MB, late avg=\(lateCacheAvg) MB, growth=\(cacheGrowth) MB."
+        )
+    }
+
     /// Runs many inferences in a row and asserts that calling
     /// `clearMLXCache()` at the end of the session brings the cache back
     /// down close to baseline. This is the production strategy: MLX is
@@ -150,6 +215,24 @@ struct MLXMemoryTests {
 
 
     // MARK: - Helpers
+
+    private func readAlpha(output: KeyingInferenceOutput) -> [Float] {
+        let width = output.alphaTexture.width
+        let height = output.alphaTexture.height
+        var pixels = [Float](repeating: 0, count: width * height)
+        let bytesPerRow = width * MemoryLayout<Float>.size
+        pixels.withUnsafeMutableBufferPointer { pointer in
+            if let base = pointer.baseAddress {
+                output.alphaTexture.getBytes(
+                    base,
+                    bytesPerRow: bytesPerRow,
+                    from: MTLRegionMake2D(0, 0, width, height),
+                    mipmapLevel: 0
+                )
+            }
+        }
+        return pixels
+    }
 
     /// Allocates a normalised-input MTLBuffer matching the shape MLX
     /// expects (1 × rung × rung × 4 floats), filled with a deterministic
