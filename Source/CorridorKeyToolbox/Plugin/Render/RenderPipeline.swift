@@ -838,30 +838,20 @@ final class RenderPipeline: @unchecked Sendable {
         ) else {
             throw MetalDeviceCacheError.textureAllocationFailed
         }
-        // The bundled `.mlxfn` bridges output their tensor in `y-up` layout
-        // — row 0 is the visual bottom, matching the CorridorKey-Runtime
-        // OFX convention the bridges were exported against. The rest of
-        // our pipeline (source IOSurface, compose shader) is `y-down`, so
-        // we flip rows here so `matteTexture.sample(uv)` lines up pixel-
-        // for-pixel with `sourceTexture.sample(uv)` in compose. Rough-matte
-        // (pass-through) doesn't touch this path, so the non-MLX render
-        // stays untouched.
-        var flipped = [Float](repeating: 0, count: width * height)
-        flipped.withUnsafeMutableBufferPointer { destPointer in
-            alpha.withUnsafeBufferPointer { srcPointer in
-                guard let destBase = destPointer.baseAddress,
-                      let srcBase = srcPointer.baseAddress
-                else { return }
-                for row in 0..<height {
-                    let srcRow = height - 1 - row
-                    destBase
-                        .advanced(by: row * width)
-                        .update(from: srcBase.advanced(by: srcRow * width), count: width)
-                }
-            }
-        }
+        // The cached alpha was written by `corridorKeyAlphaBufferToTextureKernel`
+        // (during the analysis pass), which already flipped the MLX bridge's
+        // y-up output into the y-down convention the rest of the pipeline
+        // uses. We then read those bytes back via `getBytes` and stored them
+        // in the FCP custom-parameter cache — so the cached buffer is
+        // **already y-down** and we upload it byte-for-byte.
+        //
+        // Earlier builds also flipped the rows here, which was correct
+        // pre-zero-copy (when the writeback was a CPU memcpy that didn't
+        // flip). Post-zero-copy that became a double-flip and produced an
+        // upside-down matte at compose time. See `MatteOrientationTests` in
+        // `CorridorKeyToolboxInferenceTests` for a regression gate.
         let bytesPerRow = width * MemoryLayout<Float>.size
-        flipped.withUnsafeBufferPointer { pointer in
+        alpha.withUnsafeBufferPointer { pointer in
             if let base = pointer.baseAddress {
                 pooled.texture.replace(
                     region: MTLRegionMake2D(0, 0, width, height),
