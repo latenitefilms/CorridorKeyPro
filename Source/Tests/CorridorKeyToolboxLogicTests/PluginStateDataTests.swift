@@ -74,14 +74,17 @@ struct PluginStateDataTests {
     @Test("Temporal stability defaults preserve backward compatibility")
     func temporalStabilityDefaults() {
         let defaults = PluginStateData()
-        #expect(defaults.temporalStabilityEnabled == true)
+        // Defaults OFF while the feature is behind a user-opt-in toggle —
+        // flipping to ON will come after Phase 1 is validated against
+        // real FCP analyses and the readback cost is characterised.
+        #expect(defaults.temporalStabilityEnabled == false)
         #expect(defaults.temporalStabilityStrength == 0.5)
 
         // A blob written before these keys existed must still decode cleanly
         // and inherit the new defaults — otherwise projects saved by an
         // earlier build would refuse to open.
         let decoded = PluginStateData.decoded(from: NSData())
-        #expect(decoded.temporalStabilityEnabled == true)
+        #expect(decoded.temporalStabilityEnabled == false)
         #expect(decoded.temporalStabilityStrength == 0.5)
     }
 

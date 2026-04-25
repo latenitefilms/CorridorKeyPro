@@ -18,6 +18,9 @@
 import Foundation
 import Metal
 import CoreMedia
+#if CORRIDOR_KEY_SPM_MIRROR
+import CorridorKeyToolboxLogic
+#endif
 
 /// Cache key for the single-frame MLX output cache. Anything that changes the
 /// neural model's input must participate in the hash; anything purely

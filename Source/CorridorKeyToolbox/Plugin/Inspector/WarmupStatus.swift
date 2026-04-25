@@ -12,7 +12,13 @@ import Foundation
 /// Current state of the MLX bridge warm-up. Surfaced into the analysis
 /// snapshot the inspector bridge publishes to SwiftUI, so the UI can
 /// explain the stall before the first frame keys correctly.
-enum WarmupStatus: Sendable, Equatable {
+///
+/// `public` so the SPM `CorridorKeyToolboxMetalStages` module can return
+/// values of this type from `InferenceCoordinator.warmupStatus` and
+/// `SharedMLXBridgeRegistry.status(...)`. The Xcode FxPlug target — where
+/// everything is in a single module — is unaffected by the visibility
+/// promotion.
+public enum WarmupStatus: Sendable, Equatable {
     /// MLX has not been touched yet this session.
     case cold
     /// MLX is currently loading/compiling. `resolution` is the requested

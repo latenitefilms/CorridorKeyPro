@@ -26,6 +26,9 @@
 
 import Foundation
 import Metal
+#if CORRIDOR_KEY_SPM_MIRROR
+import CorridorKeyToolboxLogic
+#endif
 
 final class SharedMLXBridgeRegistry: @unchecked Sendable {
 

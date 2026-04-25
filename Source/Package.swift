@@ -48,6 +48,12 @@ let package = Package(
             targets: ["BenchmarkRunner"]
         )
     ],
+    dependencies: [
+        // Mirrors the same `mlx-swift` reference the Xcode project uses so
+        // we can unit-test the MLX inference path outside Final Cut Pro.
+        // Pinned to the same release the production target consumes.
+        .package(url: "https://github.com/ml-explore/mlx-swift.git", exact: "0.31.3")
+    ],
     targets: [
         .target(
             name: "CorridorKeyToolboxLogic",
@@ -98,15 +104,22 @@ let package = Package(
         ),
         .target(
             name: "CorridorKeyToolboxMetalStages",
-            dependencies: ["CorridorKeyToolboxLogic"],
+            dependencies: [
+                "CorridorKeyToolboxLogic",
+                .product(name: "MLX", package: "mlx-swift"),
+                .product(name: "MLXNN", package: "mlx-swift")
+            ],
             path: "CorridorKeyToolbox/Plugin",
-            // This target owns Metal pool + MPS refiner + stage helpers. It
-            // excludes every file that depends on FxPlug headers so it can
-            // build from plain Swift + Metal + MetalPerformanceShaders.
+            // This target owns the Metal pool + MPS refiner + stage helpers
+            // **and** the inference engines (MLX + rough-matte fallback).
+            // Both layers share `MetalDeviceCacheEntry` and `RenderStages`,
+            // so collapsing them into one SPM module sidesteps having to
+            // promote large swathes of internal API to `public`.
+            // Excludes every file that depends on FxPlug headers so it can
+            // build from plain Swift + Metal + MPS + mlx-swift.
             exclude: [
                 "Info.plist",
                 "CorridorKeyToolbox.entitlements",
-                "PluginLog.swift",
                 "main.swift",
                 "CorridorKeyToolboxPlugIn.swift",
                 "CorridorKeyToolboxPlugIn+Properties.swift",
@@ -115,20 +128,28 @@ let package = Package(
                 "CorridorKeyToolboxPlugIn+PluginState.swift",
                 "CorridorKeyToolboxPlugIn+FxAnalyzer.swift",
                 "Parameters",
-                "Inference",
                 "Inspector",
                 "PostProcess",
                 "Resources",
                 "Metal/FxImageTilePixelFormat.swift",
                 "Render/RenderPipeline.swift",
-                "Shared/CorridorKeyToolbox-Bridging-Header.h"
+                "Shared/CorridorKeyToolbox-Bridging-Header.h",
+                "Inference/AnalysisData.swift",
+                "Inference/MatteCodec.swift"
             ],
             sources: [
+                "PluginLog.swift",
                 "Shared/CorridorKeyShaderTypes.swift",
                 "Metal/MetalDeviceCache.swift",
                 "Metal/IntermediateTexturePool.swift",
                 "Metal/MatteRefiner.swift",
-                "Render/RenderStages.swift"
+                "Metal/MetalStagesResourceBundleAccessor.swift",
+                "Render/RenderStages.swift",
+                "Inference/KeyingInferenceEngine.swift",
+                "Inference/MLXKeyingEngine.swift",
+                "Inference/RoughMatteKeyingEngine.swift",
+                "Inference/InferenceCoordinator.swift",
+                "Inference/SharedMLXBridgeRegistry.swift"
             ],
             resources: [
                 .copy("Metal/CorridorKeyShaders.metal"),
@@ -170,6 +191,25 @@ let package = Package(
                 "CorridorKeyToolboxLogic"
             ],
             path: "Tests/CorridorKeyToolboxMetalStagesTests",
+            swiftSettings: [
+                .swiftLanguageMode(.v6)
+            ]
+        ),
+        .testTarget(
+            name: "CorridorKeyToolboxInferenceTests",
+            dependencies: [
+                "CorridorKeyToolboxMetalStages",
+                "CorridorKeyToolboxLogic",
+                .product(name: "MLX", package: "mlx-swift")
+            ],
+            path: "Tests/CorridorKeyToolboxInferenceTests",
+            // The 512px bridge is ~30 MB and exercises the same MLX code
+            // path as the Maximum rung. Bundling just the smallest one
+            // keeps the test target compact while still catching real
+            // memory regressions.
+            resources: [
+                .copy("Resources/corridorkey_mlx_bridge_512.mlxfn")
+            ],
             swiftSettings: [
                 .swiftLanguageMode(.v6)
             ]

@@ -151,7 +151,7 @@ extension CorridorKeyToolboxPlugIn {
             retrieval: retrieval,
             parameterID: ParameterIdentifier.temporalStabilityEnabled,
             time: renderTime,
-            default: true
+            default: false
         )
         state.temporalStabilityStrength = floatValue(
             retrieval: retrieval,

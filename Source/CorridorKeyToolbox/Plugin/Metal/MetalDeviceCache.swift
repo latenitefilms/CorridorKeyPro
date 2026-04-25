@@ -165,6 +165,21 @@ final class MetalDeviceCacheEntry: @unchecked Sendable {
     private var morphErodes: [MPSMorphologyKey: MPSImageErode] = [:]
     private var lanczosScales: MPSImageLanczosScale?
 
+    /// Reusable `.shared`-storage staging texture used by the analysis-pass
+    /// source readback path. Allocating a fresh 33 MB shared texture every
+    /// frame (at the Maximum rung) piled up in the autorelease pool under
+    /// Final Cut Pro's tight analyze-frame loop — memory grew unbounded
+    /// until the driver fell behind. Caching a single texture per
+    /// `(width, height, pixelFormat)` holds allocations to one per rung
+    /// across the whole analysis.
+    private struct AnalysisReadbackKey: Hashable {
+        let width: Int
+        let height: Int
+        let pixelFormatRawValue: UInt
+    }
+    private let analysisReadbackLock = NSLock()
+    private var analysisReadbackTextures: [AnalysisReadbackKey: any MTLTexture] = [:]
+
     /// Signals completion of command buffers back to CPU-waiting callers
     /// without a busy-spin `waitUntilCompleted`. Every entry owns its own
     /// event object; monotonic `signalledValue` means no reset ever needed.
@@ -481,6 +496,67 @@ final class MetalDeviceCacheEntry: @unchecked Sendable {
     private static func roundedToOdd(_ value: Int) -> Int {
         let clamped = max(value, 1)
         return clamped % 2 == 0 ? clamped + 1 : clamped
+    }
+
+    // MARK: - Analysis readback staging texture
+
+    /// Returns a cached `.shared`-storage texture matching `(width, height,
+    /// pixelFormat)` suitable as the destination of a blit from a private
+    /// pool texture. Callers must not retain the texture across an analysis
+    /// session; the cache is purged on `clearAnalysisReadbackTextures`.
+    ///
+    /// The returned texture is reused across frames, so callers are
+    /// responsible for ensuring any outstanding GPU work that depends on
+    /// it has completed before reissuing a blit into it (the analyser's
+    /// blocking `commitAndWait` pattern meets this requirement).
+    func analysisReadbackTexture(
+        width: Int,
+        height: Int,
+        pixelFormat: MTLPixelFormat
+    ) -> (any MTLTexture)? {
+        let key = AnalysisReadbackKey(
+            width: max(width, 1),
+            height: max(height, 1),
+            pixelFormatRawValue: pixelFormat.rawValue
+        )
+        analysisReadbackLock.lock()
+        if let existing = analysisReadbackTextures[key] {
+            analysisReadbackLock.unlock()
+            return existing
+        }
+        analysisReadbackLock.unlock()
+
+        let descriptor = MTLTextureDescriptor.texture2DDescriptor(
+            pixelFormat: pixelFormat,
+            width: key.width,
+            height: key.height,
+            mipmapped: false
+        )
+        descriptor.usage = [.shaderRead]
+        descriptor.storageMode = .shared
+        guard let texture = device.makeTexture(descriptor: descriptor) else {
+            return nil
+        }
+        texture.label = "CK Analysis Readback \(key.width)x\(key.height)"
+
+        analysisReadbackLock.lock()
+        // Race: another thread may have just cached one. Keep theirs so
+        // identity stays stable.
+        if let existing = analysisReadbackTextures[key] {
+            analysisReadbackLock.unlock()
+            return existing
+        }
+        analysisReadbackTextures[key] = texture
+        analysisReadbackLock.unlock()
+        return texture
+    }
+
+    /// Called at the end of an analysis session to release the staging
+    /// textures. Re-warms lazily on the next analysis pass.
+    func clearAnalysisReadbackTextures() {
+        analysisReadbackLock.lock()
+        analysisReadbackTextures.removeAll(keepingCapacity: false)
+        analysisReadbackLock.unlock()
     }
 
     // MARK: - Shared-event value allocation

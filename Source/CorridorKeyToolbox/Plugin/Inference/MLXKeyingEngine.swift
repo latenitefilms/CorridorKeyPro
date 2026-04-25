@@ -72,6 +72,27 @@ private enum MLXBridgeResourceLocator {
 }
 
 final class MLXKeyingEngine: KeyingInferenceEngine, @unchecked Sendable {
+
+    /// Strategy for handing the normalised input tensor to MLX. Switched at
+    /// build time only — we are not (yet) confident enough in the
+    /// rawPointer path to expose a runtime toggle.
+    ///
+    /// * `.zeroCopy` — the path introduced in commit `a4190e0`. Aliases the
+    ///   shared MTLBuffer directly via `MLXArray(rawPointer:)`. Microbench
+    ///   showed ~35 ms / ~285 MB savings per frame on the test rigs at the
+    ///   time, but a real 4K clip on M1 Max measured 125–170 s per `eval()`
+    ///   at the 2048 rung — wall-time inference far outside the warm-up's
+    ///   25 s baseline. Held in reserve until we understand why.
+    /// * `.cpuStaging` — the v1.0.0 build 1 behaviour. Reads the input
+    ///   buffer into a reusable Swift `[Float]` and constructs an MLXArray
+    ///   that owns its memory. MLX allocates internal storage the way it
+    ///   wants, which seems to keep it on the fast path.
+    private enum InputStrategy {
+        case zeroCopy
+        case cpuStaging
+    }
+    private static let inputStrategy: InputStrategy = .cpuStaging
+
     let backendDisplayName: String
     var guideSourceDescription: String
 
@@ -86,10 +107,52 @@ final class MLXKeyingEngine: KeyingInferenceEngine, @unchecked Sendable {
     private var importedFunction: ImportedFunction?
     private var loadedResolution: Int = 0
 
+    /// Reusable scratch buffer for the `.cpuStaging` strategy. Sized at
+    /// warm-up so per-frame inference doesn't pay the 67 MB allocation
+    /// cost on every call. `runLock` serialises access; no extra guard.
+    private var inputScratch: [Float] = []
+
     init(cacheEntry: MetalDeviceCacheEntry) {
         self.cacheEntry = cacheEntry
         self.backendDisplayName = "MLX on \(cacheEntry.device.name)"
         self.guideSourceDescription = "Auto rough fallback"
+        Self.applyMemoryLimitsOnce()
+    }
+
+    /// Caps MLX's internal buffer cache. The default is the device's
+    /// recommended-max-working-set × 1.5 — on a 32 GB M1 Max that's
+    /// ~30+ GB, and MLX happily fills it with buffers from intermediate
+    /// computations across consecutive inferences. We measured 4.4 GB of
+    /// cache after 30 sequential 512px inferences in the unit test
+    /// `MLXMemoryTests`, scaling to ~70 GB at 2048 — which is exactly
+    /// the 42 GB symptom Final Cut Pro hit during a 26-frame Analyse
+    /// pass.
+    ///
+    /// 256 MiB is well above one inference's working set at every rung
+    /// in the ladder (the largest, 2048, fits in ~120 MB of activations)
+    /// while keeping memory bounded across long analyses. mlx-swift's
+    /// own docs note that "many developers find that relatively small
+    /// cache sizes (e.g. 2 MB) perform just as well" for inference; we
+    /// pick a conservative ceiling that still leaves headroom for
+    /// kernel JIT.
+    ///
+    /// Idempotent: the API is global to the MLX runtime, so running it
+    /// once per process is sufficient. NSLock keeps it simple — the call
+    /// only fires once per process so contention is negligible.
+    private static let memoryLimitsLock = NSLock()
+    private nonisolated(unsafe) static var memoryLimitsApplied = false
+    private static func applyMemoryLimitsOnce() {
+        memoryLimitsLock.lock()
+        if memoryLimitsApplied {
+            memoryLimitsLock.unlock()
+            return
+        }
+        memoryLimitsApplied = true
+        memoryLimitsLock.unlock()
+
+        let cacheLimitBytes = 256 * 1024 * 1024
+        MLX.Memory.cacheLimit = cacheLimitBytes
+        PluginLog.notice("MLX cache limit pinned at \(cacheLimitBytes / (1024 * 1024)) MB.")
     }
 
     func supports(resolution: Int) -> Bool {
@@ -107,7 +170,14 @@ final class MLXKeyingEngine: KeyingInferenceEngine, @unchecked Sendable {
                 "No MLX bridge file bundled for \(resolution)px."
             )
         }
+        try await prepare(bridgeURL: bridgeURL, rung: rung)
+    }
 
+    /// Test entry point that loads the bridge from an explicit URL. Useful
+    /// from SPM unit tests where the `.mlxfn` lives in the test target's
+    /// resources bundle (which is not enumerated by `Bundle.allBundles`).
+    /// Production callers should use `prepare(resolution:)`.
+    func prepare(bridgeURL: URL, rung: Int) async throws {
         if alreadyLoaded(rung: rung) { return }
 
         PluginLog.notice("Loading MLX bridge from \(bridgeURL.path).")
@@ -162,18 +232,34 @@ final class MLXKeyingEngine: KeyingInferenceEngine, @unchecked Sendable {
             )
         }
 
-        // Step 1: wrap the shared MTLBuffer directly as an MLXArray. On
-        // Apple Silicon's unified memory this is a zero-copy alias — MLX's
-        // backing storage IS the same bytes the Metal kernel wrote. The
-        // finalizer holds a strong reference to the buffer so it can't be
-        // freed while MLX still owns it.
+        // Step 1: build the MLX input. Two strategies live here; see
+        // `InputStrategy` for the trade-off and the wall-time data.
         let inputBuffer = request.normalisedInputBuffer
-        let inputArray = MLXArray(
-            rawPointer: inputBuffer.contents(),
-            [1, rung, rung, 4],
-            dtype: .float32,
-            finalizer: { _ = inputBuffer }
-        )
+        let inputArray: MLXArray
+        switch Self.inputStrategy {
+        case .zeroCopy:
+            inputArray = MLXArray(
+                rawPointer: inputBuffer.contents(),
+                [1, rung, rung, 4],
+                dtype: .float32,
+                finalizer: { _ = inputBuffer }
+            )
+        case .cpuStaging:
+            let expectedCount = rung * rung * 4
+            if inputScratch.count != expectedCount {
+                inputScratch = [Float](repeating: 0, count: expectedCount)
+            }
+            // Copy 67 MB once into the Swift scratch. On Apple Silicon's
+            // unified memory both source and destination are CPU-visible,
+            // so this is just a memcpy with no GPU sync. Lets MLX own the
+            // input layout end-to-end, which empirically keeps `eval()`
+            // on the fast path.
+            inputScratch.withUnsafeMutableBufferPointer { destination in
+                guard let destinationBase = destination.baseAddress else { return }
+                memcpy(destinationBase, inputBuffer.contents(), expectedCount * MemoryLayout<Float>.size)
+            }
+            inputArray = MLXArray(inputScratch, [1, rung, rung, 4])
+        }
 
         // Step 2: invoke the imported function. The graph returns
         // `(alpha, foreground)` per CorridorKey's bridge exporter.

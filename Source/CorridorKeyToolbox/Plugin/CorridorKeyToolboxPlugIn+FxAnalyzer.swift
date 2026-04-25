@@ -51,7 +51,7 @@ final class AnalysisSessionState: @unchecked Sendable {
     /// Cached temporal-blend configuration captured at setup time. Reading
     /// parameter values per frame would require a retrieval API round-trip
     /// on the analysis thread, so we snapshot at the start of the pass.
-    var temporalStabilityEnabled: Bool = true
+    var temporalStabilityEnabled: Bool = false
     var temporalStabilityStrength: Double = 0.5
 
     /// Snapshot for lock-free packing into an `AnalysisData` value. Callers are
@@ -87,7 +87,7 @@ final class AnalysisSessionState: @unchecked Sendable {
         previousTemporalAlpha = nil
         previousTemporalSource = nil
         previousTemporalFrameIndex = nil
-        temporalStabilityEnabled = true
+        temporalStabilityEnabled = false
         temporalStabilityStrength = 0.5
     }
 }
@@ -204,7 +204,7 @@ extension CorridorKeyToolboxPlugIn {
         // background thread. These read with safe defaults if the project
         // predates the parameter.
         let temporalEnabled: Bool = {
-            var raw = ObjCBool(true)
+            var raw = ObjCBool(false)
             retrieval.getBoolValue(&raw, fromParameter: ParameterIdentifier.temporalStabilityEnabled, at: analysisRange.start)
             return raw.boolValue
         }()
@@ -272,6 +272,12 @@ extension CorridorKeyToolboxPlugIn {
             return
         }
 
+        // Log entry-into-a-frame as well as the finish line. If the renderer
+        // hangs inside `extractAlphaMatteForAnalysis` (MLX stall, GPU hang,
+        // deadlock, etc.) the "started" line lands in the log but the
+        // matching "cached" line never does — pinpointing the hang.
+        PluginLog.notice("Analyse frame \(frameIndex + 1)/\(frameCount) started.")
+
         let deviceCache = MetalDeviceCache.shared
         guard let device = deviceCache.device(forRegistryID: frame.deviceRegistryID) else {
             throw NSError(
@@ -317,6 +323,7 @@ extension CorridorKeyToolboxPlugIn {
         // `.shared`-storage blit + 64 MB (Maximum rung) hand-off; skipping
         // it when the user has disabled the feature removes that cost.
         let needsTemporalReadback = temporalEnabled && temporalStrength > 0
+        let extractStart = ContinuousClock.now
         let extracted = try renderPipeline.extractAlphaMatteForAnalysis(
             sourceTexture: sourceTexture,
             state: analyseState,
@@ -327,6 +334,9 @@ extension CorridorKeyToolboxPlugIn {
             commandQueue: commandQueue,
             readbackSource: needsTemporalReadback
         )
+        let extractElapsed = ContinuousClock.now - extractStart
+        let extractDurationSeconds = Double(extractElapsed.components.seconds)
+            + Double(extractElapsed.components.attoseconds) / 1e18
 
         // Apply the temporal blend when we have a valid previous frame at
         // the same resolution. A change of inference resolution (user flipped
@@ -378,7 +388,22 @@ extension CorridorKeyToolboxPlugIn {
         }
         let shouldFlush = (session.analyzedCount % 10) == 0 || session.analyzedCount == session.frameCount
         let snapshot = shouldFlush ? session.snapshotLocked() : nil
+        let analyzedCountSnapshot = session.analyzedCount
+        let totalFramesSnapshot = session.frameCount
         session.lock.unlock()
+
+        // One line per frame so a hanging analyse shows up clearly in the
+        // log — we lost a diagnosis session without this and it was not a
+        // fun investigation. Includes extract time so an MLX stall is
+        // immediately obvious in the timeline.
+        let engineDescription = renderPipeline.inferenceCoordinator.backendDescription
+        let extractSecondsText = extractDurationSeconds
+            .formatted(.number.precision(.fractionLength(3)))
+        PluginLog.notice(
+            "Analyse frame \(analyzedCountSnapshot)/\(totalFramesSnapshot) cached in "
+            + "\(extractSecondsText)s "
+            + "(temporal=\(needsTemporalReadback ? "on" : "off"), engine=\(engineDescription))."
+        )
 
         if let snapshot {
             persist(snapshot: snapshot)
@@ -403,6 +428,14 @@ extension CorridorKeyToolboxPlugIn {
         session.previousTemporalSource = nil
         session.previousTemporalFrameIndex = nil
         session.lock.unlock()
+        // Release the Metal side of the readback cache on every device the
+        // session touched. The analyser might run against a different GPU
+        // next session, so we drop everything and re-warm lazily.
+        for device in MTLCopyAllDevices() {
+            if let entry = try? MetalDeviceCache.shared.entry(for: device) {
+                entry.clearAnalysisReadbackTextures()
+            }
+        }
         PluginLog.notice(
             "Analyse: complete — \(snapshot.analyzedCount) of \(snapshot.frameCount) frame(s) cached."
         )

@@ -94,3 +94,8 @@ LLM Resources/
 
 # BenchmarkRunner frame cache (per-developer; produced by ffmpeg from LLM Resources)
 Source/Benchmarks/.cache/
+
+# MLX test fixture — 288 MB binary copied from Plugin/Resources at test time.
+# `Tests/CorridorKeyToolboxInferenceTests/Resources/README.md` documents
+# the one-liner that re-populates it; we don't commit binaries.
+Source/Tests/CorridorKeyToolboxInferenceTests/Resources/*.mlxfn

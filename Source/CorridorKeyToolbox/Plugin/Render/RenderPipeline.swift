@@ -206,11 +206,17 @@ final class RenderPipeline: @unchecked Sendable {
         )
     }
 
-    /// Blits a pooled `.private`-storage texture into a shared-storage
-    /// throwaway, waits for the GPU, and returns the pixels as an RGBA float
-    /// array. Used by `extractAlphaMatteForAnalysis` so the CPU-side temporal
-    /// blender can see the source values without dropping the render path's
-    /// more efficient private storage.
+    /// Blits a pooled `.private`-storage texture into a reusable shared-
+    /// storage staging texture (cached on `MetalDeviceCacheEntry`), waits
+    /// for the GPU, and returns the pixels as an RGBA float array. Used by
+    /// `extractAlphaMatteForAnalysis` so the CPU-side temporal blender can
+    /// see the source values without dropping the render path's more
+    /// efficient private storage.
+    ///
+    /// The staging texture is cached per `(width, height, pixelFormat)` to
+    /// keep the autorelease pool from filling up under Final Cut Pro's
+    /// tight analyse-frame loop; we saw unbounded memory growth when this
+    /// allocated per-frame.
     private func readbackRGBATexture(
         _ texture: any MTLTexture,
         entry: MetalDeviceCacheEntry,
@@ -218,36 +224,35 @@ final class RenderPipeline: @unchecked Sendable {
     ) throws -> [Float] {
         let width = texture.width
         let height = texture.height
-        let descriptor = MTLTextureDescriptor.texture2DDescriptor(
-            pixelFormat: texture.pixelFormat,
+        guard let sharedTexture = entry.analysisReadbackTexture(
             width: width,
             height: height,
-            mipmapped: false
-        )
-        descriptor.usage = [.shaderRead]
-        descriptor.storageMode = .shared
-        guard let sharedTexture = entry.device.makeTexture(descriptor: descriptor) else {
+            pixelFormat: texture.pixelFormat
+        ) else {
             throw MetalDeviceCacheError.textureAllocationFailed
         }
-        guard let commandBuffer = commandQueue.makeCommandBuffer() else {
-            throw MetalDeviceCacheError.commandBufferCreationFailed
+
+        try autoreleasepool {
+            guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+                throw MetalDeviceCacheError.commandBufferCreationFailed
+            }
+            guard let blitEncoder = commandBuffer.makeBlitCommandEncoder() else {
+                throw MetalDeviceCacheError.commandEncoderCreationFailed
+            }
+            blitEncoder.copy(
+                from: texture,
+                sourceSlice: 0,
+                sourceLevel: 0,
+                sourceOrigin: MTLOrigin(x: 0, y: 0, z: 0),
+                sourceSize: MTLSize(width: width, height: height, depth: 1),
+                to: sharedTexture,
+                destinationSlice: 0,
+                destinationLevel: 0,
+                destinationOrigin: MTLOrigin(x: 0, y: 0, z: 0)
+            )
+            blitEncoder.endEncoding()
+            try commitAndWait(commandBuffer: commandBuffer)
         }
-        guard let blitEncoder = commandBuffer.makeBlitCommandEncoder() else {
-            throw MetalDeviceCacheError.commandEncoderCreationFailed
-        }
-        blitEncoder.copy(
-            from: texture,
-            sourceSlice: 0,
-            sourceLevel: 0,
-            sourceOrigin: MTLOrigin(x: 0, y: 0, z: 0),
-            sourceSize: MTLSize(width: width, height: height, depth: 1),
-            to: sharedTexture,
-            destinationSlice: 0,
-            destinationLevel: 0,
-            destinationOrigin: MTLOrigin(x: 0, y: 0, z: 0)
-        )
-        blitEncoder.endEncoding()
-        try commitAndWait(commandBuffer: commandBuffer)
 
         var pixels = [Float](repeating: 0, count: width * height * 4)
         pixels.withUnsafeMutableBufferPointer { pointer in
