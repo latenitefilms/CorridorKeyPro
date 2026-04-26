@@ -1,5 +1,15 @@
 # Release Notes
 
+### 1.0.0 (Build 4)
+
+**🎉 Released:**
+- 26th April 2026
+
+**🔨 Improvements:**
+- The **Corridor Key Toolbox** application in your `/Applications` folder now has a standalone editor built-in, allowing you to export without launching Final Cut Pro.
+
+---
+
 ### 1.0.0 (Build 3)
 
 **🎉 Released:**
