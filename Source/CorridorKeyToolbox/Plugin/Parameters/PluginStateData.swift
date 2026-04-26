@@ -23,6 +23,17 @@ struct PluginStateData: Codable, Sendable {
     /// the green-bias hint when Vision finds no salient subject.
     var autoSubjectHintEnabled: Bool
 
+    /// Whether the on-screen subject marker should be drawn on the
+    /// canvas. Drawn as a small ring + crosshair the user can drag.
+    var showSubjectMarker: Bool
+
+    /// Object-normalised position (0…1) of the subject marker. The
+    /// OSC drags this; the inspector shows it as X/Y sliders. Used
+    /// as the central click-point for the diagnostic and reserved
+    /// for future SAM-style hint refinement.
+    var subjectPositionX: Double
+    var subjectPositionY: Double
+
     // Interior detail
     var sourcePassthroughEnabled: Bool
     var passthroughErodeNormalized: Double
@@ -90,6 +101,9 @@ struct PluginStateData: Codable, Sendable {
         screenColor: ScreenColor = .green,
         qualityMode: QualityMode = .automatic,
         autoSubjectHintEnabled: Bool = false,
+        showSubjectMarker: Bool = true,
+        subjectPositionX: Double = 0.5,
+        subjectPositionY: Double = 0.5,
         sourcePassthroughEnabled: Bool = true,
         passthroughErodeNormalized: Double = 3.0,
         passthroughBlurNormalized: Double = 7.0,
@@ -122,6 +136,9 @@ struct PluginStateData: Codable, Sendable {
         self.screenColor = screenColor
         self.qualityMode = qualityMode
         self.autoSubjectHintEnabled = autoSubjectHintEnabled
+        self.showSubjectMarker = showSubjectMarker
+        self.subjectPositionX = subjectPositionX
+        self.subjectPositionY = subjectPositionY
         self.sourcePassthroughEnabled = sourcePassthroughEnabled
         self.passthroughErodeNormalized = passthroughErodeNormalized
         self.passthroughBlurNormalized = passthroughBlurNormalized
@@ -161,6 +178,9 @@ struct PluginStateData: Codable, Sendable {
         case screenColor
         case qualityMode
         case autoSubjectHintEnabled
+        case showSubjectMarker
+        case subjectPositionX
+        case subjectPositionY
         case sourcePassthroughEnabled
         case passthroughErodeNormalized
         case passthroughBlurNormalized
@@ -196,6 +216,9 @@ struct PluginStateData: Codable, Sendable {
         self.screenColor = try container.decodeIfPresent(ScreenColor.self, forKey: .screenColor) ?? .green
         self.qualityMode = try container.decodeIfPresent(QualityMode.self, forKey: .qualityMode) ?? .automatic
         self.autoSubjectHintEnabled = try container.decodeIfPresent(Bool.self, forKey: .autoSubjectHintEnabled) ?? false
+        self.showSubjectMarker = try container.decodeIfPresent(Bool.self, forKey: .showSubjectMarker) ?? true
+        self.subjectPositionX = try container.decodeIfPresent(Double.self, forKey: .subjectPositionX) ?? 0.5
+        self.subjectPositionY = try container.decodeIfPresent(Double.self, forKey: .subjectPositionY) ?? 0.5
         self.sourcePassthroughEnabled = try container.decodeIfPresent(Bool.self, forKey: .sourcePassthroughEnabled) ?? true
         self.passthroughErodeNormalized = try container.decodeIfPresent(Double.self, forKey: .passthroughErodeNormalized) ?? 3.0
         self.passthroughBlurNormalized = try container.decodeIfPresent(Double.self, forKey: .passthroughBlurNormalized) ?? 7.0

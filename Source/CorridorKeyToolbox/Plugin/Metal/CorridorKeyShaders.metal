@@ -89,11 +89,15 @@ fragment float4 corridorKeyComposeFragment(
         case CKOutputModeForegroundPlusMatte:
             return float4(foreground, alpha);
         case CKOutputModeHint:
-            // Diagnostic: visualise the hint as red on black so the
-            // user can see the prior MLX is being given. Caller binds
-            // the hint texture (Vision mask, OSC dots, or green-bias)
-            // to the matte texture slot.
-            return float4(alpha, 0.0, 0.0, 1.0);
+            // Diagnostic: visualise the hint as red on a dim purple
+            // background. The dim purple proves the .hint render
+            // path is reaching the screen even when the hint texture
+            // is empty — useful when the user is debugging "I see
+            // entirely black, is the diagnostic even running?".
+            // Foreground hint pixels (alpha > 0) draw bright red on
+            // top of the purple, falling off smoothly to the
+            // background for a clean visualisation.
+            return float4(alpha, 0.0, 0.10 * (1.0 - alpha), 1.0);
         case CKOutputModeProcessed:
         default:
             return float4(foreground * alpha, alpha);
@@ -556,34 +560,6 @@ fragment float4 corridorKeyDrawOSCFragment(
     float2 uv = in.textureCoordinate;
 
     float4 colour = float4(0.0, 0.0, 0.0, 0.0);
-
-    // No-points indicator: draw a small white crosshair at the centre
-    // of the canvas so the user can see the OSC is active and knows
-    // there's something to interact with. Only visible when no points
-    // have been placed; once the user clicks to add a hint dot, the
-    // dots themselves are the affordance.
-    if (pointCount == 0) {
-        float2 centreOffset = uv - float2(0.5, 0.5);
-        float distanceFromCentre = length(centreOffset);
-        float ringInner = 0.012;
-        float ringOuter = 0.014;
-        float aaWidth = max(fwidth(distanceFromCentre) * 0.5, 0.0005);
-        // Hollow ring marker.
-        float ringAlpha = (1.0 - smoothstep(ringOuter - aaWidth, ringOuter + aaWidth, distanceFromCentre))
-                       * smoothstep(ringInner - aaWidth, ringInner + aaWidth, distanceFromCentre);
-        // Crosshair lines through the centre.
-        float crosshairThickness = 0.0008;
-        float crosshairExtent = 0.020;
-        float horizontalLine = (1.0 - smoothstep(crosshairThickness, crosshairThickness + aaWidth, abs(centreOffset.y)))
-                             * (1.0 - smoothstep(crosshairExtent, crosshairExtent + aaWidth, abs(centreOffset.x)));
-        float verticalLine = (1.0 - smoothstep(crosshairThickness, crosshairThickness + aaWidth, abs(centreOffset.x)))
-                           * (1.0 - smoothstep(crosshairExtent, crosshairExtent + aaWidth, abs(centreOffset.y)));
-        float markerAlpha = max(max(ringAlpha, horizontalLine), verticalLine);
-        // Soft white with translucency so it doesn't dominate the
-        // canvas on bright backgrounds.
-        colour.rgb = float3(1.0);
-        colour.a = markerAlpha * 0.7;
-    }
 
     for (int i = 0; i < pointCount; ++i) {
         CKHintPoint p = points[i];

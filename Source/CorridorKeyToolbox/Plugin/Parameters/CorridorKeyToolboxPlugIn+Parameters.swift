@@ -153,6 +153,27 @@ extension CorridorKeyToolboxPlugIn {
             parameterFlags: CorridorKeyParameterFlags.nonAnimatableChoice.fxFlags
         )
 
+        // Subject Marker: a draggable on-screen point that lets the
+        // user mark the centre of the foreground subject. Provides
+        // both a clear OSC affordance (the user can see where the
+        // marker is and drag it) and a stable Point parameter that
+        // FCP wires the OSC to natively. Defaults to centre (0.5,
+        // 0.5) in object-normalised coords. The Show toggle hides
+        // the marker for users who don't want it visible.
+        create.addToggleButton(
+            withName: "Show Subject Marker",
+            parameterID: ParameterIdentifier.showSubjectMarker,
+            defaultValue: true,
+            parameterFlags: CorridorKeyParameterFlags.nonAnimatableChoice.fxFlags
+        )
+        create.addPointParameter(
+            withName: "Subject Position",
+            parameterID: ParameterIdentifier.subjectPosition,
+            defaultX: 0.5,
+            defaultY: 0.5,
+            parameterFlags: CorridorKeyParameterFlags.default.fxFlags
+        )
+
         create.endParameterSubGroup()
     }
 

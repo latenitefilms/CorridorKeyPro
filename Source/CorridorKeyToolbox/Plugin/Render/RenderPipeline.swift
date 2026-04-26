@@ -538,17 +538,25 @@ final class RenderPipeline: @unchecked Sendable {
         // (CKOutputModeHint) and renders the matte channel as red.
         // We bind the hint texture to all three slots — only the
         // matte slot is actually read for this output mode.
+        // Force the output mode to .hint here regardless of what the
+        // request state says — at this point in the diagnostic path,
+        // the user definitely picked "Hint (Diagnostic)", so any
+        // confusion in popup index → enum mapping (which has bitten
+        // us before across moef/Info.plist edits) doesn't matter.
+        var hintRenderState = request.state
+        hintRenderState.outputMode = .hint
         try compose(
             source: hintPooled.texture,
             foreground: hintPooled.texture,
             matte: hintPooled.texture,
             destination: context.destinationTexture,
             destinationTile: request.destinationImage,
-            state: request.state,
+            state: hintRenderState,
             pixelFormat: context.pixelFormat,
             entry: context.entry,
             commandBuffer: commandBuffer
         )
+        PluginLog.notice("Hint Diagnostic: composed (hintTextureFormat=\(hintPooled.texture.pixelFormat.rawValue), destTextureFormat=\(context.destinationTexture.pixelFormat.rawValue), tileWidth=\(request.destinationImage.tilePixelBounds.right - request.destinationImage.tilePixelBounds.left), tileHeight=\(request.destinationImage.tilePixelBounds.top - request.destinationImage.tilePixelBounds.bottom))")
 
         try commitAndWait(commandBuffer: commandBuffer)
         rotatedSourcePooled?.returnManually()

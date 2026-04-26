@@ -49,6 +49,21 @@ extension CorridorKeyToolboxPlugIn {
             time: renderTime,
             default: false
         )
+        state.showSubjectMarker = boolValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.showSubjectMarker,
+            time: renderTime,
+            default: true
+        )
+        let (subjectX, subjectY) = pointValue(
+            retrieval: retrieval,
+            parameterID: ParameterIdentifier.subjectPosition,
+            time: renderTime,
+            defaultX: 0.5,
+            defaultY: 0.5
+        )
+        state.subjectPositionX = subjectX
+        state.subjectPositionY = subjectY
 
         // Interior
         state.sourcePassthroughEnabled = boolValue(
@@ -261,6 +276,22 @@ extension CorridorKeyToolboxPlugIn {
         var value: ObjCBool = ObjCBool(defaultValue)
         retrieval.getBoolValue(&value, fromParameter: parameterID, at: time)
         return value.boolValue
+    }
+
+    /// Reads a 2D point parameter into an `(x, y)` tuple. FxPlug stores
+    /// point parameters in object-normalised (0…1) coordinates with the
+    /// y-axis pointing UP from the bottom-left.
+    private func pointValue(
+        retrieval: any FxParameterRetrievalAPI_v6,
+        parameterID: UInt32,
+        time: CMTime,
+        defaultX: Double,
+        defaultY: Double
+    ) -> (Double, Double) {
+        var x = defaultX
+        var y = defaultY
+        retrieval.getXValue(&x, yValue: &y, fromParameter: parameterID, at: time)
+        return (x, y)
     }
 
     /// Decodes the hidden Subject Points custom parameter into a

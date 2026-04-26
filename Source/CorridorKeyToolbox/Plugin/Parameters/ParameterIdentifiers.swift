@@ -34,6 +34,14 @@ enum ParameterIdentifier {
     /// when running on a build without Vision available.
     static let autoSubjectHintEnabled: UInt32 = 1004
 
+    /// Show / hide the on-screen subject marker on the canvas.
+    static let showSubjectMarker: UInt32 = 1005
+
+    /// 2D point parameter for the subject marker the OSC drags. Stored
+    /// in object-normalised (0…1) coordinates; defaults to (0.5, 0.5)
+    /// — the centre of the frame.
+    static let subjectPosition: UInt32 = 1006
+
     // Interior Detail
     static let sourcePassthrough: UInt32 = 2001
     static let passthroughErode: UInt32 = 2002
