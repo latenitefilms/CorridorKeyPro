@@ -58,7 +58,9 @@ final class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         // Object space is normalised to the input image (0..1 in both
         // axes) which is exactly the space `HintPoint` is stored in,
         // so we never have to convert in/out of canvas pixels.
-        return kFxDrawingCoordinates_OBJECT
+        // The enum constant is imported as `Int`; the typedef is
+        // `NSUInteger`, hence the explicit conversion.
+        return FxDrawingCoordinates(kFxDrawingCoordinates_OBJECT)
     }
 
     @objc(drawOSCWithWidth:height:activePart:destinationImage:atTime:)
@@ -67,7 +69,7 @@ final class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         height: Int,
         activePart: Int,
         destinationImage: FxImageTile,
-        atTime time: CMTime
+        at time: CMTime
     ) {
         let points = currentHintPointSet().points
         guard !points.isEmpty || activePart != 0 else { return }
@@ -87,7 +89,7 @@ final class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         atMousePositionX x: Double,
         mousePositionY y: Double,
         activePart: UnsafeMutablePointer<Int>,
-        atTime time: CMTime
+        at time: CMTime
     ) {
         let points = currentHintPointSet().points
         var bestIndex = 0
@@ -114,10 +116,12 @@ final class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         activePart: Int,
         modifiers: FxModifierKeys,
         forceUpdate: UnsafeMutablePointer<ObjCBool>,
-        atTime time: CMTime
+        at time: CMTime
     ) {
-        let isShift = (modifiers & kFxModifierKey_SHIFT) != 0
-        let isOption = (modifiers & kFxModifierKey_OPTION) != 0
+        // `FxModifierKeys` is `NSUInteger`; the `kFxModifierKey_*`
+        // constants come in as plain `Int`. Convert before masking.
+        let isShift = (modifiers & FxModifierKeys(kFxModifierKey_SHIFT)) != 0
+        let isOption = (modifiers & FxModifierKeys(kFxModifierKey_OPTION)) != 0
 
         var set = currentHintPointSet()
 
@@ -156,7 +160,7 @@ final class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         activePart: Int,
         modifiers: FxModifierKeys,
         forceUpdate: UnsafeMutablePointer<ObjCBool>,
-        atTime time: CMTime
+        at time: CMTime
     ) {
         dragLock.lock()
         let drag = dragState
@@ -183,7 +187,7 @@ final class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         activePart: Int,
         modifiers: FxModifierKeys,
         forceUpdate: UnsafeMutablePointer<ObjCBool>,
-        atTime time: CMTime
+        at time: CMTime
     ) {
         dragLock.lock()
         dragState = nil
@@ -202,7 +206,7 @@ final class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         modifiers: FxModifierKeys,
         forceUpdate: UnsafeMutablePointer<ObjCBool>,
         didHandle: UnsafeMutablePointer<ObjCBool>,
-        atTime time: CMTime
+        at time: CMTime
     ) {
         // 'C' (clear all), Delete (clear all), Backspace (clear all).
         switch asciiKey {
@@ -231,7 +235,7 @@ final class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         modifiers: FxModifierKeys,
         forceUpdate: UnsafeMutablePointer<ObjCBool>,
         didHandle: UnsafeMutablePointer<ObjCBool>,
-        atTime time: CMTime
+        at time: CMTime
     ) {
         didHandle.pointee = ObjCBool(false)
         forceUpdate.pointee = ObjCBool(false)

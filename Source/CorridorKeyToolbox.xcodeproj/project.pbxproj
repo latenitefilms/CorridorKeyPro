@@ -61,13 +61,13 @@
 		CK0100000000000000000075 /* FxImageTilePixelFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000075 /* FxImageTilePixelFormat.swift */; };
 		CK0100000000000000000076 /* SharedMLXBridgeRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000076 /* SharedMLXBridgeRegistry.swift */; };
 		CK0100000000000000000077 /* TemporalBlender.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000077 /* TemporalBlender.swift */; };
+		DC0100000000000000000001 /* DeviceCapabilityCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC0200000000000000000001 /* DeviceCapabilityCache.swift */; };
+		HP0100000000000000000001 /* HintPointSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = HP0200000000000000000001 /* HintPointSet.swift */; };
 		MX0200000000000000000002 /* MLXKeyingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = MX0100000000000000000003 /* MLXKeyingEngine.swift */; };
 		MX0500000000000000000001 /* MLX in Frameworks */ = {isa = PBXBuildFile; productRef = MX0400000000000000000001 /* MLX */; };
 		MX0500000000000000000002 /* MLXNN in Frameworks */ = {isa = PBXBuildFile; productRef = MX0400000000000000000002 /* MLXNN */; };
-		VH0100000000000000000001 /* VisionHintEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = VH0200000000000000000001 /* VisionHintEngine.swift */; };
-		DC0100000000000000000001 /* DeviceCapabilityCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC0200000000000000000001 /* DeviceCapabilityCache.swift */; };
-		HP0100000000000000000001 /* HintPointSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = HP0200000000000000000001 /* HintPointSet.swift */; };
 		OS0100000000000000000001 /* CorridorKeyHintOSC.swift in Sources */ = {isa = PBXBuildFile; fileRef = OS0200000000000000000001 /* CorridorKeyHintOSC.swift */; };
+		VH0100000000000000000001 /* VisionHintEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = VH0200000000000000000001 /* VisionHintEngine.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -168,11 +168,11 @@
 		CK0400000000000000000006 /* CoreImage.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreImage.framework; path = System/Library/Frameworks/CoreImage.framework; sourceTree = SDKROOT; };
 		CK0400000000000000000008 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		CK0400000000000000000009 /* PluginManager.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PluginManager.framework; path = /Library/Developer/Frameworks/PluginManager.framework; sourceTree = "<absolute>"; };
-		MX0100000000000000000003 /* MLXKeyingEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MLXKeyingEngine.swift; path = CorridorKeyToolbox/Plugin/Inference/MLXKeyingEngine.swift; sourceTree = "<group>"; };
-		VH0200000000000000000001 /* VisionHintEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = VisionHintEngine.swift; path = CorridorKeyToolbox/Plugin/Inference/VisionHintEngine.swift; sourceTree = "<group>"; };
 		DC0200000000000000000001 /* DeviceCapabilityCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DeviceCapabilityCache.swift; path = CorridorKeyToolbox/Plugin/Inference/DeviceCapabilityCache.swift; sourceTree = "<group>"; };
 		HP0200000000000000000001 /* HintPointSet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HintPointSet.swift; path = CorridorKeyToolbox/Plugin/Inspector/HintPointSet.swift; sourceTree = "<group>"; };
+		MX0100000000000000000003 /* MLXKeyingEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MLXKeyingEngine.swift; path = CorridorKeyToolbox/Plugin/Inference/MLXKeyingEngine.swift; sourceTree = "<group>"; };
 		OS0200000000000000000001 /* CorridorKeyHintOSC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CorridorKeyHintOSC.swift; path = CorridorKeyToolbox/Plugin/Inspector/CorridorKeyHintOSC.swift; sourceTree = "<group>"; };
+		VH0200000000000000000001 /* VisionHintEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = VisionHintEngine.swift; path = CorridorKeyToolbox/Plugin/Inference/VisionHintEngine.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */

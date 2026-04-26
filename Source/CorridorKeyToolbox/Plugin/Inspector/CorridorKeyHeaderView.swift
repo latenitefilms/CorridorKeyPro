@@ -131,10 +131,15 @@ struct CorridorKeyHeaderView: View {
     @ViewBuilder
     private var renderStatsFooter: some View {
         if let milliseconds = bridge.snapshot.lastRenderMilliseconds, milliseconds > 0 {
+            // Format with one decimal place using `Double.formatted(_:)`
+            // because plain `String` interpolation doesn't accept the
+            // `\(value, format:)` shorthand — that's a `LocalizedStringKey`
+            // / `Text` feature.
+            let formatted = milliseconds.formatted(.number.precision(.fractionLength(1)))
             statusBadge(
                 systemImage: "speedometer",
                 tint: .secondary,
-                text: "Last frame: \(milliseconds, format: .number.precision(.fractionLength(1))) ms"
+                text: "Last frame: \(formatted) ms"
             )
         } else {
             EmptyView()
