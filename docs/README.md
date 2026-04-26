@@ -15,7 +15,7 @@ Free to [download](/download) and Open Source!
 !!!
 
 
-![](/static/corridor-key-toolbox.png)
+![](/static/corridor-key-build-4.png)
 
 ---
 
