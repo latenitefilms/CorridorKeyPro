@@ -1,6 +1,6 @@
 //
 //  CorridorKeyHintOSC.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Sibling FxPlug plug-in that conforms to `FxOnScreenControl_v4` and
 //  draws a draggable subject marker on the Final Cut Pro canvas. The
@@ -357,7 +357,7 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             throw MetalDeviceCacheError.commandBufferCreationFailed
         }
-        commandBuffer.label = "Corridor Key Toolbox OSC Marker"
+        commandBuffer.label = "CorridorKey by LateNite OSC Marker"
 
         let passDescriptor = MTLRenderPassDescriptor()
         passDescriptor.colorAttachments[0].texture = texture

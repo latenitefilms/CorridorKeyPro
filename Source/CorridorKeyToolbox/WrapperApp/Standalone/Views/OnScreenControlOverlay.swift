@@ -1,6 +1,6 @@
 //
 //  OnScreenControlOverlay.swift
-//  Corridor Key Toolbox — Standalone Editor
+//  CorridorKey by LateNite — Standalone Editor
 //
 //  Mirrors Final Cut Pro's on-screen control for the Corridor Key
 //  effect: a click target that lets the user drop foreground or

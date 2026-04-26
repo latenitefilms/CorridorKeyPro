@@ -1,6 +1,6 @@
 //
 //  RealClipFixture.swift
-//  Corridor Key Toolbox — WrapperAppTests
+//  CorridorKey by LateNite — WrapperAppTests
 //
 //  Locator and gate for the real NikoDruid green-screen clip the
 //  benchmark suite uses. The file is 130 MB so we deliberately don't

@@ -1,6 +1,6 @@
 //
 //  CorridorKeyToolboxPlugIn+PluginState.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Reads every parameter into a single value-type snapshot that the renderer
 //  and analyser can consume without touching the FxPlug API again. FxPlug
@@ -23,7 +23,7 @@ extension CorridorKeyToolboxPlugIn {
             throw NSError(
                 domain: FxPlugErrorDomain,
                 code: kFxError_APIUnavailable,
-                userInfo: [NSLocalizedDescriptionKey: "Corridor Key Toolbox could not read parameter values."]
+                userInfo: [NSLocalizedDescriptionKey: "CorridorKey by LateNite could not read parameter values."]
             )
         }
 

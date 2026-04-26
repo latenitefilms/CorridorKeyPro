@@ -1,6 +1,6 @@
 //
 //  CorridorKeyToolboxPlugIn+CustomViews.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Hands Final Cut Pro the SwiftUI-backed inspector header for the header
 //  custom-UI parameter. FxPlug takes ownership of the returned NSView via

@@ -1,6 +1,6 @@
 //
 //  WarmupStatus.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Lifecycle of the MLX bridge as seen by the UI. Drives the "Loading neural
 //  model…" badge in the inspector so users understand the first-play stall

@@ -15,8 +15,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "CK0700000000000000000001"
-               BuildableName = "Corridor Key Toolbox.app"
-               BlueprintName = "Corridor Key Toolbox"
+               BuildableName = "CorridorKey by LateNite.app"
+               BlueprintName = "CorridorKey by LateNite"
                ReferencedContainer = "container:CorridorKeyToolbox.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -29,8 +29,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "CK0700000000000000000002"
-               BuildableName = "Corridor Key Toolbox Renderer.pluginkit"
-               BlueprintName = "Corridor Key Toolbox Renderer"
+               BuildableName = "CorridorKey by LateNite Renderer.pluginkit"
+               BlueprintName = "CorridorKey by LateNite Renderer"
                ReferencedContainer = "container:CorridorKeyToolbox.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -70,8 +70,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "CK0700000000000000000001"
-            BuildableName = "Corridor Key Toolbox.app"
-            BlueprintName = "Corridor Key Toolbox"
+            BuildableName = "CorridorKey by LateNite.app"
+            BlueprintName = "CorridorKey by LateNite"
             ReferencedContainer = "container:CorridorKeyToolbox.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -87,8 +87,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "CK0700000000000000000001"
-            BuildableName = "Corridor Key Toolbox.app"
-            BlueprintName = "Corridor Key Toolbox"
+            BuildableName = "CorridorKey by LateNite.app"
+            BlueprintName = "CorridorKey by LateNite"
             ReferencedContainer = "container:CorridorKeyToolbox.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

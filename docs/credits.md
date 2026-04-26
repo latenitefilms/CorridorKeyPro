@@ -1,12 +1,12 @@
 # Credits
 
-**Corridor Key Toolbox** has been thrown together by Chris at [LateNite](https://fcp.cafe/latenite/).
+**CorridorKey by LateNite** has been thrown together by Chris at [LateNite](https://fcp.cafe/latenite/).
 
-This would NOT be possible without Niko's amazing [Corridor Key](https://github.com/nikopueringer/CorridorKey).
+This would **NOT** be possible without Niko's at [Corridor Digital's](https://www.corridordigital.com) amazing [CorridorKey](https://github.com/nikopueringer/CorridorKey).
 
-HUGE thank you to [Alexandre Alvaro](https://huggingface.co/alexandrealvaro) for the [MLX Models](https://huggingface.co/alexandrealvaro/corridorkey-models/tree/main).
+**HUGE** thank you to [Alexandre Alvaro](https://huggingface.co/alexandrealvaro) for the [MLX Models](https://huggingface.co/alexandrealvaro/corridorkey-models/tree/main).
 
-The temporary **Corridor Key Toolbox** icon was designed by the amazing [Matthew Skiles](http://matthewskiles.com).
+The temporary **CorridorKey by LateNite** icon was designed by the amazing [Matthew Skiles](http://matthewskiles.com) - he's working on a new unique icon!
 
 You can learn more about LateNite's creations over at [FCP Cafe](https://fcp.cafe/latenite/).
 
@@ -14,20 +14,49 @@ You can learn more about LateNite's creations over at [FCP Cafe](https://fcp.caf
 
 ## Acknowledgements
 
-**Corridor Key Toolbox** would NOT be possible without Niko's amazing [Corridor Key](https://github.com/nikopueringer/CorridorKey).
-
-Niko's Corridor Key repo integrates several open-source modules for Alpha Hint generation.
-
-We would like to also explicitly credit and thank the following research teams:
-
-- **Generative Video Matting (GVM):** Developed by the Advanced Intelligent Machines (AIM) research team at Zhejiang University. The GVM code and models are heavily utilized in the `gvm_core` module. Their work is licensed under the [2-clause BSD License (BSD-2-Clause)](https://opensource.org/license/bsd-2-clause). You can find their source repository here: [aim-uofa/GVM](https://github.com/aim-uofa/GVM). Give them a star!
-- **VideoMaMa:** Developed by the CVLAB at KAIST. The VideoMaMa architecture is utilized within the `VideoMaMaInferenceModule`. Their code is released under the [Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0)](https://creativecommons.org/licenses/by-nc/4.0/), and their specific foundation model checkpoints (`dino_projection_mlp.pth`, `unet/*`) are subject to the [Stability AI Community License](https://stability.ai/license). You can find their source repository here: [cvlab-kaist/VideoMaMa](https://github.com/cvlab-kaist/VideoMaMa). Give them a star!
-
-By using these optional modules, you agree to abide by their respective Non-Commercial licenses. Please review their repositories for full terms.
+**CorridorKey by LateNite** would **NOT** be possible without Niko's amazing [CorridorKey](https://github.com/nikopueringer/CorridorKey).
 
 ---
 
-## License
+## Code License
+
+All the Swift and website code in this repository is MIT license, however when distributed, it falls under the CorridorKey License below.
+
+```
+MIT License
+
+Copyright (c) 2022-2023 LateNite Films Pty Ltd.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+---
+
+## Model License
+
+**CorridorKey by LateNite** is subject to the same license terms as CorridorKey — [CC BY-NC-SA 4.0](https://github.com/nikopueringer/CorridorKey/blob/main/LICENSE).
+
+You may use it freely including for commercial projects. You may not repackage or sell it, and the CorridorKey name must be retained in any forks or releases.
+
+If you want to integrate CorridorKey into a commercial software product or paid inference service, reach out to Corridor Digital at [contact@corridordigital.com](mailto:contact@corridordigital.com).
+
+The [CorridorKey MLX Models](https://huggingface.co/alexandrealvaro/corridorkey-models/tree/main) by [Alexandre Alvaro](https://huggingface.co/alexandrealvaro) used in this project have the following license:
 
 ```
 CORRIDOR KEY LICENCE

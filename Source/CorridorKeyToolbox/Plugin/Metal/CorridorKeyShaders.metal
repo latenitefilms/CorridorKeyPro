@@ -1,6 +1,6 @@
 //
 //  CorridorKeyShaders.metal
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Metal kernels and vertex/fragment shaders that implement the Corridor Key
 //  per-frame GPU pipeline: screen-colour rotation, downsample & normalisation

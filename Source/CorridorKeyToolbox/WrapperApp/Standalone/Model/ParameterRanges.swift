@@ -1,6 +1,6 @@
 //
 //  ParameterRanges.swift
-//  Corridor Key Toolbox — Standalone Editor
+//  CorridorKey by LateNite — Standalone Editor
 //
 //  Single source of truth for slider min / max / default / step values.
 //  Mirrors the FxPlug parameter table in

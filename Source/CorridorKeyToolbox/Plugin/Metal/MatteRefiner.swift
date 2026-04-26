@@ -1,6 +1,6 @@
 //
 //  MatteRefiner.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Radius-aware dispatcher that runs morphology (erode / dilate) and Gaussian
 //  blur through `MetalPerformanceShaders` when the kernel is big enough to
@@ -180,7 +180,7 @@ enum MatteRefiner {
         var erodeFlag: Int32 = radius < 0 ? 1 : 0
 
         if let encoder = commandBuffer.makeComputeCommandEncoder() {
-            encoder.label = "Corridor Key Toolbox Morphology H"
+            encoder.label = "CorridorKey by LateNite Morphology H"
             encoder.setComputePipelineState(entry.computePipelines.morphologyHorizontal)
             encoder.setTexture(source, index: Int(CKTextureIndexMatte.rawValue))
             encoder.setTexture(intermediate, index: Int(CKTextureIndexOutput.rawValue))
@@ -196,7 +196,7 @@ enum MatteRefiner {
         }
 
         if let encoder = commandBuffer.makeComputeCommandEncoder() {
-            encoder.label = "Corridor Key Toolbox Morphology V"
+            encoder.label = "CorridorKey by LateNite Morphology V"
             encoder.setComputePipelineState(entry.computePipelines.morphologyVertical)
             encoder.setTexture(intermediate, index: Int(CKTextureIndexMatte.rawValue))
             encoder.setTexture(destination, index: Int(CKTextureIndexOutput.rawValue))
@@ -225,7 +225,7 @@ enum MatteRefiner {
         var radiusValue = Int32(kernelRadius)
 
         if let encoder = commandBuffer.makeComputeCommandEncoder() {
-            encoder.label = "Corridor Key Toolbox Blur H"
+            encoder.label = "CorridorKey by LateNite Blur H"
             encoder.setComputePipelineState(entry.computePipelines.gaussianHorizontal)
             encoder.setTexture(source, index: Int(CKTextureIndexMatte.rawValue))
             encoder.setTexture(intermediate, index: Int(CKTextureIndexOutput.rawValue))
@@ -241,7 +241,7 @@ enum MatteRefiner {
         }
 
         if let encoder = commandBuffer.makeComputeCommandEncoder() {
-            encoder.label = "Corridor Key Toolbox Blur V"
+            encoder.label = "CorridorKey by LateNite Blur V"
             encoder.setComputePipelineState(entry.computePipelines.gaussianVertical)
             encoder.setTexture(intermediate, index: Int(CKTextureIndexMatte.rawValue))
             encoder.setTexture(destination, index: Int(CKTextureIndexOutput.rawValue))

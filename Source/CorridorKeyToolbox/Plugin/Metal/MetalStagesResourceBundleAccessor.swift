@@ -1,6 +1,6 @@
 //
 //  MetalStagesResourceBundleAccessor.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  SPM-only helper that exposes the Metal-stages module's `Bundle.module`
 //  so test targets can find `CorridorKeyShaders.metal` and the shared

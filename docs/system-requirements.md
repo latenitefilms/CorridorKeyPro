@@ -1,6 +1,6 @@
 # System Requirements
 
-**Corridor Key Toolbox** requires **Final Cut Pro 11** or later on **macOS 26 Tahoe**.
+**CorridorKey by LateNite** requires **Final Cut Pro 11** or later on **macOS 26 Tahoe**.
 
 It uses **Apple MLX** and requires a modern **Apple Silicon** Mac with as much RAM as you can throw it.
 

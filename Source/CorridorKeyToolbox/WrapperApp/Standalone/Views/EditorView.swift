@@ -1,6 +1,6 @@
 //
 //  EditorView.swift
-//  Corridor Key Toolbox — Standalone Editor
+//  CorridorKey by LateNite — Standalone Editor
 //
 //  Top-level scene for the standalone editor window. The layout is a
 //  vertical stack: preview surface → divider → transport bar. The
@@ -34,7 +34,7 @@ struct EditorView: View {
             let engine = try StandaloneRenderEngine()
             self._viewModel = State(wrappedValue: EditorViewModel(renderEngine: engine))
         } catch {
-            fatalError("Corridor Key Toolbox could not initialise its render engine: \(error.localizedDescription)")
+            fatalError("CorridorKey by LateNite could not initialise its render engine: \(error.localizedDescription)")
         }
     }
 
@@ -144,10 +144,10 @@ struct EditorView: View {
 
     private var toolbarTitle: String {
         switch viewModel.phase {
-        case .noClipLoaded: return "Corridor Key Toolbox"
+        case .noClipLoaded: return "CorridorKey by LateNite"
         case .loadingClip: return "Loading…"
         case .ready:
-            guard let url = viewModel.clipInfo?.url else { return "Corridor Key Toolbox" }
+            guard let url = viewModel.clipInfo?.url else { return "CorridorKey by LateNite" }
             return url.deletingPathExtension().lastPathComponent
         case .loadFailed: return "Couldn't load clip"
         }

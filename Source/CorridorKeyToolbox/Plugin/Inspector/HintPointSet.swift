@@ -1,6 +1,6 @@
 //
 //  HintPointSet.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Value type for the user-placed foreground / background hint points
 //  the on-screen control writes into a custom parameter and the
@@ -25,7 +25,7 @@ public enum HintPointKind: Int, Sendable, Codable {
 /// One user-placed hint point. Coordinates are in object-normalized
 /// space (0…1 across the input image) so they remain valid when the
 /// user changes the canvas size, scrubs around timecodes, or applies
-/// a transform on top of Corridor Key Toolbox.
+/// a transform on top of CorridorKey by LateNite.
 public struct HintPoint: Hashable, Sendable, Codable {
     public var x: Double
     public var y: Double

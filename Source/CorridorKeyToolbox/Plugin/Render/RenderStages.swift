@@ -1,6 +1,6 @@
 //
 //  RenderStages.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Pure-Metal stage helpers. None of these functions reference FxPlug types —
 //  they take textures, state, and a command buffer, and encode one stage of
@@ -45,7 +45,7 @@ enum RenderStages {
             output.returnManually()
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "Corridor Key Toolbox Screen Matrix"
+        encoder.label = "CorridorKey by LateNite Screen Matrix"
         encoder.setComputePipelineState(entry.computePipelines.applyScreenMatrix)
         encoder.setTexture(source, index: Int(CKTextureIndexSource.rawValue))
         encoder.setTexture(output.texture, index: Int(CKTextureIndexOutput.rawValue))
@@ -82,7 +82,7 @@ enum RenderStages {
             output.returnManually()
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "Corridor Key Toolbox Green Hint"
+        encoder.label = "CorridorKey by LateNite Green Hint"
         encoder.setComputePipelineState(entry.computePipelines.greenHint)
         encoder.setTexture(source, index: Int(CKTextureIndexSource.rawValue))
         encoder.setTexture(output.texture, index: Int(CKTextureIndexOutput.rawValue))
@@ -117,7 +117,7 @@ enum RenderStages {
             output.returnManually()
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "Corridor Key Toolbox Hint"
+        encoder.label = "CorridorKey by LateNite Hint"
         encoder.setComputePipelineState(entry.computePipelines.extractHint)
         encoder.setTexture(source, index: Int(CKTextureIndexSource.rawValue))
         encoder.setTexture(output.texture, index: Int(CKTextureIndexOutput.rawValue))
@@ -151,7 +151,7 @@ enum RenderStages {
         guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "Corridor Key Toolbox Hint Points"
+        encoder.label = "CorridorKey by LateNite Hint Points"
         encoder.setComputePipelineState(entry.computePipelines.applyHintPoints)
         encoder.setTexture(hint, index: Int(CKTextureIndexOutput.rawValue))
 
@@ -211,7 +211,7 @@ enum RenderStages {
         guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "Corridor Key Toolbox Normalise → Buffer"
+        encoder.label = "CorridorKey by LateNite Normalise → Buffer"
         encoder.setComputePipelineState(entry.computePipelines.normalizeToBuffer)
         encoder.setTexture(source, index: Int(CKTextureIndexSource.rawValue))
         encoder.setTexture(hint, index: Int(CKTextureIndexHint.rawValue))
@@ -265,7 +265,7 @@ enum RenderStages {
             normalised.returnManually()
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "Corridor Key Toolbox Combine + Normalise (Texture)"
+        encoder.label = "CorridorKey by LateNite Combine + Normalise (Texture)"
         encoder.setComputePipelineState(entry.computePipelines.combineAndNormalize)
         encoder.setTexture(source, index: Int(CKTextureIndexSource.rawValue))
         encoder.setTexture(hint, index: Int(CKTextureIndexHint.rawValue))
@@ -303,7 +303,7 @@ enum RenderStages {
         guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "Corridor Key Toolbox Alpha Buffer → Texture"
+        encoder.label = "CorridorKey by LateNite Alpha Buffer → Texture"
         encoder.setComputePipelineState(entry.computePipelines.alphaBufferToTexture)
         encoder.setBuffer(buffer, offset: 0, index: 0)
         encoder.setTexture(destination, index: Int(CKTextureIndexOutput.rawValue))
@@ -328,7 +328,7 @@ enum RenderStages {
         guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "Corridor Key Toolbox Foreground Buffer → Texture"
+        encoder.label = "CorridorKey by LateNite Foreground Buffer → Texture"
         encoder.setComputePipelineState(entry.computePipelines.foregroundBufferToTexture)
         encoder.setBuffer(buffer, offset: 0, index: 0)
         encoder.setTexture(destination, index: Int(CKTextureIndexOutput.rawValue))
@@ -380,7 +380,7 @@ enum RenderStages {
                 target.returnManually()
                 throw MetalDeviceCacheError.commandEncoderCreationFailed
             }
-            encoder.label = "Corridor Key Toolbox Resample (Bilinear)"
+            encoder.label = "CorridorKey by LateNite Resample (Bilinear)"
             encoder.setComputePipelineState(entry.computePipelines.resample)
             encoder.setTexture(source, index: Int(CKTextureIndexSource.rawValue))
             encoder.setTexture(target.texture, index: Int(CKTextureIndexOutput.rawValue))
@@ -415,7 +415,7 @@ enum RenderStages {
             output.returnManually()
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "Corridor Key Toolbox Despill"
+        encoder.label = "CorridorKey by LateNite Despill"
         encoder.setComputePipelineState(entry.computePipelines.despill)
         encoder.setTexture(foreground, index: Int(CKTextureIndexSource.rawValue))
         encoder.setTexture(output.texture, index: Int(CKTextureIndexOutput.rawValue))
@@ -452,7 +452,7 @@ enum RenderStages {
         guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "Corridor Key Toolbox Levels + Gamma"
+        encoder.label = "CorridorKey by LateNite Levels + Gamma"
         encoder.setComputePipelineState(entry.computePipelines.alphaLevelsGamma)
         encoder.setTexture(source, index: Int(CKTextureIndexMatte.rawValue))
         encoder.setTexture(destination, index: Int(CKTextureIndexOutput.rawValue))
@@ -494,7 +494,7 @@ enum RenderStages {
             output.returnManually()
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "Corridor Key Toolbox Source Passthrough"
+        encoder.label = "CorridorKey by LateNite Source Passthrough"
         encoder.setComputePipelineState(entry.computePipelines.sourcePassthrough)
         encoder.setTexture(foreground, index: Int(CKTextureIndexForeground.rawValue))
         encoder.setTexture(source, index: Int(CKTextureIndexSource.rawValue))
@@ -575,7 +575,7 @@ enum RenderStages {
             intermediatePooled?.returnManually()
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "Corridor Key Toolbox Matte Refine (Fused)"
+        encoder.label = "CorridorKey by LateNite Matte Refine (Fused)"
         encoder.setComputePipelineState(entry.computePipelines.matteRefineFused)
         encoder.setTexture(matte, index: Int(CKTextureIndexMatte.rawValue))
         encoder.setTexture(coarseTexture, index: Int(CKTextureIndexCoarse.rawValue))
@@ -645,7 +645,7 @@ enum RenderStages {
             output.returnManually()
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "Corridor Key Toolbox Foreground Post-Process (Fused)"
+        encoder.label = "CorridorKey by LateNite Foreground Post-Process (Fused)"
         encoder.setComputePipelineState(entry.computePipelines.foregroundPostProcess)
         encoder.setTexture(foreground, index: Int(CKTextureIndexForeground.rawValue))
         encoder.setTexture(sourceRGB, index: Int(CKTextureIndexSource.rawValue))
@@ -737,7 +737,7 @@ enum RenderStages {
             blended.returnManually()
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "Corridor Key Toolbox Refiner Blend"
+        encoder.label = "CorridorKey by LateNite Refiner Blend"
         encoder.setComputePipelineState(entry.computePipelines.refinerBlend)
         encoder.setTexture(matte, index: Int(CKTextureIndexMatte.rawValue))
         encoder.setTexture(coarse.texture, index: Int(CKTextureIndexCoarse.rawValue))
@@ -814,7 +814,7 @@ enum RenderStages {
             output.returnManually()
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "Corridor Key Toolbox Temporal Blend"
+        encoder.label = "CorridorKey by LateNite Temporal Blend"
         encoder.setComputePipelineState(entry.computePipelines.temporalBlend)
         encoder.setTexture(currentMatte, index: Int(CKTextureIndexMatte.rawValue))
         encoder.setTexture(previousMatte, index: Int(CKTextureIndexPreviousMatte.rawValue))
@@ -897,7 +897,7 @@ enum RenderStages {
 
         // Init pass: binarise matte → unique integer label per pixel.
         if let encoder = commandBuffer.makeComputeCommandEncoder() {
-            encoder.label = "Corridor Key Toolbox CC Init"
+            encoder.label = "CorridorKey by LateNite CC Init"
             encoder.setComputePipelineState(entry.computePipelines.ccLabelInit)
             encoder.setTexture(matte, index: Int(CKTextureIndexMatte.rawValue))
             encoder.setTexture(labelA.texture, index: Int(CKTextureIndexOutput.rawValue))
@@ -927,7 +927,7 @@ enum RenderStages {
         var destinationLabel = labelB
         for _ in 0..<propagateIterations {
             if let encoder = commandBuffer.makeComputeCommandEncoder() {
-                encoder.label = "Corridor Key Toolbox CC Propagate"
+                encoder.label = "CorridorKey by LateNite CC Propagate"
                 encoder.setComputePipelineState(entry.computePipelines.ccLabelPropagate)
                 encoder.setTexture(sourceLabel.texture, index: Int(CKTextureIndexMatte.rawValue))
                 encoder.setTexture(destinationLabel.texture, index: Int(CKTextureIndexOutput.rawValue))
@@ -955,7 +955,7 @@ enum RenderStages {
         var widthParam = Int32(width)
         for _ in 0..<pointerJumpIterations {
             if let encoder = commandBuffer.makeComputeCommandEncoder() {
-                encoder.label = "Corridor Key Toolbox CC Pointer Jump"
+                encoder.label = "CorridorKey by LateNite CC Pointer Jump"
                 encoder.setComputePipelineState(entry.computePipelines.ccLabelPointerJump)
                 encoder.setTexture(sourceLabel.texture, index: Int(CKTextureIndexMatte.rawValue))
                 encoder.setTexture(destinationLabel.texture, index: Int(CKTextureIndexOutput.rawValue))
@@ -984,16 +984,16 @@ enum RenderStages {
             labelB.returnManually()
             throw MetalDeviceCacheError.textureAllocationFailed
         }
-        countsBuffer.label = "Corridor Key Toolbox CC Counts"
+        countsBuffer.label = "CorridorKey by LateNite CC Counts"
         if let blit = commandBuffer.makeBlitCommandEncoder() {
-            blit.label = "Corridor Key Toolbox CC Counts Zero"
+            blit.label = "CorridorKey by LateNite CC Counts Zero"
             blit.fill(buffer: countsBuffer, range: 0..<countsBuffer.length, value: 0)
             blit.endEncoding()
         }
 
         // Atomic count pass.
         if let encoder = commandBuffer.makeComputeCommandEncoder() {
-            encoder.label = "Corridor Key Toolbox CC Count"
+            encoder.label = "CorridorKey by LateNite CC Count"
             encoder.setComputePipelineState(entry.computePipelines.ccLabelCount)
             encoder.setTexture(sourceLabel.texture, index: Int(CKTextureIndexLabel.rawValue))
             encoder.setBuffer(countsBuffer, offset: 0, index: Int(CKBufferIndexCCLabelCounts.rawValue))
@@ -1023,7 +1023,7 @@ enum RenderStages {
             throw MetalDeviceCacheError.textureAllocationFailed
         }
         if let encoder = commandBuffer.makeComputeCommandEncoder() {
-            encoder.label = "Corridor Key Toolbox CC Filter"
+            encoder.label = "CorridorKey by LateNite CC Filter"
             encoder.setComputePipelineState(entry.computePipelines.ccLabelFilter)
             encoder.setTexture(sourceLabel.texture, index: Int(CKTextureIndexLabel.rawValue))
             encoder.setTexture(matte, index: Int(CKTextureIndexMatte.rawValue))
@@ -1103,7 +1103,7 @@ enum RenderStages {
             output.returnManually()
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "Corridor Key Toolbox Light Wrap"
+        encoder.label = "CorridorKey by LateNite Light Wrap"
         encoder.setComputePipelineState(entry.computePipelines.lightWrap)
         encoder.setTexture(foreground, index: Int(CKTextureIndexForeground.rawValue))
         encoder.setTexture(blurredSource.texture, index: Int(CKTextureIndexSource.rawValue))
@@ -1149,7 +1149,7 @@ enum RenderStages {
             output.returnManually()
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "Corridor Key Toolbox Edge Decontaminate"
+        encoder.label = "CorridorKey by LateNite Edge Decontaminate"
         encoder.setComputePipelineState(entry.computePipelines.edgeDecontaminate)
         encoder.setTexture(foreground, index: Int(CKTextureIndexForeground.rawValue))
         encoder.setTexture(matte, index: Int(CKTextureIndexMatte.rawValue))

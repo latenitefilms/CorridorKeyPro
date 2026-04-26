@@ -1,11 +1,11 @@
 //
 //  MotionTemplateInstaller.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Installs (or refreshes) the bundled Motion Template into the user's
-//  real `~/Movies/Motion Templates.localized/Effects.localized/Corridor Key
-//  Pro/` directory so Final Cut Pro picks up the effect as soon as the app
-//  finishes launching.
+//  real `~/Movies/Motion Templates.localized/Effects.localized/CorridorKey
+//  by LateNite/` directory so Final Cut Pro picks up the effect as soon as
+//  the app finishes launching.
 //
 //  Because the wrapper app runs inside the App Sandbox,
 //  `URL.moviesDirectory` resolves to the container's redirected copy at
@@ -35,7 +35,7 @@ private enum MotionTemplateCopyResult: Sendable {
 // MARK: - Installer
 
 actor MotionTemplateInstaller {
-    static let effectCategory = "Corridor Key Toolbox"
+    static let effectCategory = "CorridorKey by LateNite"
 
     private let fileManager = FileManager.default
 
@@ -45,14 +45,14 @@ actor MotionTemplateInstaller {
         guard let bundledTemplateURL = bundledTemplateURL() else {
             return .failed(
                 title: "Motion Template could not be installed.",
-                info: "Motion Template resources were not found inside Corridor Key Toolbox.app."
+                info: "Motion Template resources were not found inside CorridorKey by LateNite.app."
             )
         }
 
         guard let realMoviesURL = realUserMoviesDirectory() else {
             return .failed(
                 title: "Motion Template could not be installed.",
-                info: "Corridor Key Toolbox could not locate your ~/Movies folder."
+                info: "CorridorKey by LateNite could not locate your ~/Movies folder."
             )
         }
 
@@ -70,7 +70,7 @@ actor MotionTemplateInstaller {
         guard isMotionTemplateAlreadyInstalled(in: realMoviesURL, bundledTemplateURL: bundledTemplateURL) else {
             return .failed(
                 title: "Motion Template could not be verified.",
-                info: "Corridor Key Toolbox copied the template files but could not confirm the installed copy. Try relaunching the app."
+                info: "CorridorKey by LateNite copied the template files but could not confirm the installed copy. Try relaunching the app."
             )
         }
         return .installed
@@ -80,7 +80,7 @@ actor MotionTemplateInstaller {
 
     /// Location of the bundled template inside the running wrapper app. The
     /// Motion Template folder reference in the Xcode project lands at
-    /// `Contents/Resources/Motion Template/Corridor Key Toolbox`.
+    /// `Contents/Resources/Motion Template/CorridorKey by LateNite`.
     private func bundledTemplateURL() -> URL? {
         guard let resourceURL = Bundle.main.resourceURL else {
             return nil
@@ -253,6 +253,6 @@ actor MotionTemplateInstaller {
     // MARK: - Logging
 
     private func log(_ message: String) {
-        NSLog("[Corridor Key Toolbox] %@", message)
+        NSLog("[CorridorKey by LateNite] %@", message)
     }
 }

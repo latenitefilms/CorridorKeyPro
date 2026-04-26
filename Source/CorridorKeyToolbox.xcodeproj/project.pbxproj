@@ -35,7 +35,7 @@
 		CK0100000000000000000015 /* CorridorKeyToolboxApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000015 /* CorridorKeyToolboxApp.swift */; };
 		CK0100000000000000000016 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000016 /* WelcomeView.swift */; };
 		CK0100000000000000000017 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000017 /* InfoPlist.strings */; };
-		CK0100000000000000000018 /* Corridor Key Toolbox Renderer.pluginkit in Embed PlugIns */ = {isa = PBXBuildFile; fileRef = CK0300000000000000000002 /* Corridor Key Toolbox Renderer.pluginkit */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		CK0100000000000000000018 /* CorridorKey by LateNite Renderer.pluginkit in Embed PlugIns */ = {isa = PBXBuildFile; fileRef = CK0300000000000000000002 /* CorridorKey by LateNite Renderer.pluginkit */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		CK0100000000000000000019 /* FxPlug.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CK0400000000000000000001 /* FxPlug.framework */; };
 		CK010000000000000000001A /* FxPlug.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = CK0400000000000000000001 /* FxPlug.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		CK010000000000000000001B /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CK0400000000000000000002 /* Cocoa.framework */; };
@@ -135,14 +135,14 @@
 			containerPortal = CK0600000000000000000001 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = CK0700000000000000000002;
-			remoteInfo = "Corridor Key Toolbox XPC";
+			remoteInfo = "CorridorKey by LateNite XPC";
 		};
 		WT0500000000000000000001 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = CK0600000000000000000001 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = CK0700000000000000000001;
-			remoteInfo = "Corridor Key Toolbox";
+			remoteInfo = "CorridorKey by LateNite";
 		};
 /* End PBXContainerItemProxy section */
 
@@ -153,7 +153,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				CK0100000000000000000018 /* Corridor Key Toolbox Renderer.pluginkit in Embed PlugIns */,
+				CK0100000000000000000018 /* CorridorKey by LateNite Renderer.pluginkit in Embed PlugIns */,
 			);
 			name = "Embed PlugIns";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -224,8 +224,8 @@
 		CK0200000000000000000075 /* FxImageTilePixelFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FxImageTilePixelFormat.swift; path = CorridorKeyToolbox/Plugin/Metal/FxImageTilePixelFormat.swift; sourceTree = "<group>"; };
 		CK0200000000000000000076 /* SharedMLXBridgeRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SharedMLXBridgeRegistry.swift; path = CorridorKeyToolbox/Plugin/Inference/SharedMLXBridgeRegistry.swift; sourceTree = "<group>"; };
 		CK0200000000000000000077 /* TemporalBlender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TemporalBlender.swift; path = CorridorKeyToolbox/Plugin/PostProcess/TemporalBlender.swift; sourceTree = "<group>"; };
-		CK0300000000000000000001 /* Corridor Key Toolbox.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Corridor Key Toolbox.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		CK0300000000000000000002 /* Corridor Key Toolbox Renderer.pluginkit */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Corridor Key Toolbox Renderer.pluginkit"; sourceTree = BUILT_PRODUCTS_DIR; };
+		CK0300000000000000000001 /* CorridorKey by LateNite.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "CorridorKey by LateNite.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		CK0300000000000000000002 /* CorridorKey by LateNite Renderer.pluginkit */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "CorridorKey by LateNite Renderer.pluginkit"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CK0400000000000000000001 /* FxPlug.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FxPlug.framework; path = /Library/Developer/Frameworks/FxPlug.framework; sourceTree = "<absolute>"; };
 		CK0400000000000000000002 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		CK0400000000000000000003 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
@@ -436,8 +436,8 @@
 		CK0A00000000000000000009 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				CK0300000000000000000001 /* Corridor Key Toolbox.app */,
-				CK0300000000000000000002 /* Corridor Key Toolbox Renderer.pluginkit */,
+				CK0300000000000000000001 /* CorridorKey by LateNite.app */,
+				CK0300000000000000000002 /* CorridorKey by LateNite Renderer.pluginkit */,
 			
 				WT0300000000000000000001 /* WrapperAppTests.xctest */,);
 			name = Products;
@@ -575,9 +575,9 @@
 		/* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		CK0700000000000000000001 /* Corridor Key Toolbox */ = {
+		CK0700000000000000000001 /* CorridorKey by LateNite */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = CK0B00000000000000000001 /* Build configuration list for PBXNativeTarget "Corridor Key Toolbox" */;
+			buildConfigurationList = CK0B00000000000000000001 /* Build configuration list for PBXNativeTarget "CorridorKey by LateNite" */;
 			buildPhases = (
 				CK0C00000000000000000001 /* Sources */,
 				CK0900000000000000000001 /* Frameworks */,
@@ -589,18 +589,18 @@
 			dependencies = (
 				CK0E00000000000000000001 /* PBXTargetDependency */,
 			);
-			name = "Corridor Key Toolbox";
-			productName = "Corridor Key Toolbox";
+			name = "CorridorKey by LateNite";
+			productName = "CorridorKey by LateNite";
 			packageProductDependencies = (
 				SP0000000000000000000001 /* MLX */,
 				SP0000000000000000000002 /* MLXNN */,
 			);
-			productReference = CK0300000000000000000001 /* Corridor Key Toolbox.app */;
+			productReference = CK0300000000000000000001 /* CorridorKey by LateNite.app */;
 			productType = "com.apple.product-type.application";
 		};
-		CK0700000000000000000002 /* Corridor Key Toolbox Renderer */ = {
+		CK0700000000000000000002 /* CorridorKey by LateNite Renderer */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = CK0B00000000000000000002 /* Build configuration list for PBXNativeTarget "Corridor Key Toolbox Renderer" */;
+			buildConfigurationList = CK0B00000000000000000002 /* Build configuration list for PBXNativeTarget "CorridorKey by LateNite Renderer" */;
 			buildPhases = (
 				CK0C00000000000000000002 /* Sources */,
 				CK0900000000000000000002 /* Frameworks */,
@@ -612,13 +612,13 @@
 			);
 			dependencies = (
 			);
-			name = "Corridor Key Toolbox Renderer";
+			name = "CorridorKey by LateNite Renderer";
 			packageProductDependencies = (
 				MX0400000000000000000001 /* MLX */,
 				MX0400000000000000000002 /* MLXNN */,
 			);
-			productName = "Corridor Key Toolbox XPC";
-			productReference = CK0300000000000000000002 /* Corridor Key Toolbox Renderer.pluginkit */;
+			productName = "CorridorKey by LateNite XPC";
+			productReference = CK0300000000000000000002 /* CorridorKey by LateNite Renderer.pluginkit */;
 			productType = "com.apple.product-type.bundle";
 		};
 		WT0700000000000000000001 /* WrapperAppTests */ = {
@@ -673,8 +673,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				CK0700000000000000000001 /* Corridor Key Toolbox */,
-				CK0700000000000000000002 /* Corridor Key Toolbox Renderer */,
+				CK0700000000000000000001 /* CorridorKey by LateNite */,
+				CK0700000000000000000002 /* CorridorKey by LateNite Renderer */,
 				WT0700000000000000000001 /* WrapperAppTests */,
 			);
 		};
@@ -843,12 +843,12 @@
 /* Begin PBXTargetDependency section */
 		CK0E00000000000000000001 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = CK0700000000000000000002 /* Corridor Key Toolbox Renderer */;
+			target = CK0700000000000000000002 /* CorridorKey by LateNite Renderer */;
 			targetProxy = CK0500000000000000000001 /* PBXContainerItemProxy */;
 		};
 		WT0E00000000000000000001 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = CK0700000000000000000001 /* Corridor Key Toolbox */;
+			target = CK0700000000000000000001 /* CorridorKey by LateNite */;
 			targetProxy = WT0500000000000000000001 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -1009,12 +1009,12 @@
 				ENABLE_RESOURCE_ACCESS_USB = NO;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = CorridorKeyToolbox/WrapperApp/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Corridor Key Toolbox";
+				INFOPLIST_KEY_CFBundleDisplayName = "CorridorKey by LateNite";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.video";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.latenitefilms.CorridorKeyToolbox;
 				PRODUCT_MODULE_NAME = CorridorKeyToolboxApp;
-				PRODUCT_NAME = "Corridor Key Toolbox";
+				PRODUCT_NAME = "CorridorKey by LateNite";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
 			name = Debug;
@@ -1046,12 +1046,12 @@
 				ENABLE_RESOURCE_ACCESS_USB = NO;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = CorridorKeyToolbox/WrapperApp/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Corridor Key Toolbox";
+				INFOPLIST_KEY_CFBundleDisplayName = "CorridorKey by LateNite";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.video";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.latenitefilms.CorridorKeyToolbox;
 				PRODUCT_MODULE_NAME = CorridorKeyToolboxApp;
-				PRODUCT_NAME = "Corridor Key Toolbox";
+				PRODUCT_NAME = "CorridorKey by LateNite";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
 			name = Release;
@@ -1068,13 +1068,13 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				HEADER_SEARCH_PATHS = "$(SRCROOT)/CorridorKeyToolbox/Plugin/Shared";
 				INFOPLIST_FILE = CorridorKeyToolbox/Plugin/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Corridor Key Toolbox Renderer";
+				INFOPLIST_KEY_CFBundleDisplayName = "CorridorKey by LateNite Renderer";
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
 				MACH_O_TYPE = mh_execute;
 				MTL_HEADER_SEARCH_PATHS = "$(SRCROOT)/CorridorKeyToolbox/Plugin/Shared";
 				PRODUCT_BUNDLE_IDENTIFIER = com.latenitefilms.CorridorKeyToolbox.Renderer;
 				PRODUCT_MODULE_NAME = CorridorKeyToolboxRenderer;
-				PRODUCT_NAME = "Corridor Key Toolbox Renderer";
+				PRODUCT_NAME = "CorridorKey by LateNite Renderer";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = FXPLUG_HOST;
 				SWIFT_OBJC_BRIDGING_HEADER = "CorridorKeyToolbox/Plugin/Shared/CorridorKeyToolbox-Bridging-Header.h";
@@ -1094,13 +1094,13 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				HEADER_SEARCH_PATHS = "$(SRCROOT)/CorridorKeyToolbox/Plugin/Shared";
 				INFOPLIST_FILE = CorridorKeyToolbox/Plugin/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Corridor Key Toolbox Renderer";
+				INFOPLIST_KEY_CFBundleDisplayName = "CorridorKey by LateNite Renderer";
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
 				MACH_O_TYPE = mh_execute;
 				MTL_HEADER_SEARCH_PATHS = "$(SRCROOT)/CorridorKeyToolbox/Plugin/Shared";
 				PRODUCT_BUNDLE_IDENTIFIER = com.latenitefilms.CorridorKeyToolbox.Renderer;
 				PRODUCT_MODULE_NAME = CorridorKeyToolboxRenderer;
-				PRODUCT_NAME = "Corridor Key Toolbox Renderer";
+				PRODUCT_NAME = "CorridorKey by LateNite Renderer";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = FXPLUG_HOST;
 				SWIFT_OBJC_BRIDGING_HEADER = "CorridorKeyToolbox/Plugin/Shared/CorridorKeyToolbox-Bridging-Header.h";
@@ -1121,7 +1121,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.latenitefilms.CorridorKeyToolbox.WrapperAppTests;
 				PRODUCT_NAME = WrapperAppTests;
 				SWIFT_VERSION = 6.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Corridor Key Toolbox.app/Contents/MacOS/Corridor Key Toolbox";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CorridorKey by LateNite.app/Contents/MacOS/CorridorKey by LateNite";
 			};
 			name = Debug;
 		};
@@ -1138,14 +1138,14 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.latenitefilms.CorridorKeyToolbox.WrapperAppTests;
 				PRODUCT_NAME = WrapperAppTests;
 				SWIFT_VERSION = 6.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Corridor Key Toolbox.app/Contents/MacOS/Corridor Key Toolbox";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CorridorKey by LateNite.app/Contents/MacOS/CorridorKey by LateNite";
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		CK0B00000000000000000001 /* Build configuration list for PBXNativeTarget "Corridor Key Toolbox" */ = {
+		CK0B00000000000000000001 /* Build configuration list for PBXNativeTarget "CorridorKey by LateNite" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				CK1000000000000000000003 /* Debug */,
@@ -1154,7 +1154,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		CK0B00000000000000000002 /* Build configuration list for PBXNativeTarget "Corridor Key Toolbox Renderer" */ = {
+		CK0B00000000000000000002 /* Build configuration list for PBXNativeTarget "CorridorKey by LateNite Renderer" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				CK1000000000000000000005 /* Debug */,

@@ -1,6 +1,6 @@
 //
 //  WelcomeView.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  First-run welcome screen. Automatically installs or refreshes the bundled
 //  Motion Template into the user's `~/Movies/Motion Templates.localized/...`
@@ -40,11 +40,11 @@ struct WelcomeView: View {
                 .cornerRadius(20)
                 .shadow(radius: 2, y: 1)
 
-            Text("Corridor Key Toolbox")
+            Text("CorridorKey by LateNite")
                 .font(.largeTitle)
                 .bold()
 
-            Text("Use the standalone editor to key any clip — or jump straight to \(Text("Final Cut Pro").bold()) and find Corridor Key Toolbox in the Effects browser.")
+            Text("Use the standalone editor to key any clip — or jump straight to \(Text("Final Cut Pro").bold()) and find CorridorKey by LateNite in the Effects browser.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 40)
@@ -123,12 +123,12 @@ struct WelcomeView: View {
     /// Opens Finder at the renderer's log directory. The FxPlug renderer runs
     /// in its own sandbox container, so logs land at
     /// `~/Library/Containers/com.latenitefilms.CorridorKeyToolbox.Renderer/
-    ///     Data/Library/Application Support/Corridor Key Toolbox/Logs`.
+    ///     Data/Library/Application Support/CorridorKey by LateNite/Logs`.
     /// NSWorkspace can reveal paths across sandbox boundaries because Finder
     /// performs the navigation in its own process.
     private func revealRendererLogs() {
         let rendererContainerURL = URL(fileURLWithPath: realUserHomePath())
-            .appending(path: "Library/Containers/com.latenitefilms.CorridorKeyToolbox.Renderer/Data/Library/Application Support/Corridor Key Toolbox/Logs", directoryHint: .isDirectory)
+            .appending(path: "Library/Containers/com.latenitefilms.CorridorKeyToolbox.Renderer/Data/Library/Application Support/CorridorKey by LateNite/Logs", directoryHint: .isDirectory)
 
         // If the directory doesn't exist yet (FCP hasn't launched the
         // renderer) let the user know rather than opening Finder at a
@@ -136,7 +136,7 @@ struct WelcomeView: View {
         if !FileManager.default.fileExists(atPath: rendererContainerURL.path) {
             showAlert(
                 title: "No logs yet",
-                message: "The renderer log folder appears once Final Cut Pro has loaded Corridor Key Toolbox at least once. Apply the effect to a clip and try again."
+                message: "The renderer log folder appears once Final Cut Pro has loaded CorridorKey by LateNite at least once. Apply the effect to a clip and try again."
             )
             return
         }

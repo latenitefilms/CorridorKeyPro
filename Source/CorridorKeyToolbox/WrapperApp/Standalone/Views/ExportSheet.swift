@@ -1,6 +1,6 @@
 //
 //  ExportSheet.swift
-//  Corridor Key Toolbox — Standalone Editor
+//  CorridorKey by LateNite — Standalone Editor
 //
 //  Modal sheet that gathers ProRes 4444 export options, runs the
 //  export through `EditorViewModel.runExport`, and surfaces progress

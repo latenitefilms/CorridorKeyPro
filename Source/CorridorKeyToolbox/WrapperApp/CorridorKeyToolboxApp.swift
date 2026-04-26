@@ -1,6 +1,6 @@
 //
 //  CorridorKeyToolboxApp.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  The wrapper application has two roles in v1.0:
 //
@@ -36,7 +36,7 @@ enum EditorWindow {
 @main
 struct CorridorKeyToolboxApp: App {
     var body: some Scene {
-        WindowGroup("Corridor Key Toolbox") {
+        WindowGroup("CorridorKey by LateNite") {
             WelcomeView()
                 .frame(minWidth: 550, minHeight: 460)
                 .frame(maxWidth: 550, maxHeight: 460)
@@ -45,7 +45,7 @@ struct CorridorKeyToolboxApp: App {
         .windowResizability(.contentSize)
         .commands {
             CommandGroup(replacing: .appInfo) {
-                Button("About Corridor Key Toolbox") {
+                Button("About CorridorKey by LateNite") {
                     NSApp.orderFrontStandardAboutPanel(nil)
                 }
             }
@@ -53,7 +53,7 @@ struct CorridorKeyToolboxApp: App {
                 NewEditorMenuItem()
             }
             CommandGroup(replacing: .help) {
-                Button("Corridor Key Toolbox Help") {
+                Button("CorridorKey by LateNite Help") {
                     if let url = URL(string: "https://corridorkeytoolbox.fcp.cafe") {
                         NSWorkspace.shared.open(url)
                     }

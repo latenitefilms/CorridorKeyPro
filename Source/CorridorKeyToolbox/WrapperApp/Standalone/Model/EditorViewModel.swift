@@ -1,6 +1,6 @@
 //
 //  EditorViewModel.swift
-//  Corridor Key Toolbox — Standalone Editor
+//  CorridorKey by LateNite — Standalone Editor
 //
 //  Single source of truth for the editor window. Holds:
 //

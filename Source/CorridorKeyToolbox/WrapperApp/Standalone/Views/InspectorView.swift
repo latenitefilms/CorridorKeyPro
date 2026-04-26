@@ -1,6 +1,6 @@
 //
 //  InspectorView.swift
-//  Corridor Key Toolbox — Standalone Editor
+//  CorridorKey by LateNite — Standalone Editor
 //
 //  Mirrors the Final Cut Pro inspector layout for the standalone
 //  editor: Settings → Interior Detail → Matte → Edge & Spill → Edge

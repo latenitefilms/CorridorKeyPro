@@ -1,6 +1,6 @@
 //
 //  MetalPreviewView.swift
-//  Corridor Key Toolbox — Standalone Editor
+//  CorridorKey by LateNite — Standalone Editor
 //
 //  SwiftUI bridge for displaying the keyed preview frame on a
 //  `MTKView`. Updates whenever the editor view model publishes a new
@@ -83,14 +83,14 @@ struct MetalPreviewView: NSViewRepresentable {
         init(device: any MTLDevice) {
             self.device = device
             guard let queue = device.makeCommandQueue() else {
-                fatalError("Corridor Key Toolbox preview view could not create a Metal command queue.")
+                fatalError("CorridorKey by LateNite preview view could not create a Metal command queue.")
             }
             self.commandQueue = queue
             let library: any MTLLibrary
             do {
                 library = try Self.makeShaderLibrary(device: device)
             } catch {
-                fatalError("Corridor Key Toolbox preview view could not compile its inline shaders: \(error.localizedDescription)")
+                fatalError("CorridorKey by LateNite preview view could not compile its inline shaders: \(error.localizedDescription)")
             }
             let pipelineDescriptor = MTLRenderPipelineDescriptor()
             pipelineDescriptor.label = "Corridor Key Standalone Preview"
@@ -115,7 +115,7 @@ struct MetalPreviewView: NSViewRepresentable {
             do {
                 self.pipelineState = try device.makeRenderPipelineState(descriptor: pipelineDescriptor)
             } catch {
-                fatalError("Corridor Key Toolbox preview view could not build its render pipeline: \(error.localizedDescription)")
+                fatalError("CorridorKey by LateNite preview view could not build its render pipeline: \(error.localizedDescription)")
             }
             let checkerDescriptor = MTLRenderPipelineDescriptor()
             checkerDescriptor.label = "Corridor Key Standalone Preview Checker"
@@ -125,7 +125,7 @@ struct MetalPreviewView: NSViewRepresentable {
             do {
                 self.checkerPipelineState = try device.makeRenderPipelineState(descriptor: checkerDescriptor)
             } catch {
-                fatalError("Corridor Key Toolbox preview view could not build its checker pipeline: \(error.localizedDescription)")
+                fatalError("CorridorKey by LateNite preview view could not build its checker pipeline: \(error.localizedDescription)")
             }
             super.init()
         }

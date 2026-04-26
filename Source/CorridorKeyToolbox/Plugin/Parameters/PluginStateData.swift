@@ -1,6 +1,6 @@
 //
 //  PluginStateData.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Immutable snapshot of every parameter value at a specific render time.
 //  Created in `pluginState(_:at:quality:)` and handed back to the plugin in

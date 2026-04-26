@@ -1,7 +1,7 @@
 // swift-tools-version: 6.0
 //
 //  Package.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Headless regression suite for the plug-in's pure-Swift logic and the
 //  Metal stage helpers. The Xcode project remains the build system of

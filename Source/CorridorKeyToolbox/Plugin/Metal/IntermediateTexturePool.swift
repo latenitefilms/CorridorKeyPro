@@ -1,9 +1,9 @@
 //
 //  IntermediateTexturePool.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Reuses Metal textures between frames instead of allocating fresh ones on
-//  every render. Profiling v0 Corridor Key Toolbox renders at 3840 × 2160
+//  every render. Profiling v0 CorridorKey by LateNite renders at 3840 × 2160
 //  showed ~8–12 intermediate textures allocated per frame (despill output,
 //  two morphology ping-pongs, two Gaussian ping-pongs, resample targets,
 //  etc.) — at 30 fps this added up to several hundred texture allocations per

@@ -34,7 +34,7 @@ enum BenchmarkReportWriter {
         let generatedAt = Date().formatted(.iso8601)
 
         var lines: [String] = []
-        lines.append("# Corridor Key Toolbox — Matte Benchmark")
+        lines.append("# CorridorKey by LateNite — Matte Benchmark")
         lines.append("")
         lines.append("**Label:** \(report.label)")
         lines.append("**Matte folder:** `\(report.matteFolder.path(percentEncoded: false))`")

@@ -1,6 +1,6 @@
 //
 //  MLXKeyingEngine.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Loads a CorridorKey `.mlxfn` bridge via mlx-swift's public
 //  `ImportedFunction` API and runs inference for one frame at a time. The
@@ -83,7 +83,7 @@ private enum MLXBridgeResourceLocator {
         }
 
         // 2. The wrapper app: the renderer plugin sits inside the
-        //    .app at Contents/PlugIns/Corridor Key Toolbox Renderer.pluginkit
+        //    .app at Contents/PlugIns/CorridorKey by LateNite Renderer.pluginkit
         //    and owns the .mlxfn resources. Looking them up here lets
         //    the standalone editor reuse the same on-disk artefacts
         //    the renderer ships, instead of bundling a second copy.
@@ -373,7 +373,7 @@ final class MLXKeyingEngine: KeyingInferenceEngine, @unchecked Sendable {
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             throw KeyingInferenceError.deviceUnavailable
         }
-        commandBuffer.label = "Corridor Key Toolbox MLX Writeback"
+        commandBuffer.label = "CorridorKey by LateNite MLX Writeback"
 
         try RenderStages.writeAlphaBufferToTexture(
             buffer: alphaMLXBuffer,

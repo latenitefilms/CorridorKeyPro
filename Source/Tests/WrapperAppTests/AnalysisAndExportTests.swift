@@ -1,6 +1,6 @@
 //
 //  AnalysisAndExportTests.swift
-//  Corridor Key Toolbox — WrapperAppTests
+//  CorridorKey by LateNite — WrapperAppTests
 //
 //  End-to-end tests for the standalone editor's two background
 //  passes:

@@ -1,6 +1,6 @@
 //
 //  CorridorKeyToolboxPlugIn+RenderRects.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Tells FxPlug which parts of the input and output images we touch. The
 //  keyer is an identity transform so the output bounds always equal the

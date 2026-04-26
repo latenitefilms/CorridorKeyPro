@@ -1,6 +1,6 @@
 //
 //  PluginLog.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  File-based logging utility for the FxPlug XPC service. Because Final Cut Pro
 //  runs plug-ins in an out-of-process sandbox, messages written with `print` or
@@ -11,9 +11,9 @@
 
 import Foundation
 
-/// Namespace for Corridor Key Toolbox logging. Exposes level-tagged helpers that
+/// Namespace for CorridorKey by LateNite logging. Exposes level-tagged helpers that
 /// forward to `NSLog` and append to a persistent log file under
-/// `~/Library/Application Support/Corridor Key Toolbox/Logs/`. Calls are
+/// `~/Library/Application Support/CorridorKey by LateNite/Logs/`. Calls are
 /// intentionally forgiving — the log path exists from the first redirect
 /// install, and emits made before that still show up in Console.app.
 enum PluginLog {
@@ -37,7 +37,7 @@ enum PluginLog {
         }
 
         let logDirectory = applicationSupport
-            .appending(path: "Corridor Key Toolbox", directoryHint: .isDirectory)
+            .appending(path: "CorridorKey by LateNite", directoryHint: .isDirectory)
             .appending(path: "Logs", directoryHint: .isDirectory)
         if !fileManager.fileExists(atPath: logDirectory.path) {
             do {
@@ -56,24 +56,24 @@ enum PluginLog {
         let logFile = logDirectory.appending(path: "CorridorKeyToolboxRenderer-\(versionString)-\(buildString).log")
 
         freopen(logFile.path.cString(using: .utf8), "a+", stderr)
-        notice("--------- Corridor Key Toolbox Renderer \(versionString) (\(buildString)) ---------")
+        notice("--------- CorridorKey by LateNite Renderer \(versionString) (\(buildString)) ---------")
         notice("Log file: \(logFile.path)")
     }
 
     static func notice(_ message: String) {
-        NSLog("[Corridor Key Toolbox] %@", message)
+        NSLog("[CorridorKey by LateNite] %@", message)
     }
 
     static func debug(_ message: String) {
-        NSLog("[Corridor Key Toolbox] DEBUG: %@", message)
+        NSLog("[CorridorKey by LateNite] DEBUG: %@", message)
     }
 
     static func warning(_ message: String) {
-        NSLog("[Corridor Key Toolbox] WARNING: %@", message)
+        NSLog("[CorridorKey by LateNite] WARNING: %@", message)
     }
 
     static func error(_ message: String) {
-        NSLog("[Corridor Key Toolbox] ERROR: %@", message)
+        NSLog("[CorridorKey by LateNite] ERROR: %@", message)
     }
 
     private nonisolated(unsafe) static var didInstallRedirect = false

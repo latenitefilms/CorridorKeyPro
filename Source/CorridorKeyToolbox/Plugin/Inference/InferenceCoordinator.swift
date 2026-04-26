@@ -1,6 +1,6 @@
 //
 //  InferenceCoordinator.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  The inference adapter for the analyser path. Every analyse-time call
 //  goes through MLX — there is intentionally **no** fallback engine, so

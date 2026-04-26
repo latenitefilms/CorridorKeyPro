@@ -1,6 +1,6 @@
 //
 //  SharedMLXBridgeRegistry.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Process-wide cache of warmed `MLXKeyingEngine`s keyed by `(device,
 //  rung)`. Before this registry each `InferenceCoordinator` held its own

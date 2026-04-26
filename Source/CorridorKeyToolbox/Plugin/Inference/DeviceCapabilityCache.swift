@@ -1,6 +1,6 @@
 //
 //  DeviceCapabilityCache.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Learning cache that records per-device MLX inference latency at each
 //  rung and lets `QualityMode.automatic` lift the static RAM-aware

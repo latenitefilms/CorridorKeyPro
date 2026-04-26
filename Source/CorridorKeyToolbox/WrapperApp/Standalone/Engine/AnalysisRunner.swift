@@ -1,6 +1,6 @@
 //
 //  AnalysisRunner.swift
-//  Corridor Key Toolbox — Standalone Editor
+//  CorridorKey by LateNite — Standalone Editor
 //
 //  Mirrors `CorridorKeyToolboxPlugIn+FxAnalyzer` for the standalone
 //  editor: walks every frame of a clip, hands the source to MLX via

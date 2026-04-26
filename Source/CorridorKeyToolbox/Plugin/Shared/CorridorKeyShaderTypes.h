@@ -1,6 +1,6 @@
 //
 //  CorridorKeyShaderTypes.h
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Shared type and index constants used by Metal shaders and the Swift host.
 //

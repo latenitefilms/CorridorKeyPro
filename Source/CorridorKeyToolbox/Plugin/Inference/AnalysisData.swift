@@ -1,6 +1,6 @@
 //
 //  AnalysisData.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Strongly-typed model for the analysis cache that lives inside the FxPlug
 //  custom parameter. Keeping this inside the Final Cut Pro Library (rather

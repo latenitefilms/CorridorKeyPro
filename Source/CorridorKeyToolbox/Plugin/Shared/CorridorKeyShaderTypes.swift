@@ -1,6 +1,6 @@
 //
 //  CorridorKeyShaderTypes.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Swift mirror of `CorridorKeyShaderTypes.h`. The Xcode FxPlug target
 //  imports the C header via its bridging header; the Swift Package build —

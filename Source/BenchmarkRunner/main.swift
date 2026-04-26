@@ -2,7 +2,7 @@
 //  main.swift
 //  BenchmarkRunner
 //
-//  Headless regression tool for Corridor Key Toolbox. Reads a benchmark
+//  Headless regression tool for CorridorKey by LateNite. Reads a benchmark
 //  clip folder (as shipped in `LLM Resources/Benchmark/`) and produces a
 //  markdown report summarising matte-quality metrics that are sensitive to
 //  the post-processing changes we'll land in subsequent phases.
@@ -43,7 +43,7 @@ do {
     let arguments = try BenchmarkArguments.parse(CommandLine.arguments)
     let sourceIdentifier = arguments.label ?? arguments.matteFolder.lastPathComponent
 
-    print("Corridor Key Toolbox — BenchmarkRunner")
+    print("CorridorKey by LateNite — BenchmarkRunner")
     print("Matte folder: \(arguments.matteFolder.path(percentEncoded: false))")
     print("Label       : \(sourceIdentifier)")
 

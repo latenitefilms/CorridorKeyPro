@@ -1,12 +1,12 @@
 input: .
 output: .retype
 
-url: CorridorKeyToolbox.fcp.cafe
+url: corridorkeybylatenite.fcp.cafe
 
 favicon: static/favicon.ico
 
 branding:
-  title: Corridor Key Toolbox
+  title: CorridorKey by LateNite
   logo: static/logo-dark.png
   logoDark: static/logo-light.png
 

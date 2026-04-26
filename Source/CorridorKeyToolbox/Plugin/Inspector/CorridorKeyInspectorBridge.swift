@@ -1,6 +1,6 @@
 //
 //  CorridorKeyInspectorBridge.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Thin bridge between the SwiftUI inspector header and the FxPlug host
 //  APIs. Keeps SwiftUI views free of `PROAPIAccessing` / `NSError` plumbing

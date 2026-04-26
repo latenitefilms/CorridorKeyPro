@@ -1,6 +1,6 @@
 //
 //  ProResExporter.swift
-//  Corridor Key Toolbox — Standalone Editor
+//  CorridorKey by LateNite — Standalone Editor
 //
 //  Streams every frame of the source clip through Corridor Key, then
 //  encodes the result as Apple ProRes 4444 (with optional alpha) into

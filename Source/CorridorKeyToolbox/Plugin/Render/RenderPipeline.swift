@@ -1,6 +1,6 @@
 //
 //  RenderPipeline.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Orchestrates a single-frame render. The pipeline is built around three
 //  command buffers so the inference engine (which owns synchronous CPU work
@@ -503,7 +503,7 @@ final class RenderPipeline: @unchecked Sendable {
         guard let commandBuffer = context.commandQueue.makeCommandBuffer() else {
             throw MetalDeviceCacheError.commandBufferCreationFailed
         }
-        commandBuffer.label = "Corridor Key Toolbox Pass-Through"
+        commandBuffer.label = "CorridorKey by LateNite Pass-Through"
 
         // Reuse the compose render pipeline with the source bound as every
         // sampler and `foregroundOnly` output. This re-publishes the raw
@@ -578,7 +578,7 @@ final class RenderPipeline: @unchecked Sendable {
         guard let commandBuffer = context.commandQueue.makeCommandBuffer() else {
             throw MetalDeviceCacheError.commandBufferCreationFailed
         }
-        commandBuffer.label = "Corridor Key Toolbox Hint Diagnostic"
+        commandBuffer.label = "CorridorKey by LateNite Hint Diagnostic"
 
         // Step 1: rotate into the screen-colour-canonical domain so
         // the green-bias hint matches what runPreInference would see
@@ -712,7 +712,7 @@ final class RenderPipeline: @unchecked Sendable {
         guard let preCommandBuffer = context.commandQueue.makeCommandBuffer() else {
             throw MetalDeviceCacheError.commandBufferCreationFailed
         }
-        preCommandBuffer.label = "Corridor Key Toolbox Cached Pre-Inference"
+        preCommandBuffer.label = "CorridorKey by LateNite Cached Pre-Inference"
 
         let rotatedSourcePooled = try RenderStages.applyScreenMatrix(
             source: context.sourceTexture,
@@ -801,7 +801,7 @@ final class RenderPipeline: @unchecked Sendable {
         guard let preCommandBuffer = commandQueue.makeCommandBuffer() else {
             throw MetalDeviceCacheError.commandBufferCreationFailed
         }
-        preCommandBuffer.label = "Corridor Key Toolbox Pre-Inference"
+        preCommandBuffer.label = "CorridorKey by LateNite Pre-Inference"
 
         let rotatedSourcePooled = try RenderStages.applyScreenMatrix(
             source: sourceTexture,
@@ -884,7 +884,7 @@ final class RenderPipeline: @unchecked Sendable {
                 pixelFormat: .rgba16Float
             ) else { throw MetalDeviceCacheError.textureAllocationFailed }
             if let blit = preCommandBuffer.makeBlitCommandEncoder() {
-                blit.label = "Corridor Key Toolbox Pre-Inf Copy"
+                blit.label = "CorridorKey by LateNite Pre-Inf Copy"
                 blit.copy(from: rotatedSource, to: fallback.texture)
                 blit.endEncoding()
             }
@@ -912,7 +912,7 @@ final class RenderPipeline: @unchecked Sendable {
         guard let postCommandBuffer = context.commandQueue.makeCommandBuffer() else {
             throw MetalDeviceCacheError.commandBufferCreationFailed
         }
-        postCommandBuffer.label = "Corridor Key Toolbox Post-Inference"
+        postCommandBuffer.label = "CorridorKey by LateNite Post-Inference"
 
         // 1. Upscale alpha + foreground to destination resolution using the
         // user's chosen method.
@@ -1300,7 +1300,7 @@ final class RenderPipeline: @unchecked Sendable {
         guard let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: passDescriptor) else {
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "Corridor Key Toolbox Compose"
+        encoder.label = "CorridorKey by LateNite Compose"
 
         let halfW = tileWidth * 0.5
         let halfH = tileHeight * 0.5

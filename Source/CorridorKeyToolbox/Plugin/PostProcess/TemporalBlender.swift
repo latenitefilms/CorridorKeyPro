@@ -1,6 +1,6 @@
 //
 //  TemporalBlender.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  CPU-side mirror of `corridorKeyTemporalBlendKernel`. Applied during the
 //  analysis pass so the cached matte already reflects the blend — playback

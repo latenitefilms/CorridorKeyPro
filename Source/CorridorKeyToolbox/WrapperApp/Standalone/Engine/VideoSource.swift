@@ -1,6 +1,6 @@
 //
 //  VideoSource.swift
-//  Corridor Key Toolbox — Standalone Editor
+//  CorridorKey by LateNite — Standalone Editor
 //
 //  Wraps an `AVURLAsset` so the standalone editor can:
 //
@@ -63,15 +63,15 @@ enum VideoSourceError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .noVideoTrack(let url):
-            return "Corridor Key Toolbox couldn't find a video track in \(url.lastPathComponent)."
+            return "CorridorKey by LateNite couldn't find a video track in \(url.lastPathComponent)."
         case .readerSetupFailed(let error):
-            return "Corridor Key Toolbox couldn't open the clip for reading: \(error.localizedDescription)"
+            return "CorridorKey by LateNite couldn't open the clip for reading: \(error.localizedDescription)"
         case .readerOutputUnavailable:
-            return "Corridor Key Toolbox couldn't attach a video output to the clip reader."
+            return "CorridorKey by LateNite couldn't attach a video output to the clip reader."
         case .sampleBufferUnavailable:
-            return "Corridor Key Toolbox couldn't read the next sample buffer from the clip."
+            return "CorridorKey by LateNite couldn't read the next sample buffer from the clip."
         case .pixelBufferUnavailable:
-            return "Corridor Key Toolbox decoded a sample but no pixel data came with it."
+            return "CorridorKey by LateNite decoded a sample but no pixel data came with it."
         }
     }
 }

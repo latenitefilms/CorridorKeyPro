@@ -6,7 +6,7 @@
 - 26th April 2026
 
 **🔨 Improvements:**
-- The **Corridor Key Toolbox** application in your `/Applications` folder now has a standalone editor built-in, allowing you to export without launching Final Cut Pro.
+- The **CorridorKey by LateNite** application in your `/Applications` folder now has a standalone editor built-in, allowing you to export without launching Final Cut Pro.
 
 ---
 
@@ -46,4 +46,4 @@
 **🎉 Released:**
 - 23rd April 2026
 
-This is the first public beta release of **Corridor Key Toolbox**. Woohoo!
+This is the first public beta release of **CorridorKey by LateNite**. Woohoo!

@@ -1,6 +1,6 @@
 //
 //  ScreenColorEstimator.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Produces forward / inverse 3x3 matrices that rotate a non-green screen into
 //  the green domain expected by the neural model and the despill kernel. When

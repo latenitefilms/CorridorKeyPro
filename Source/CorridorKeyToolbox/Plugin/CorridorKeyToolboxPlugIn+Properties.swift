@@ -1,6 +1,6 @@
 //
 //  CorridorKeyToolboxPlugIn+Properties.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Declares the static capabilities of the plug-in. Properties are fetched
 //  once per instance and cached by the host, so this method is the right place

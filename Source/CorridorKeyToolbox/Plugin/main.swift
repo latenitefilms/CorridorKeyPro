@@ -1,6 +1,6 @@
 //
 //  main.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Entry point for the FxPlug XPC service. `FxPrincipal.startServicePrincipal`
 //  hands control over to Final Cut Pro's plug-in host, which instantiates
@@ -31,7 +31,7 @@ final class CorridorKeyToolboxServiceDelegate: NSObject, FxPrincipalDelegate {
 }
 
 PluginLog.installFileRedirect()
-PluginLog.notice("Corridor Key Toolbox Renderer launching.")
+PluginLog.notice("CorridorKey by LateNite Renderer launching.")
 
 // Kick off MLX warm-up immediately at XPC service startup. The warm-up
 // runs on a background utility task, so it doesn't block the principal

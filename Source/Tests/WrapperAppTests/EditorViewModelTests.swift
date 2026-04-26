@@ -1,6 +1,6 @@
 //
 //  EditorViewModelTests.swift
-//  Corridor Key Toolbox — WrapperAppTests
+//  CorridorKey by LateNite — WrapperAppTests
 //
 //  Drives the @Observable view model that owns the editor window.
 //  These tests would have caught the original "permission denied"

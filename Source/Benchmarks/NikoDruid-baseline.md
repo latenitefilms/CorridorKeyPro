@@ -1,4 +1,4 @@
-# Corridor Key Toolbox — Matte Benchmark
+# CorridorKey by LateNite — Matte Benchmark
 
 **Label:** CorridorKey v1.0 reference (510 frames, pre-temporal)
 **Matte folder:** `/Users/chrishocking/Documents/GitHub/CorridorKeyToolbox/Source/Benchmarks/.cache/NikoDruid-matte-png`

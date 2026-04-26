@@ -1,6 +1,6 @@
 //
 //  PreviewBackdropCompositingTests.swift
-//  Corridor Key Toolbox — WrapperAppTests
+//  CorridorKey by LateNite — WrapperAppTests
 //
 //  Regression tests for the bug where the keyed image's
 //  premultiplied-black background got drawn opaque over the

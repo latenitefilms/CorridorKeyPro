@@ -1,6 +1,6 @@
 //
 //  CorridorKeyToolbox-Bridging-Header.h
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Exposes the FxPlug SDK and our shared shader constants to Swift.
 //

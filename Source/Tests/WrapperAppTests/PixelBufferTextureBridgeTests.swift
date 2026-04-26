@@ -1,6 +1,6 @@
 //
 //  PixelBufferTextureBridgeTests.swift
-//  Corridor Key Toolbox — WrapperAppTests
+//  CorridorKey by LateNite — WrapperAppTests
 //
 //  Round-trips a `CVPixelBuffer` through the bridge into an
 //  `MTLTexture` and back again, confirming:

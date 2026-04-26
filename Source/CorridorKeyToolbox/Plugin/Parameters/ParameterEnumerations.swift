@@ -1,6 +1,6 @@
 //
 //  ParameterEnumerations.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Swift-native representations of each choice parameter. The `rawValue` lines
 //  up with the `addPopupMenu` index order used in

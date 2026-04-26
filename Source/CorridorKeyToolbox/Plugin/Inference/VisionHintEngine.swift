@@ -1,6 +1,6 @@
 //
 //  VisionHintEngine.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Generates the alpha-hint texture that feeds the MLX bridge's 4th input
 //  channel from Apple's Vision framework instead of the legacy green-bias

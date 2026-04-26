@@ -1,6 +1,6 @@
 //
 //  TransportPolishTests.swift
-//  Corridor Key Toolbox — WrapperAppTests
+//  CorridorKey by LateNite — WrapperAppTests
 //
 //  Targeted regressions for the round of UI polish that landed in
 //  v1.0:

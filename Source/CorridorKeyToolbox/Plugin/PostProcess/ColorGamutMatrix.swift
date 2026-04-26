@@ -1,6 +1,6 @@
 //
 //  ColorGamutMatrix.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Builds 3x3 linear matrices that map Final Cut Pro's working colour gamut
 //  into the Rec.709-linear sRGB space the neural network was trained on, so
@@ -34,7 +34,7 @@ struct WorkingSpaceTransform: Sendable, Equatable {
     )
 }
 
-/// The FxPlug colour gamuts Corridor Key Toolbox will encounter. We map the
+/// The FxPlug colour gamuts CorridorKey by LateNite will encounter. We map the
 /// `FxColorPrimaries` enum to this Swift type at the render boundary so the
 /// rest of the pipeline can reason in Swift-native terms.
 enum WorkingColorGamut: Int, Sendable, CaseIterable, Codable {

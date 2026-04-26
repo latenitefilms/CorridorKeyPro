@@ -1,6 +1,6 @@
 //
 //  WrapperApp-Bridging-Header.h
-//  Corridor Key Toolbox — Standalone Editor
+//  CorridorKey by LateNite — Standalone Editor
 //
 //  Imports the C-side shader-types header so the wrapper app's Swift
 //  code can reference the same `CKTextureIndex…`, `CKBufferIndex…`,

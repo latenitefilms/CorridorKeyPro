@@ -1,6 +1,6 @@
 //
 //  StandaloneRenderEngineTests.swift
-//  Corridor Key Toolbox — WrapperAppTests
+//  CorridorKey by LateNite — WrapperAppTests
 //
 //  Drives the engine that wraps `RenderPipeline` for the standalone
 //  editor. The engine is the seam between AVFoundation pixel buffers

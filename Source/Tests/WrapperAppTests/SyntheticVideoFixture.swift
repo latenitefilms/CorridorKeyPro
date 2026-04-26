@@ -1,6 +1,6 @@
 //
 //  SyntheticVideoFixture.swift
-//  Corridor Key Toolbox — WrapperAppTests
+//  CorridorKey by LateNite — WrapperAppTests
 //
 //  Builds a tiny synthetic MP4 on disk for the wrapper-app tests so we
 //  don't have to bundle a 130 MB sample clip into the test bundle. The

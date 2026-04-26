@@ -1,6 +1,6 @@
 //
 //  FourFrameUserFlowTests.swift
-//  Corridor Key Toolbox — WrapperAppTests
+//  CorridorKey by LateNite — WrapperAppTests
 //
 //  End-to-end coverage that mirrors the user's hand-test against the
 //  short ProRes 4444 fixture in `LLM Resources/Benchmark/NikoDruid/

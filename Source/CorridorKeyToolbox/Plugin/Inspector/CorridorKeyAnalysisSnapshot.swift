@@ -1,6 +1,6 @@
 //
 //  CorridorKeyAnalysisSnapshot.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  Value-type summary the inspector header renders. Kept dependency-free so
 //  it can be unit-tested from the Swift Package side of the repo and stays

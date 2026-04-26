@@ -1,6 +1,6 @@
 //
 //  NikoDruidEndToEndTests.swift
-//  Corridor Key Toolbox — WrapperAppTests
+//  CorridorKey by LateNite — WrapperAppTests
 //
 //  Drives the standalone editor end-to-end against the real NikoDruid
 //  green-screen clip the benchmark suite uses. Each test exercises a

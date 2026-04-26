@@ -1,6 +1,6 @@
 //
 //  PixelBufferTextureBridge.swift
-//  Corridor Key Toolbox — Standalone Editor
+//  CorridorKey by LateNite — Standalone Editor
 //
 //  Bridges between AVFoundation's `CVPixelBuffer` (used by `AVAssetReader`
 //  / `AVAssetWriter`) and Metal's `MTLTexture` (consumed by the Corridor
@@ -39,13 +39,13 @@ enum PixelBufferTextureBridgeError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .unsupportedPixelFormat(let osType):
-            return "Corridor Key Toolbox cannot bridge pixel format 0x\(String(osType, radix: 16))."
+            return "CorridorKey by LateNite cannot bridge pixel format 0x\(String(osType, radix: 16))."
         case .textureCreationFailed:
-            return "Corridor Key Toolbox could not wrap a pixel buffer as a Metal texture."
+            return "CorridorKey by LateNite could not wrap a pixel buffer as a Metal texture."
         case .noIOSurface:
-            return "Corridor Key Toolbox received a CVPixelBuffer without an IOSurface; the AVFoundation reader was not configured for Metal compatibility."
+            return "CorridorKey by LateNite received a CVPixelBuffer without an IOSurface; the AVFoundation reader was not configured for Metal compatibility."
         case .pixelBufferAllocationFailed(let status):
-            return "Corridor Key Toolbox could not allocate a destination pixel buffer (status \(status))."
+            return "CorridorKey by LateNite could not allocate a destination pixel buffer (status \(status))."
         }
     }
 }

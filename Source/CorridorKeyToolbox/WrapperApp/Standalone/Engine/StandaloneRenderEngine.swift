@@ -1,6 +1,6 @@
 //
 //  StandaloneRenderEngine.swift
-//  Corridor Key Toolbox — Standalone Editor
+//  CorridorKey by LateNite — Standalone Editor
 //
 //  Glue layer between the standalone editor and the shared render
 //  pipeline. Holds onto the system-default `MTLDevice`, a single
@@ -35,11 +35,11 @@ enum StandaloneRenderEngineError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .noMetalDevice:
-            return "Corridor Key Toolbox could not access the system Metal device."
+            return "CorridorKey by LateNite could not access the system Metal device."
         case .bridgeUnavailable:
-            return "Corridor Key Toolbox could not initialise the pixel-buffer ↔ Metal bridge."
+            return "CorridorKey by LateNite could not initialise the pixel-buffer ↔ Metal bridge."
         case .destinationAllocationFailed:
-            return "Corridor Key Toolbox could not allocate a destination texture."
+            return "CorridorKey by LateNite could not allocate a destination texture."
         }
     }
 }

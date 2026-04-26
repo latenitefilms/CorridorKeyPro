@@ -12,6 +12,8 @@
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundleDisplayName</key>
+	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundlePackageType</key>
 	<string>XPC!</string>
 	<key>CFBundleShortVersionString</key>
@@ -57,7 +59,7 @@
 			<key>className</key>
 			<string>CorridorKeyToolboxPlugIn</string>
 			<key>displayName</key>
-			<string>Corridor Key Toolbox</string>
+			<string>CorridorKey by LateNite</string>
 			<key>group</key>
 			<string>8F1B3A2C-6E54-4A18-9D7F-0C8B5E2A4931</string>
 			<key>infoString</key>
@@ -75,7 +77,7 @@
 			<key>className</key>
 			<string>CorridorKeyHintOSC</string>
 			<key>displayName</key>
-			<string>Corridor Key Subject Points</string>
+			<string>CorridorKey by LateNite Subject Points</string>
 			<key>group</key>
 			<string>8F1B3A2C-6E54-4A18-9D7F-0C8B5E2A4931</string>
 			<key>infoString</key>

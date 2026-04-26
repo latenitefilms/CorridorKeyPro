@@ -1,6 +1,6 @@
 //
 //  VideoSourceTests.swift
-//  Corridor Key Toolbox — WrapperAppTests
+//  CorridorKey by LateNite — WrapperAppTests
 //
 //  Verifies the AVFoundation import path the standalone editor uses
 //  to bring a clip into the keyer. These are the tests that would

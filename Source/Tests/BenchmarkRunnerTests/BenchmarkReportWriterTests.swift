@@ -36,7 +36,7 @@ import Foundation
         )
         let markdown = BenchmarkReportWriter.render(report)
 
-        #expect(markdown.contains("Corridor Key Toolbox — Matte Benchmark"))
+        #expect(markdown.contains("CorridorKey by LateNite — Matte Benchmark"))
         #expect(markdown.contains("v1.0.0 Build 2 (baseline)"))
         #expect(markdown.contains("| Frames | 120 |"))
         #expect(markdown.contains("3,840 × 2,160") || markdown.contains("3840 × 2160"))

@@ -1,6 +1,6 @@
 //
 //  FxImageTilePixelFormat.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  FxPlug-specific extension point split out so `MetalDeviceCache.swift`
 //  stays free of FxPlug types and can be compiled by the Swift Package

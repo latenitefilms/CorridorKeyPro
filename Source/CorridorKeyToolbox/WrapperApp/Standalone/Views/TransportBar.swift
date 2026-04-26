@@ -1,6 +1,6 @@
 //
 //  TransportBar.swift
-//  Corridor Key Toolbox — Standalone Editor
+//  CorridorKey by LateNite — Standalone Editor
 //
 //  Mac-native transport bar that sits beneath the preview surface.
 //  Modelled after QuickTime Player's controls: a centred play / pause

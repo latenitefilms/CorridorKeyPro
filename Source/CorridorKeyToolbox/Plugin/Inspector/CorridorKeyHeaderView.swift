@@ -1,6 +1,6 @@
 //
 //  CorridorKeyHeaderView.swift
-//  Corridor Key Toolbox
+//  CorridorKey by LateNite
 //
 //  SwiftUI header drawn at the top of the Final Cut Pro inspector. Pulls its
 //  data from `CorridorKeyInspectorBridge` so the SwiftUI tree stays free of
@@ -39,10 +39,10 @@ struct CorridorKeyHeaderView: View {
                 .resizable()
                 .interpolation(.high)
                 .frame(width: 48, height: 48)
-                .accessibilityLabel("Corridor Key Toolbox")
+                .accessibilityLabel("CorridorKey by LateNite")
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("Corridor Key Toolbox")
+                Text("CorridorKey by LateNite")
                     .font(.headline)
                     .lineLimit(1)
                     .fixedSize(horizontal: false, vertical: true)
