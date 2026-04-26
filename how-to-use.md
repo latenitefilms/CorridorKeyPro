@@ -1,28 +1,28 @@
 # How To Use
 
 !!!primary
-**Corridor Key Toolbox** is currently in a **public beta testing phase**.
+**CorridorKey by LateNite** is currently in a **public beta testing phase**.
 
 We're just using a placeholder icon for now (taken from [VFX Toolbox](https://vfxtoolbox.fcp.cafe)).
 
 Feedback welcome!
 !!!
 
-Run **Corridor Key Toolbox** from your `/Applications` folder.
+Run **CorridorKey by LateNite** from your `/Applications` folder.
 
 It will look like this:
 
 ![](/static/wrapper-app.png)
 
-**Corridor Key Toolbox** will automatically install the Motion Template in this folder:
+**CorridorKey by LateNite** will automatically install the Motion Template in this folder:
 
 ```
-/Users/YOUR-USER-NAME/Movies/Motion Templates.localized/Effects.localized/Corridor Key Toolbox
+/Users/YOUR-USER-NAME/Movies/Motion Templates.localized/Effects.localized/CorridorKey by LateNite
 ```
 
 Click the **Open Final Cut Pro** button to launch Final Cut Pro.
 
-You can then apply the **Corridor Key Toolbox** effect to your clips from the **Effects Browser:**
+You can then apply the **CorridorKey by LateNite** effect to your clips from the **Effects Browser:**
 
 ![](/static/effects-browser.png)
 

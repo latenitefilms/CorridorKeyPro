@@ -1,9 +1,9 @@
 # Uninstall
 
-To uninstall **Corridor Key Toolbox**, simply drag the application to the trash/bin.
+To uninstall **CorridorKey by LateNite**, simply drag the application to the trash/bin.
 
-**Corridor Key Toolbox** will automatically install the Motion Template in this folder:
+**CorridorKey by LateNite** will automatically install the Motion Template in this folder:
 
 ```
-/Users/YOUR-USER-NAME/Movies/Motion Templates.localized/Effects.localized/Corridor Key Toolbox
+/Users/YOUR-USER-NAME/Movies/Motion Templates.localized/Effects.localized/CorridorKey by LateNite
 ```

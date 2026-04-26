@@ -1,6 +1,6 @@
 # Frequently Asked Questions
 
-## What other Corridor Key projects exist?
+## What other CorridorKey projects exist?
 
 Here's some cool projects:
 
@@ -9,3 +9,4 @@ Here's some cool projects:
 - [CorridorKey Engine](https://github.com/99oblivius/CorridorKey-Engine) - Async multi-GPU inference, optimization profiles, a JSON-RPC engine API, and a Textual TUI.
 - [CorridorKeyOpenVINO](https://github.com/daniil-lyakhov/CorridorKeyOpenVINO) - Fast Inference on Intel Hardware with OpenVINO
 - [CorridorKey by blace.ai](https://aescripts.com/corridorkey-by-blace-ai/) - High rendering performance (2x-4x faster rendering times) and completely C++ based for maximum stability.
+- [Iris — CorridorKey](https://github.com/DomCoganda/Iris-CorridorKey) - A native desktop frontend for CorridorKey by Corridor Digital.

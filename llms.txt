@@ -1,15 +1,15 @@
-﻿# Corridor Key Toolbox
+﻿# CorridorKey by LateNite
 
-> Corridor Key Toolbox is currently in a public beta testing phase.
+> CorridorKey by LateNite is currently in a public beta testing phase.
 
-- [Corridor Key Toolbox](https://CorridorKeyToolbox.fcp.cafe/readme.md): Corridor Key Toolbox
-- [Download](https://CorridorKeyToolbox.fcp.cafe/download.md): Corridor Key Toolbox is currently in a public beta testing phase.
-- [System Requirements](https://CorridorKeyToolbox.fcp.cafe/system-requirements.md): Corridor Key Toolbox requires Final Cut Pro 11 or later on macOS 26 Tahoe.
-- [How To Use](https://CorridorKeyToolbox.fcp.cafe/how-to-use.md): Corridor Key Toolbox is currently in a public beta testing phase.
-- [Support](https://CorridorKeyToolbox.fcp.cafe/support.md): The best place to get support is the FCP Cafe Discord.
-- [Frequently Asked Questions](https://CorridorKeyToolbox.fcp.cafe/faq.md): Here's some cool projects:
-- [Troubleshooting](https://CorridorKeyToolbox.fcp.cafe/troubleshooting.md): Apologies in advance if you have any trouble using Corridor Key Toolbox.
-- [Release Notes](https://CorridorKeyToolbox.fcp.cafe/release-notes.md): 🎉 Released:
-- [Uninstall](https://CorridorKeyToolbox.fcp.cafe/uninstall.md): To uninstall Corridor Key Toolbox, simply drag the application to the trash/bin.
-- [Credits](https://CorridorKeyToolbox.fcp.cafe/credits.md): Corridor Key Toolbox has been thrown together by Chris at LateNite.
-- [Privacy Policy](https://CorridorKeyToolbox.fcp.cafe/privacy.md): This is the privacy policy for the Corridor Key Toolbox, macOS Application that is available on the macOS App Store and TestFlight.
+- [CorridorKey by LateNite](https://corridorkeybylatenite.fcp.cafe/readme.md): CorridorKey by LateNite
+- [Download](https://corridorkeybylatenite.fcp.cafe/download.md): CorridorKey by LateNite is currently in a public beta testing phase.
+- [System Requirements](https://corridorkeybylatenite.fcp.cafe/system-requirements.md): CorridorKey by LateNite requires Final Cut Pro 11 or later on macOS 26 Tahoe.
+- [How To Use](https://corridorkeybylatenite.fcp.cafe/how-to-use.md): CorridorKey by LateNite is currently in a public beta testing phase.
+- [Support](https://corridorkeybylatenite.fcp.cafe/support.md): The best place to get support is the FCP Cafe Discord.
+- [Frequently Asked Questions](https://corridorkeybylatenite.fcp.cafe/faq.md): Here's some cool projects:
+- [Troubleshooting](https://corridorkeybylatenite.fcp.cafe/troubleshooting.md): Apologies in advance if you have any trouble using CorridorKey by LateNite.
+- [Release Notes](https://corridorkeybylatenite.fcp.cafe/release-notes.md): 🎉 Released:
+- [Uninstall](https://corridorkeybylatenite.fcp.cafe/uninstall.md): To uninstall CorridorKey by LateNite, simply drag the application to the trash/bin.
+- [Credits](https://corridorkeybylatenite.fcp.cafe/credits.md): CorridorKey by LateNite has been thrown together by Chris at LateNite.
+- [Privacy Policy](https://corridorkeybylatenite.fcp.cafe/privacy.md): This is the privacy policy for the CorridorKey by LateNite, macOS Application that is available on the macOS App Store and TestFlight.

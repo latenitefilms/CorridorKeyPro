@@ -1,14 +1,18 @@
-# Corridor Key Toolbox
+# CorridorKey by LateNite
 
 !!!primary
-**Corridor Key Toolbox** is currently in a **public beta testing phase**.
+**CorridorKey by LateNite** is currently in a **public beta testing phase**.
 
-We're just using a placeholder icon for now (taken from [VFX Toolbox](https://vfxtoolbox.fcp.cafe)).
+We're just using a placeholder icon for now (taken from [VFX Toolbox](https://vfxtoolbox.fcp.cafe)) - new icon coming soon!
 
 Feedback welcome!
 !!!
 
-**Corridor Key Toolbox** brings [Corridor Key](https://github.com/nikopueringer/CorridorKey) to Final Cut Pro.
+**CorridorKey by LateNite** brings [Corridor Digital's](https://www.corridordigital.com) [Corridor Key](https://github.com/nikopueringer/CorridorKey) to Final Cut Pro. 🥳
+
+[Corridor Key](https://github.com/nikopueringer/CorridorKey) is an open source project created by the talented [Corridor Digital](https://www.corridordigital.com) team.
+
+**CorridorKey by LateNite** takes the machine learning [MLX Models](https://huggingface.co/alexandrealvaro/corridorkey-models/tree/main) created by [Alexandre Alvaro](https://huggingface.co/alexandrealvaro), and uses them in a highly performant Swift application, designed and optimised for Apple Silicon.
 
 !!!success
 Free to [download](/download) and Open Source!

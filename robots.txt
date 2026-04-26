@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://CorridorKeyToolbox.fcp.cafe/sitemap.xml
+Sitemap: https://corridorkeybylatenite.fcp.cafe/sitemap.xml
