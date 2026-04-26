@@ -61,23 +61,53 @@ enum MLXBridgeArtifact {
     }
 }
 
-/// Lazy bundled-resource lookup that works from either the XPC service
-/// bundle or its host app bundle, whichever contains the `.mlxfn` files.
+/// Lazy bundled-resource lookup that works from any of the three
+/// processes that may host the engine: the FxPlug XPC service (the
+/// .mlxfn files sit in its own bundle), the standalone wrapper app
+/// (which reaches into the embedded renderer plugin so we don't have
+/// to duplicate ~600 MB of model artefacts in two places), and the
+/// SPM test runner (which loads the smallest bridge from its test
+/// resources).
 private enum MLXBridgeResourceLocator {
     static func url(for filename: String) -> URL? {
         let fileManager = FileManager.default
-
-        // Bundle.main.url(forResource:…) is the simplest path — it resolves
-        // to the service bundle's Resources folder when FCP loads us.
         let filenameStem = (filename as NSString).deletingPathExtension
         let filenameExtension = (filename as NSString).pathExtension
+
+        // 1. The simplest case — the .mlxfn lives inside whatever
+        //    bundle this process's main executable was loaded from.
+        //    True for the FxPlug XPC service and for SPM test runners
+        //    that bundle the test resource directly.
         if let url = Bundle.main.url(forResource: filenameStem, withExtension: filenameExtension) {
             return url
         }
 
-        // Also walk `Bundle.allBundles` in case the file lives inside the
-        // wrapper app's Resources folder (for a dev build where the pluginkit
-        // is copied in after Xcode bundles the mlxfn into the outer app).
+        // 2. The wrapper app: the renderer plugin sits inside the
+        //    .app at Contents/PlugIns/Corridor Key Toolbox Renderer.pluginkit
+        //    and owns the .mlxfn resources. Looking them up here lets
+        //    the standalone editor reuse the same on-disk artefacts
+        //    the renderer ships, instead of bundling a second copy.
+        if let pluginsURL = Bundle.main.builtInPlugInsURL {
+            do {
+                let plugins = try fileManager.contentsOfDirectory(
+                    at: pluginsURL,
+                    includingPropertiesForKeys: nil
+                )
+                for plugin in plugins {
+                    let candidate = plugin
+                        .appending(path: "Contents/Resources/\(filename)")
+                    if fileManager.fileExists(atPath: candidate.path) {
+                        return candidate
+                    }
+                }
+            } catch {
+                // Plugins folder absent or unreadable — fall through to
+                // the bundle walk below; nothing to surface to the user.
+            }
+        }
+
+        // 3. Walk every loaded bundle in case a host loaded ours
+        //    indirectly (dev builds, unit tests, etc).
         for bundle in Bundle.allBundles {
             if let url = bundle.url(forResource: filenameStem, withExtension: filenameExtension) {
                 return url

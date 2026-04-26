@@ -68,7 +68,62 @@
 		MX0500000000000000000002 /* MLXNN in Frameworks */ = {isa = PBXBuildFile; productRef = MX0400000000000000000002 /* MLXNN */; };
 		OS0100000000000000000001 /* CorridorKeyHintOSC.swift in Sources */ = {isa = PBXBuildFile; fileRef = OS0200000000000000000001 /* CorridorKeyHintOSC.swift */; };
 		VH0100000000000000000001 /* VisionHintEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = VH0200000000000000000001 /* VisionHintEngine.swift */; };
-/* End PBXBuildFile section */
+		SB0000000000000000000001 /* PixelBufferTextureBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = SR0000000000000000000001 /* PixelBufferTextureBridge.swift */; };
+		SB0000000000000000000002 /* VideoSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = SR0000000000000000000002 /* VideoSource.swift */; };
+		SB0000000000000000000003 /* StandaloneRenderEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = SR0000000000000000000003 /* StandaloneRenderEngine.swift */; };
+		SB0000000000000000000004 /* AnalysisRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = SR0000000000000000000004 /* AnalysisRunner.swift */; };
+		SB0000000000000000000005 /* ProResExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = SR0000000000000000000005 /* ProResExporter.swift */; };
+		SB0000000000000000000006 /* ParameterRanges.swift in Sources */ = {isa = PBXBuildFile; fileRef = SR0000000000000000000006 /* ParameterRanges.swift */; };
+		SB0000000000000000000007 /* EditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = SR0000000000000000000007 /* EditorViewModel.swift */; };
+		SB0000000000000000000008 /* MetalPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SR0000000000000000000008 /* MetalPreviewView.swift */; };
+		SB0000000000000000000009 /* InspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SR0000000000000000000009 /* InspectorView.swift */; };
+		SB000000000000000000000A /* TransportBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = SR000000000000000000000A /* TransportBar.swift */; };
+		SB000000000000000000000B /* ExportSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = SR000000000000000000000B /* ExportSheet.swift */; };
+		SB000000000000000000000C /* EditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SR000000000000000000000C /* EditorView.swift */; };
+		SB000000000000000000000D /* RenderPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000013 /* RenderPipeline.swift */; };
+		SB000000000000000000000E /* RenderStages.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000073 /* RenderStages.swift */; };
+		SB000000000000000000000F /* MetalDeviceCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK020000000000000000000C /* MetalDeviceCache.swift */; };
+		SB0000000000000000000010 /* MatteRefiner.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000071 /* MatteRefiner.swift */; };
+		SB0000000000000000000011 /* IntermediateTexturePool.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000070 /* IntermediateTexturePool.swift */; };
+		SB0000000000000000000012 /* CorridorKeyShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = CK020000000000000000000D /* CorridorKeyShaders.metal */; };
+		SB0000000000000000000013 /* AnalysisData.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000051 /* AnalysisData.swift */; };
+		SB0000000000000000000014 /* SharedMLXBridgeRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000076 /* SharedMLXBridgeRegistry.swift */; };
+		SB0000000000000000000015 /* MatteCodec.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000052 /* MatteCodec.swift */; };
+		SB0000000000000000000016 /* KeyingInferenceEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK020000000000000000000F /* KeyingInferenceEngine.swift */; };
+		SB0000000000000000000017 /* MLXKeyingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = MX0100000000000000000003 /* MLXKeyingEngine.swift */; };
+		SB0000000000000000000018 /* VisionHintEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = VH0200000000000000000001 /* VisionHintEngine.swift */; };
+		SB0000000000000000000019 /* DeviceCapabilityCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC0200000000000000000001 /* DeviceCapabilityCache.swift */; };
+		SB000000000000000000001A /* InferenceCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000012 /* InferenceCoordinator.swift */; };
+		SB000000000000000000001B /* TemporalBlender.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000077 /* TemporalBlender.swift */; };
+		SB000000000000000000001C /* ScreenColorEstimator.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK020000000000000000000E /* ScreenColorEstimator.swift */; };
+		SB000000000000000000001D /* ColorGamutMatrix.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000072 /* ColorGamutMatrix.swift */; };
+		SB000000000000000000001E /* HintPointSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = HP0200000000000000000001 /* HintPointSet.swift */; };
+		SB000000000000000000001F /* WarmupStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000074 /* WarmupStatus.swift */; };
+		SB0000000000000000000020 /* CorridorKeyAnalysisSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000063 /* CorridorKeyAnalysisSnapshot.swift */; };
+		SB0000000000000000000021 /* ParameterEnumerations.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK020000000000000000000A /* ParameterEnumerations.swift */; };
+		SB0000000000000000000022 /* PluginStateData.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK020000000000000000000B /* PluginStateData.swift */; };
+		SB0000000000000000000023 /* PluginLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000040 /* PluginLog.swift */; };
+		SB0000000000000000000024 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CK0400000000000000000003 /* Metal.framework */; };
+		SB0000000000000000000025 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CK0400000000000000000004 /* MetalKit.framework */; };
+		SB0000000000000000000026 /* MetalPerformanceShaders.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CK0400000000000000000005 /* MetalPerformanceShaders.framework */; };
+		SB0000000000000000000027 /* CoreImage.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CK0400000000000000000006 /* CoreImage.framework */; };
+		SB0000000000000000000028 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CK0400000000000000000008 /* Accelerate.framework */; };
+		SB0000000000000000000029 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = SF0000000000000000000001 /* AVFoundation.framework */; };
+		SB000000000000000000002A /* VideoToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = SF0000000000000000000002 /* VideoToolbox.framework */; };
+		SB000000000000000000002B /* Vision.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = SF0000000000000000000003 /* Vision.framework */; };
+		SB000000000000000000002C /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = SF0000000000000000000004 /* CoreMedia.framework */; };
+		SB000000000000000000002D /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = SF0000000000000000000005 /* CoreVideo.framework */; };
+		SB000000000000000000002E /* MLX in Frameworks */ = {isa = PBXBuildFile; productRef = SP0000000000000000000001 /* MLX */; };
+		SB000000000000000000002F /* MLXNN in Frameworks */ = {isa = PBXBuildFile; productRef = SP0000000000000000000002 /* MLXNN */; };
+				WB0000000000000000000002 /* SyntheticVideoFixture.swift in Sources */ = {isa = PBXBuildFile; fileRef = WR0000000000000000000002 /* SyntheticVideoFixture.swift */; };
+		WB0000000000000000000003 /* PixelBufferTextureBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = WR0000000000000000000003 /* PixelBufferTextureBridgeTests.swift */; };
+		WB0000000000000000000004 /* VideoSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = WR0000000000000000000004 /* VideoSourceTests.swift */; };
+		WB0000000000000000000005 /* StandaloneRenderEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = WR0000000000000000000005 /* StandaloneRenderEngineTests.swift */; };
+		WB0000000000000000000006 /* AnalysisAndExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = WR0000000000000000000006 /* AnalysisAndExportTests.swift */; };
+		WB0000000000000000000007 /* EditorViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = WR0000000000000000000007 /* EditorViewModelTests.swift */; };
+				EB0000000000000000000001 /* RealClipFixture.swift in Sources */ = {isa = PBXBuildFile; fileRef = ER0000000000000000000001 /* RealClipFixture.swift */; };
+		EB0000000000000000000002 /* NikoDruidEndToEndTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ER0000000000000000000002 /* NikoDruidEndToEndTests.swift */; };
+		/* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
 		CK0500000000000000000001 /* PBXContainerItemProxy */ = {
@@ -77,6 +132,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = CK0700000000000000000002;
 			remoteInfo = "Corridor Key Toolbox XPC";
+		};
+		WT0500000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CK0600000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CK0700000000000000000001;
+			remoteInfo = "Corridor Key Toolbox";
 		};
 /* End PBXContainerItemProxy section */
 
@@ -173,13 +235,51 @@
 		MX0100000000000000000003 /* MLXKeyingEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MLXKeyingEngine.swift; path = CorridorKeyToolbox/Plugin/Inference/MLXKeyingEngine.swift; sourceTree = "<group>"; };
 		OS0200000000000000000001 /* CorridorKeyHintOSC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CorridorKeyHintOSC.swift; path = CorridorKeyToolbox/Plugin/Inspector/CorridorKeyHintOSC.swift; sourceTree = "<group>"; };
 		VH0200000000000000000001 /* VisionHintEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = VisionHintEngine.swift; path = CorridorKeyToolbox/Plugin/Inference/VisionHintEngine.swift; sourceTree = "<group>"; };
-/* End PBXFileReference section */
+		SR0000000000000000000001 /* PixelBufferTextureBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PixelBufferTextureBridge.swift; path = "CorridorKeyToolbox/WrapperApp/Standalone/Engine/PixelBufferTextureBridge.swift"; sourceTree = "<group>"; };
+		SR0000000000000000000002 /* VideoSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = VideoSource.swift; path = "CorridorKeyToolbox/WrapperApp/Standalone/Engine/VideoSource.swift"; sourceTree = "<group>"; };
+		SR0000000000000000000003 /* StandaloneRenderEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = StandaloneRenderEngine.swift; path = "CorridorKeyToolbox/WrapperApp/Standalone/Engine/StandaloneRenderEngine.swift"; sourceTree = "<group>"; };
+		SR0000000000000000000004 /* AnalysisRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AnalysisRunner.swift; path = "CorridorKeyToolbox/WrapperApp/Standalone/Engine/AnalysisRunner.swift"; sourceTree = "<group>"; };
+		SR0000000000000000000005 /* ProResExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ProResExporter.swift; path = "CorridorKeyToolbox/WrapperApp/Standalone/Engine/ProResExporter.swift"; sourceTree = "<group>"; };
+		SR0000000000000000000006 /* ParameterRanges.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ParameterRanges.swift; path = "CorridorKeyToolbox/WrapperApp/Standalone/Model/ParameterRanges.swift"; sourceTree = "<group>"; };
+		SR0000000000000000000007 /* EditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = EditorViewModel.swift; path = "CorridorKeyToolbox/WrapperApp/Standalone/Model/EditorViewModel.swift"; sourceTree = "<group>"; };
+		SR0000000000000000000008 /* MetalPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MetalPreviewView.swift; path = "CorridorKeyToolbox/WrapperApp/Standalone/Views/MetalPreviewView.swift"; sourceTree = "<group>"; };
+		SR0000000000000000000009 /* InspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = InspectorView.swift; path = "CorridorKeyToolbox/WrapperApp/Standalone/Views/InspectorView.swift"; sourceTree = "<group>"; };
+		SR000000000000000000000A /* TransportBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TransportBar.swift; path = "CorridorKeyToolbox/WrapperApp/Standalone/Views/TransportBar.swift"; sourceTree = "<group>"; };
+		SR000000000000000000000B /* ExportSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ExportSheet.swift; path = "CorridorKeyToolbox/WrapperApp/Standalone/Views/ExportSheet.swift"; sourceTree = "<group>"; };
+		SR000000000000000000000C /* EditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = EditorView.swift; path = "CorridorKeyToolbox/WrapperApp/Standalone/Views/EditorView.swift"; sourceTree = "<group>"; };
+		SF0000000000000000000001 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
+		SF0000000000000000000002 /* VideoToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = VideoToolbox.framework; path = System/Library/Frameworks/VideoToolbox.framework; sourceTree = SDKROOT; };
+		SF0000000000000000000003 /* Vision.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Vision.framework; path = System/Library/Frameworks/Vision.framework; sourceTree = SDKROOT; };
+		SF0000000000000000000004 /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
+		SF0000000000000000000005 /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
+				WR0000000000000000000002 /* SyntheticVideoFixture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SyntheticVideoFixture.swift; path = "Tests/WrapperAppTests/SyntheticVideoFixture.swift"; sourceTree = "<group>"; };
+		WR0000000000000000000003 /* PixelBufferTextureBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PixelBufferTextureBridgeTests.swift; path = "Tests/WrapperAppTests/PixelBufferTextureBridgeTests.swift"; sourceTree = "<group>"; };
+		WR0000000000000000000004 /* VideoSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = VideoSourceTests.swift; path = "Tests/WrapperAppTests/VideoSourceTests.swift"; sourceTree = "<group>"; };
+		WR0000000000000000000005 /* StandaloneRenderEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = StandaloneRenderEngineTests.swift; path = "Tests/WrapperAppTests/StandaloneRenderEngineTests.swift"; sourceTree = "<group>"; };
+		WR0000000000000000000006 /* AnalysisAndExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AnalysisAndExportTests.swift; path = "Tests/WrapperAppTests/AnalysisAndExportTests.swift"; sourceTree = "<group>"; };
+		WR0000000000000000000007 /* EditorViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = EditorViewModelTests.swift; path = "Tests/WrapperAppTests/EditorViewModelTests.swift"; sourceTree = "<group>"; };
+		WT0300000000000000000001 /* WrapperAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WrapperAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+				ER0000000000000000000001 /* RealClipFixture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RealClipFixture.swift; path = "Tests/WrapperAppTests/RealClipFixture.swift"; sourceTree = "<group>"; };
+		ER0000000000000000000002 /* NikoDruidEndToEndTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NikoDruidEndToEndTests.swift; path = "Tests/WrapperAppTests/NikoDruidEndToEndTests.swift"; sourceTree = "<group>"; };
+		/* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		CK0900000000000000000001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				SB0000000000000000000024 /* Metal.framework in Frameworks */,
+				SB0000000000000000000025 /* MetalKit.framework in Frameworks */,
+				SB0000000000000000000026 /* MetalPerformanceShaders.framework in Frameworks */,
+				SB0000000000000000000027 /* CoreImage.framework in Frameworks */,
+				SB0000000000000000000028 /* Accelerate.framework in Frameworks */,
+				SB0000000000000000000029 /* AVFoundation.framework in Frameworks */,
+				SB000000000000000000002A /* VideoToolbox.framework in Frameworks */,
+				SB000000000000000000002B /* Vision.framework in Frameworks */,
+				SB000000000000000000002C /* CoreMedia.framework in Frameworks */,
+				SB000000000000000000002D /* CoreVideo.framework in Frameworks */,
+				SB000000000000000000002E /* MLX in Frameworks */,
+				SB000000000000000000002F /* MLXNN in Frameworks */,
 				CK010000000000000000001B /* Cocoa.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -196,6 +296,13 @@
 				CK0100000000000000000021 /* Accelerate.framework in Frameworks */,
 				MX0500000000000000000001 /* MLX in Frameworks */,
 				MX0500000000000000000002 /* MLXNN in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		WT0900000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -222,7 +329,8 @@
 				CK0A00000000000000000010 /* Configuration */,
 				CK0A00000000000000000002 /* CorridorKeyToolbox */,
 				CK0A00000000000000000008 /* Frameworks */,
-				CK0A00000000000000000009 /* Products */,
+				WT0A00000000000000000001 /* WrapperAppTests */,
+			CK0A00000000000000000009 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
@@ -283,6 +391,7 @@
 		CK0A00000000000000000007 /* WrapperApp */ = {
 			isa = PBXGroup;
 			children = (
+				SG0000000000000000000004 /* Standalone */,
 				221345E12F98BC6800CF734C /* MLX Models */,
 				22D097FE2F9887BD0096E749 /* Credits.rtf */,
 				221345E72F99948900CF734C /* VFX Toolbox.icon */,
@@ -299,6 +408,11 @@
 		CK0A00000000000000000008 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				SF0000000000000000000001 /* AVFoundation.framework */,
+				SF0000000000000000000002 /* VideoToolbox.framework */,
+				SF0000000000000000000003 /* Vision.framework */,
+				SF0000000000000000000004 /* CoreMedia.framework */,
+				SF0000000000000000000005 /* CoreVideo.framework */,
 				CK0400000000000000000001 /* FxPlug.framework */,
 				CK0400000000000000000009 /* PluginManager.framework */,
 				CK0400000000000000000002 /* Cocoa.framework */,
@@ -316,7 +430,8 @@
 			children = (
 				CK0300000000000000000001 /* Corridor Key Toolbox.app */,
 				CK0300000000000000000002 /* Corridor Key Toolbox Renderer.pluginkit */,
-			);
+			
+				WT0300000000000000000001 /* WrapperAppTests.xctest */,);
 			name = Products;
 			sourceTree = "<group>";
 		};
@@ -388,7 +503,65 @@
 			name = Inspector;
 			sourceTree = "<group>";
 		};
-/* End PBXGroup section */
+		SG0000000000000000000001 /* Engine */ = {
+			isa = PBXGroup;
+			children = (
+				SR0000000000000000000001 /* PixelBufferTextureBridge.swift */,
+				SR0000000000000000000002 /* VideoSource.swift */,
+				SR0000000000000000000003 /* StandaloneRenderEngine.swift */,
+				SR0000000000000000000004 /* AnalysisRunner.swift */,
+				SR0000000000000000000005 /* ProResExporter.swift */,
+			);
+			name = Engine;
+			sourceTree = "<group>";
+		};
+		SG0000000000000000000002 /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				SR0000000000000000000006 /* ParameterRanges.swift */,
+				SR0000000000000000000007 /* EditorViewModel.swift */,
+			);
+			name = Model;
+			sourceTree = "<group>";
+		};
+		SG0000000000000000000003 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				SR0000000000000000000008 /* MetalPreviewView.swift */,
+				SR0000000000000000000009 /* InspectorView.swift */,
+				SR000000000000000000000A /* TransportBar.swift */,
+				SR000000000000000000000B /* ExportSheet.swift */,
+				SR000000000000000000000C /* EditorView.swift */,
+			);
+			name = Views;
+			sourceTree = "<group>";
+		};
+		SG0000000000000000000004 /* Standalone */ = {
+			isa = PBXGroup;
+			children = (
+				SG0000000000000000000001 /* Engine */,
+				SG0000000000000000000002 /* Model */,
+				SG0000000000000000000003 /* Views */,
+			);
+			name = Standalone;
+			sourceTree = "<group>";
+		};
+				WT0A00000000000000000001 /* WrapperAppTests */ = {
+			isa = PBXGroup;
+			children = (
+				ER0000000000000000000001 /* RealClipFixture.swift */,
+				ER0000000000000000000002 /* NikoDruidEndToEndTests.swift */,
+				WR0000000000000000000002 /* SyntheticVideoFixture.swift */,
+				WR0000000000000000000003 /* PixelBufferTextureBridgeTests.swift */,
+				WR0000000000000000000004 /* VideoSourceTests.swift */,
+				WR0000000000000000000005 /* StandaloneRenderEngineTests.swift */,
+				WR0000000000000000000006 /* AnalysisAndExportTests.swift */,
+				WR0000000000000000000007 /* EditorViewModelTests.swift */,
+			);
+			name = WrapperAppTests;
+			sourceTree = "<group>";
+		};
+		/* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
 		CK0700000000000000000001 /* Corridor Key Toolbox */ = {
@@ -407,6 +580,10 @@
 			);
 			name = "Corridor Key Toolbox";
 			productName = "Corridor Key Toolbox";
+			packageProductDependencies = (
+				SP0000000000000000000001 /* MLX */,
+				SP0000000000000000000002 /* MLXNN */,
+			);
 			productReference = CK0300000000000000000001 /* Corridor Key Toolbox.app */;
 			productType = "com.apple.product-type.application";
 		};
@@ -432,6 +609,23 @@
 			productName = "Corridor Key Toolbox XPC";
 			productReference = CK0300000000000000000002 /* Corridor Key Toolbox Renderer.pluginkit */;
 			productType = "com.apple.product-type.bundle";
+		};
+		WT0700000000000000000001 /* WrapperAppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = WT0B00000000000000000001 /* Build configuration list for PBXNativeTarget "WrapperAppTests" */;
+			buildPhases = (
+				WT0C00000000000000000001 /* Sources */,
+				WT0900000000000000000001 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				WT0E00000000000000000001 /* PBXTargetDependency */,
+			);
+			name = WrapperAppTests;
+			productName = WrapperAppTests;
+			productReference = WT0300000000000000000001 /* WrapperAppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -470,6 +664,7 @@
 			targets = (
 				CK0700000000000000000001 /* Corridor Key Toolbox */,
 				CK0700000000000000000002 /* Corridor Key Toolbox Renderer */,
+				WT0700000000000000000001 /* WrapperAppTests */,
 			);
 		};
 /* End PBXProject section */
@@ -528,6 +723,41 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				SB0000000000000000000001 /* PixelBufferTextureBridge.swift in Sources */,
+				SB0000000000000000000002 /* VideoSource.swift in Sources */,
+				SB0000000000000000000003 /* StandaloneRenderEngine.swift in Sources */,
+				SB0000000000000000000004 /* AnalysisRunner.swift in Sources */,
+				SB0000000000000000000005 /* ProResExporter.swift in Sources */,
+				SB0000000000000000000006 /* ParameterRanges.swift in Sources */,
+				SB0000000000000000000007 /* EditorViewModel.swift in Sources */,
+				SB0000000000000000000008 /* MetalPreviewView.swift in Sources */,
+				SB0000000000000000000009 /* InspectorView.swift in Sources */,
+				SB000000000000000000000A /* TransportBar.swift in Sources */,
+				SB000000000000000000000B /* ExportSheet.swift in Sources */,
+				SB000000000000000000000C /* EditorView.swift in Sources */,
+				SB000000000000000000000D /* RenderPipeline.swift in Sources */,
+				SB000000000000000000000E /* RenderStages.swift in Sources */,
+				SB000000000000000000000F /* MetalDeviceCache.swift in Sources */,
+				SB0000000000000000000010 /* MatteRefiner.swift in Sources */,
+				SB0000000000000000000011 /* IntermediateTexturePool.swift in Sources */,
+				SB0000000000000000000012 /* CorridorKeyShaders.metal in Sources */,
+				SB0000000000000000000013 /* AnalysisData.swift in Sources */,
+				SB0000000000000000000014 /* SharedMLXBridgeRegistry.swift in Sources */,
+				SB0000000000000000000015 /* MatteCodec.swift in Sources */,
+				SB0000000000000000000016 /* KeyingInferenceEngine.swift in Sources */,
+				SB0000000000000000000017 /* MLXKeyingEngine.swift in Sources */,
+				SB0000000000000000000018 /* VisionHintEngine.swift in Sources */,
+				SB0000000000000000000019 /* DeviceCapabilityCache.swift in Sources */,
+				SB000000000000000000001A /* InferenceCoordinator.swift in Sources */,
+				SB000000000000000000001B /* TemporalBlender.swift in Sources */,
+				SB000000000000000000001C /* ScreenColorEstimator.swift in Sources */,
+				SB000000000000000000001D /* ColorGamutMatrix.swift in Sources */,
+				SB000000000000000000001E /* HintPointSet.swift in Sources */,
+				SB000000000000000000001F /* WarmupStatus.swift in Sources */,
+				SB0000000000000000000020 /* CorridorKeyAnalysisSnapshot.swift in Sources */,
+				SB0000000000000000000021 /* ParameterEnumerations.swift in Sources */,
+				SB0000000000000000000022 /* PluginStateData.swift in Sources */,
+				SB0000000000000000000023 /* PluginLog.swift in Sources */,
 				CK0100000000000000000015 /* CorridorKeyToolboxApp.swift in Sources */,
 				CK0100000000000000000016 /* WelcomeView.swift in Sources */,
 				CK010000000000000000002A /* MotionTemplateInstaller.swift in Sources */,
@@ -578,6 +808,21 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		WT0C00000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EB0000000000000000000001 /* RealClipFixture.swift in Sources */,
+				EB0000000000000000000002 /* NikoDruidEndToEndTests.swift in Sources */,
+				WB0000000000000000000002 /* SyntheticVideoFixture.swift in Sources */,
+				WB0000000000000000000003 /* PixelBufferTextureBridgeTests.swift in Sources */,
+				WB0000000000000000000004 /* VideoSourceTests.swift in Sources */,
+				WB0000000000000000000005 /* StandaloneRenderEngineTests.swift in Sources */,
+				WB0000000000000000000006 /* AnalysisAndExportTests.swift in Sources */,
+				WB0000000000000000000007 /* EditorViewModelTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -585,6 +830,11 @@
 			isa = PBXTargetDependency;
 			target = CK0700000000000000000002 /* Corridor Key Toolbox Renderer */;
 			targetProxy = CK0500000000000000000001 /* PBXContainerItemProxy */;
+		};
+		WT0E00000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CK0700000000000000000001 /* Corridor Key Toolbox */;
+			targetProxy = WT0500000000000000000001 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -721,6 +971,10 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = CK0200000000000000000026 /* Shared.xcconfig */;
 			buildSettings = {
+				MTL_HEADER_SEARCH_PATHS = "$(SRCROOT)/CorridorKeyToolbox/Plugin/Shared";
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/CorridorKeyToolbox/Plugin/Shared";
+				SWIFT_OBJC_BRIDGING_HEADER = "CorridorKeyToolbox/WrapperApp/WrapperApp-Bridging-Header.h";
+				CLANG_ENABLE_MODULES = YES;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_APPICON_NAME = "VFX Toolbox";
 				CODE_SIGN_ENTITLEMENTS = CorridorKeyToolbox/WrapperApp/WrapperApp.entitlements;
@@ -754,6 +1008,10 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = CK0200000000000000000026 /* Shared.xcconfig */;
 			buildSettings = {
+				MTL_HEADER_SEARCH_PATHS = "$(SRCROOT)/CorridorKeyToolbox/Plugin/Shared";
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/CorridorKeyToolbox/Plugin/Shared";
+				SWIFT_OBJC_BRIDGING_HEADER = "CorridorKeyToolbox/WrapperApp/WrapperApp-Bridging-Header.h";
+				CLANG_ENABLE_MODULES = YES;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_APPICON_NAME = "VFX Toolbox";
 				CODE_SIGN_ENTITLEMENTS = CorridorKeyToolbox/WrapperApp/WrapperApp.entitlements;
@@ -803,6 +1061,7 @@
 				PRODUCT_MODULE_NAME = CorridorKeyToolboxRenderer;
 				PRODUCT_NAME = "Corridor Key Toolbox Renderer";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = FXPLUG_HOST;
 				SWIFT_OBJC_BRIDGING_HEADER = "CorridorKeyToolbox/Plugin/Shared/CorridorKeyToolbox-Bridging-Header.h";
 				WRAPPER_EXTENSION = pluginkit;
 			};
@@ -828,8 +1087,43 @@
 				PRODUCT_MODULE_NAME = CorridorKeyToolboxRenderer;
 				PRODUCT_NAME = "Corridor Key Toolbox Renderer";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = FXPLUG_HOST;
 				SWIFT_OBJC_BRIDGING_HEADER = "CorridorKeyToolbox/Plugin/Shared/CorridorKeyToolbox-Bridging-Header.h";
 				WRAPPER_EXTENSION = pluginkit;
+			};
+			name = Release;
+		};
+		WT1000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = CK0200000000000000000026 /* Shared.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = A5HDJTY9X5;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.latenitefilms.CorridorKeyToolbox.WrapperAppTests;
+				PRODUCT_NAME = WrapperAppTests;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Corridor Key Toolbox.app/Contents/MacOS/Corridor Key Toolbox";
+			};
+			name = Debug;
+		};
+		WT1000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = CK0200000000000000000026 /* Shared.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = A5HDJTY9X5;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.latenitefilms.CorridorKeyToolbox.WrapperAppTests;
+				PRODUCT_NAME = WrapperAppTests;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Corridor Key Toolbox.app/Contents/MacOS/Corridor Key Toolbox";
 			};
 			name = Release;
 		};
@@ -863,6 +1157,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		WT0B00000000000000000001 /* Build configuration list for PBXNativeTarget "WrapperAppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				WT1000000000000000000001 /* Debug */,
+				WT1000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -887,7 +1190,17 @@
 			package = MX0300000000000000000001 /* XCRemoteSwiftPackageReference "mlx-swift" */;
 			productName = MLXNN;
 		};
-/* End XCSwiftPackageProductDependency section */
+		SP0000000000000000000001 /* MLX */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = MX0300000000000000000001 /* XCRemoteSwiftPackageReference "mlx-swift" */;
+			productName = MLX;
+		};
+		SP0000000000000000000002 /* MLXNN */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = MX0300000000000000000001 /* XCRemoteSwiftPackageReference "mlx-swift" */;
+			productName = MLXNN;
+		};
+		/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = CK0600000000000000000001 /* Project object */;
 }

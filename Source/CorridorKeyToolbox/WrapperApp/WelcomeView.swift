@@ -21,6 +21,7 @@ private enum MotionTemplateInstallationState {
 }
 
 struct WelcomeView: View {
+    @Environment(\.openWindow) private var openWindow
     @State private var installationState: MotionTemplateInstallationState = .checking
     @State private var hasStartedInstall = false
     @State private var alertTitle = ""
@@ -28,8 +29,8 @@ struct WelcomeView: View {
     @State private var isShowingAlert = false
 
     var body: some View {
-        VStack(spacing: 24) {
-            Spacer(minLength: 8)
+        VStack(spacing: 22) {
+            Spacer(minLength: 4)
             Image(nsImage: NSApplication.shared.applicationIconImage)
                 .resizable()
                 .interpolation(.high)
@@ -43,31 +44,39 @@ struct WelcomeView: View {
                 .font(.largeTitle)
                 .bold()
 
-            Text("You can find \(Text("Corridor Key Toolbox").bold()) in Final Cut Pro's Effects Browser.")
+            Text("Use the standalone editor to key any clip — or jump straight to \(Text("Final Cut Pro").bold()) and find Corridor Key Toolbox in the Effects browser.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 40)
 
             InstallationStatusLabel(state: installationState)
 
-            HStack(spacing: 12) {
-                Button("Open Final Cut Pro", systemImage: "play.rectangle") {
-                    openFinalCutPro()
+            VStack(spacing: 10) {
+                Button("Open Standalone Editor", systemImage: "wand.and.stars") {
+                    openWindow(id: EditorWindow.id)
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
+                .frame(maxWidth: 280)
 
-                Button("User Guide", systemImage: "book") {
-                    openUserGuide()
-                }
-                .controlSize(.large)
+                HStack(spacing: 10) {
+                    Button("Open Final Cut Pro", systemImage: "play.rectangle") {
+                        openFinalCutPro()
+                    }
+                    .controlSize(.large)
 
-                Button("Reveal Log File", systemImage: "doc.text.magnifyingglass") {
-                    revealRendererLogs()
+                    Button("User Guide", systemImage: "book") {
+                        openUserGuide()
+                    }
+                    .controlSize(.large)
+
+                    Button("Reveal Log File", systemImage: "doc.text.magnifyingglass") {
+                        revealRendererLogs()
+                    }
+                    .controlSize(.large)
                 }
-                .controlSize(.large)
             }
-            Spacer(minLength: 8)
+            Spacer(minLength: 4)
         }
         .padding()
         .onAppear {
