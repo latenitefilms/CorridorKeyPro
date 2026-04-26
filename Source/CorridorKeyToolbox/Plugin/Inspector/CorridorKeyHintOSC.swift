@@ -50,6 +50,7 @@ final class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
     required init?(apiManager: any PROAPIAccessing) {
         self.apiManager = apiManager
         super.init()
+        PluginLog.notice("CorridorKeyHintOSC instantiated by FCP — OSC is registered and ready.")
     }
 
     // MARK: - FxOnScreenControl_v4
@@ -72,7 +73,10 @@ final class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         at time: CMTime
     ) {
         let points = currentHintPointSet().points
-        guard !points.isEmpty || activePart != 0 else { return }
+        // Always render: even with zero points we draw a small
+        // "click anywhere to add hint" affordance at the centre so
+        // the user knows the OSC is active. Without this the canvas
+        // looks identical with and without the OSC selected.
         do {
             try renderOSC(
                 destinationImage: destinationImage,

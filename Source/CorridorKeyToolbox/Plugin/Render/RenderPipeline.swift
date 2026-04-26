@@ -439,6 +439,8 @@ final class RenderPipeline: @unchecked Sendable {
         gamutTransform: WorkingSpaceTransform,
         inferenceResolution: Int
     ) throws -> RenderReport {
+        PluginLog.notice("Hint Diagnostic: render started (autoSubjectHint=\(request.state.autoSubjectHintEnabled), source=\(context.sourceTexture.width)x\(context.sourceTexture.height), pixelFormat=\(context.pixelFormat.rawValue))")
+
         // Vision request runs synchronously on the Neural Engine in
         // parallel with the GPU pre-pass — same pattern as the
         // production analyse path so the diagnostic shows the same
@@ -455,14 +457,20 @@ final class RenderPipeline: @unchecked Sendable {
                     visionMask = try engine.generateMask(source: context.sourceTexture)
                     if visionMask == nil {
                         visionFailureReason = "Vision found no foreground instance"
+                        PluginLog.notice("Hint Diagnostic: Vision returned nil — falling back to green-bias hint.")
+                    } else {
+                        PluginLog.notice("Hint Diagnostic: Vision returned a mask, will resample and compose.")
                     }
                 } catch {
                     visionFailureReason = error.localizedDescription
-                    PluginLog.notice("Vision hint diagnostic: \(error.localizedDescription)")
+                    PluginLog.notice("Hint Diagnostic: Vision threw error '\(error.localizedDescription)' — falling back to green-bias hint.")
                 }
             } else {
                 visionFailureReason = "Vision hint engine unavailable"
+                PluginLog.notice("Hint Diagnostic: visionHintEngine() returned nil — Vision unavailable.")
             }
+        } else {
+            PluginLog.notice("Hint Diagnostic: skipping Vision — autoSubjectHint=\(request.state.autoSubjectHintEnabled), externalHintAttached=\(request.alphaHintImage != nil).")
         }
 
         guard let commandBuffer = context.commandQueue.makeCommandBuffer() else {

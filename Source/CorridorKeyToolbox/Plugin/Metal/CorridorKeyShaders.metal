@@ -556,6 +556,35 @@ fragment float4 corridorKeyDrawOSCFragment(
     float2 uv = in.textureCoordinate;
 
     float4 colour = float4(0.0, 0.0, 0.0, 0.0);
+
+    // No-points indicator: draw a small white crosshair at the centre
+    // of the canvas so the user can see the OSC is active and knows
+    // there's something to interact with. Only visible when no points
+    // have been placed; once the user clicks to add a hint dot, the
+    // dots themselves are the affordance.
+    if (pointCount == 0) {
+        float2 centreOffset = uv - float2(0.5, 0.5);
+        float distanceFromCentre = length(centreOffset);
+        float ringInner = 0.012;
+        float ringOuter = 0.014;
+        float aaWidth = max(fwidth(distanceFromCentre) * 0.5, 0.0005);
+        // Hollow ring marker.
+        float ringAlpha = (1.0 - smoothstep(ringOuter - aaWidth, ringOuter + aaWidth, distanceFromCentre))
+                       * smoothstep(ringInner - aaWidth, ringInner + aaWidth, distanceFromCentre);
+        // Crosshair lines through the centre.
+        float crosshairThickness = 0.0008;
+        float crosshairExtent = 0.020;
+        float horizontalLine = (1.0 - smoothstep(crosshairThickness, crosshairThickness + aaWidth, abs(centreOffset.y)))
+                             * (1.0 - smoothstep(crosshairExtent, crosshairExtent + aaWidth, abs(centreOffset.x)));
+        float verticalLine = (1.0 - smoothstep(crosshairThickness, crosshairThickness + aaWidth, abs(centreOffset.x)))
+                           * (1.0 - smoothstep(crosshairExtent, crosshairExtent + aaWidth, abs(centreOffset.y)));
+        float markerAlpha = max(max(ringAlpha, horizontalLine), verticalLine);
+        // Soft white with translucency so it doesn't dominate the
+        // canvas on bright backgrounds.
+        colour.rgb = float3(1.0);
+        colour.a = markerAlpha * 0.7;
+    }
+
     for (int i = 0; i < pointCount; ++i) {
         CKHintPoint p = points[i];
         float2 offset = uv - float2(p.x, p.y);

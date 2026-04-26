@@ -30,24 +30,21 @@ import CoreVideo
 import CoreImage
 import Vision
 
-/// Wraps a Vision-generated mask as a Metal texture. The pixel data lives
-/// in an IOSurface that the texture aliases; the `cvTexture` and
-/// `pixelBuffer` fields keep that surface alive for the GPU read.
+/// Wraps a Vision-generated mask as a plain Metal-owned texture. The
+/// CVPixelBuffer / CVMetalTexture lifecycle is handled inside
+/// `VisionHintEngine` — this struct just carries the resulting
+/// `.r8Unorm` texture downstream callers can sample freely.
 struct VisionMask: @unchecked Sendable {
     let texture: any MTLTexture
-    private let cvTexture: CVMetalTexture
-    private let pixelBuffer: CVPixelBuffer
 
-    init(texture: any MTLTexture, cvTexture: CVMetalTexture, pixelBuffer: CVPixelBuffer) {
+    init(texture: any MTLTexture) {
         self.texture = texture
-        self.cvTexture = cvTexture
-        self.pixelBuffer = pixelBuffer
     }
 
-    /// Pins the backing IOSurface to the supplied command buffer's
-    /// completion. Without this the surface can be reclaimed before
-    /// the GPU finishes reading the texture, producing intermittent
-    /// black hints.
+    /// No-op kept for source compatibility. The Metal-owned texture is
+    /// retained by Swift ARC for the lifetime of the `VisionMask`
+    /// value, so callers don't need to register completion-handler
+    /// retention with the command buffer any more.
     func retainOnCompletion(of commandBuffer: any MTLCommandBuffer) {
         commandBuffer.addCompletedHandler { _ in
             _ = self
@@ -135,6 +132,27 @@ final class VisionHintEngine: @unchecked Sendable {
     /// dimensions but Vision may scale internally). Callers feed it into
     /// `RenderStages.extractHint` with `layout=1` to resample to the
     /// pre-inference target dimensions.
+    /// Returns a plain Metal-owned `.r8Unorm` texture containing the
+    /// Vision mask. Internally:
+    ///
+    /// 1. Runs the foreground request and gets a CVPixelBuffer.
+    /// 2. Wraps it as a `CVMetalTexture` via `CVMetalTextureCache`.
+    /// 3. **Blits** that wrapped texture into a plain Metal-owned
+    ///    `.private` texture and returns the plain texture.
+    ///
+    /// The blit step exists because `CVMetalTexture`-wrapped textures
+    /// from a `CVPixelBuffer`'s IOSurface have idiosyncratic
+    /// shaderRead behaviour on macOS 26 — even with the explicit
+    /// `kCVMetalTextureUsage` attribute set, downstream compute
+    /// kernels that do `source.read(gid)` against the wrapped
+    /// texture fault on the GPU. Copying once into a Metal-managed
+    /// texture sidesteps the issue completely and removes the need
+    /// for callers to keep the `CVMetalTexture` / `CVPixelBuffer`
+    /// alive across command-buffer commits.
+    ///
+    /// The blit runs on a dedicated command queue borrowed from the
+    /// device cache and is committed before this function returns —
+    /// the returned texture is fully valid the moment it lands.
     func generateMask(source: any MTLTexture) throws -> VisionMask? {
         guard let baseImage = CIImage(mtlTexture: source, options: nil) else {
             PluginLog.notice("Vision hint: CIImage(mtlTexture:) returned nil for source format \(source.pixelFormat.rawValue).")
@@ -183,18 +201,23 @@ final class VisionHintEngine: @unchecked Sendable {
         return try wrapAsMetalTexture(pixelBuffer: maskBuffer)
     }
 
-    /// Wraps a Vision mask CVPixelBuffer as an `.r8Unorm` MTLTexture via
-    /// `CVMetalTextureCache`. Apple Silicon's unified memory means this
-    /// is a pointer alias, not a copy.
+    /// Wraps a Vision mask CVPixelBuffer as an `.r8Unorm` MTLTexture
+    /// via `CVMetalTextureCache`, then immediately blits it into a
+    /// plain Metal-owned `.private` texture and returns that. See
+    /// `generateMask`'s doc-comment for why the blit step is
+    /// necessary on macOS 26.
     private func wrapAsMetalTexture(pixelBuffer: CVPixelBuffer) throws -> VisionMask {
         let width = CVPixelBufferGetWidth(pixelBuffer)
         let height = CVPixelBufferGetHeight(pixelBuffer)
+        let textureAttributes: [String: Any] = [
+            kCVMetalTextureUsage as String: NSNumber(value: MTLTextureUsage.shaderRead.rawValue)
+        ]
         var cvTexture: CVMetalTexture?
         let status = CVMetalTextureCacheCreateTextureFromImage(
             kCFAllocatorDefault,
             textureCache,
             pixelBuffer,
-            nil,
+            textureAttributes as CFDictionary,
             .r8Unorm,
             width,
             height,
@@ -203,15 +226,63 @@ final class VisionHintEngine: @unchecked Sendable {
         )
         guard status == kCVReturnSuccess,
               let cvTexture,
-              let texture = CVMetalTextureGetTexture(cvTexture)
+              let wrappedTexture = CVMetalTextureGetTexture(cvTexture)
         else {
             throw VisionHintError.textureWrappingFailed(status)
         }
-        return VisionMask(
-            texture: texture,
-            cvTexture: cvTexture,
-            pixelBuffer: pixelBuffer
+
+        // Copy into a plain Metal texture. Private storage is the
+        // tightest format for downstream sampling and avoids any
+        // CVPixelBuffer-driven access quirks. Owned by Swift ARC,
+        // no completion-handler lifetime juggling needed.
+        let descriptor = MTLTextureDescriptor.texture2DDescriptor(
+            pixelFormat: .r8Unorm,
+            width: width,
+            height: height,
+            mipmapped: false
         )
+        descriptor.usage = [.shaderRead]
+        descriptor.storageMode = .private
+        guard let plainTexture = cacheEntry.device.makeTexture(descriptor: descriptor) else {
+            throw VisionHintError.textureWrappingFailed(0)
+        }
+        plainTexture.label = "Vision Hint Mask"
+
+        guard let queue = cacheEntry.borrowCommandQueue() else {
+            throw VisionHintError.textureWrappingFailed(0)
+        }
+        defer { cacheEntry.returnCommandQueue(queue) }
+        guard let commandBuffer = queue.makeCommandBuffer(),
+              let blit = commandBuffer.makeBlitCommandEncoder()
+        else {
+            throw VisionHintError.textureWrappingFailed(0)
+        }
+        commandBuffer.label = "Vision Hint Mask Blit"
+        blit.copy(
+            from: wrappedTexture,
+            sourceSlice: 0,
+            sourceLevel: 0,
+            sourceOrigin: MTLOrigin(x: 0, y: 0, z: 0),
+            sourceSize: MTLSize(width: width, height: height, depth: 1),
+            to: plainTexture,
+            destinationSlice: 0,
+            destinationLevel: 0,
+            destinationOrigin: MTLOrigin(x: 0, y: 0, z: 0)
+        )
+        blit.endEncoding()
+        // Hold the CVMetalTexture and CVPixelBuffer alive until the
+        // blit completes; release them as soon as it does so we don't
+        // accumulate IOSurface references across analyse passes.
+        let pinnedCV = cvTexture
+        let pinnedBuffer = pixelBuffer
+        commandBuffer.addCompletedHandler { _ in
+            _ = pinnedCV
+            _ = pinnedBuffer
+        }
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+
+        return VisionMask(texture: plainTexture)
     }
 
     /// Drops any cached request state. Called when the cache entry is
