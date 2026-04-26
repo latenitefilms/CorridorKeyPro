@@ -72,7 +72,6 @@ final class CorridorKeyComputePipelines: Sendable {
     let foregroundPostProcess: any MTLComputePipelineState
     let temporalBlend: any MTLComputePipelineState
     let applyHintPoints: any MTLComputePipelineState
-    let drawOSC: any MTLComputePipelineState
 
     init(device: any MTLDevice, library: any MTLLibrary) throws {
         func compute(_ name: String) throws -> any MTLComputePipelineState {
@@ -108,7 +107,6 @@ final class CorridorKeyComputePipelines: Sendable {
         foregroundPostProcess = try compute("corridorKeyForegroundPostProcessKernel")
         temporalBlend = try compute("corridorKeyTemporalBlendKernel")
         applyHintPoints = try compute("corridorKeyApplyHintPointsKernel")
-        drawOSC = try compute("corridorKeyDrawOSCKernel")
     }
 }
 
@@ -117,6 +115,11 @@ final class CorridorKeyComputePipelines: Sendable {
 /// and writes the final RGBA to Final Cut Pro's destination texture.
 final class CorridorKeyRenderPipelines: Sendable {
     let compose: any MTLRenderPipelineState
+    /// OSC overlay pipeline. Same vertex shader as compose but a
+    /// dedicated fragment shader that renders foreground / background
+    /// hint dots with alpha blending so transparent regions let the
+    /// underlying canvas show through.
+    let drawOSC: any MTLRenderPipelineState
 
     init(device: any MTLDevice, library: any MTLLibrary, pixelFormat: MTLPixelFormat) throws {
         guard let vertexFunction = library.makeFunction(name: "corridorKeyComposeVertex") else {
@@ -131,6 +134,32 @@ final class CorridorKeyRenderPipelines: Sendable {
         descriptor.fragmentFunction = fragmentFunction
         descriptor.colorAttachments[0].pixelFormat = pixelFormat
         compose = try device.makeRenderPipelineState(descriptor: descriptor)
+
+        // OSC pipeline: shares the compose vertex shader (full-screen
+        // quad with object-space UVs) but uses a dedicated fragment
+        // that renders coloured discs with alpha blending against the
+        // OSC's transparent destination canvas.
+        guard let oscVertexFunction = library.makeFunction(name: "corridorKeyDrawOSCVertex") else {
+            throw MetalDeviceCacheError.missingShaderFunction("corridorKeyDrawOSCVertex")
+        }
+        guard let oscFragmentFunction = library.makeFunction(name: "corridorKeyDrawOSCFragment") else {
+            throw MetalDeviceCacheError.missingShaderFunction("corridorKeyDrawOSCFragment")
+        }
+        let oscDescriptor = MTLRenderPipelineDescriptor()
+        oscDescriptor.label = "Corridor Key Toolbox OSC"
+        oscDescriptor.vertexFunction = oscVertexFunction
+        oscDescriptor.fragmentFunction = oscFragmentFunction
+        oscDescriptor.colorAttachments[0].pixelFormat = pixelFormat
+        // Standard "source over" alpha blending so transparent areas of
+        // the OSC let the canvas show through.
+        oscDescriptor.colorAttachments[0].isBlendingEnabled = true
+        oscDescriptor.colorAttachments[0].rgbBlendOperation = .add
+        oscDescriptor.colorAttachments[0].alphaBlendOperation = .add
+        oscDescriptor.colorAttachments[0].sourceRGBBlendFactor = .sourceAlpha
+        oscDescriptor.colorAttachments[0].sourceAlphaBlendFactor = .one
+        oscDescriptor.colorAttachments[0].destinationRGBBlendFactor = .oneMinusSourceAlpha
+        oscDescriptor.colorAttachments[0].destinationAlphaBlendFactor = .oneMinusSourceAlpha
+        drawOSC = try device.makeRenderPipelineState(descriptor: oscDescriptor)
     }
 }
 

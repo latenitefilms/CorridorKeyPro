@@ -442,13 +442,26 @@ final class RenderPipeline: @unchecked Sendable {
         // Vision request runs synchronously on the Neural Engine in
         // parallel with the GPU pre-pass — same pattern as the
         // production analyse path so the diagnostic shows the same
-        // hint MLX would actually receive.
+        // hint MLX would actually receive. Errors here are logged
+        // (not swallowed) so users investigating "why is my hint
+        // black?" can see the cause in Console.app.
         var visionMask: VisionMask? = nil
+        var visionFailureReason: String? = nil
         if request.state.autoSubjectHintEnabled,
            request.alphaHintImage == nil,
            #available(macOS 14.0, *) {
             if let engine = context.entry.visionHintEngine() as? VisionHintEngine {
-                visionMask = try? engine.generateMask(source: context.sourceTexture)
+                do {
+                    visionMask = try engine.generateMask(source: context.sourceTexture)
+                    if visionMask == nil {
+                        visionFailureReason = "Vision found no foreground instance"
+                    }
+                } catch {
+                    visionFailureReason = error.localizedDescription
+                    PluginLog.notice("Vision hint diagnostic: \(error.localizedDescription)")
+                }
+            } else {
+                visionFailureReason = "Vision hint engine unavailable"
             }
         }
 
@@ -538,6 +551,8 @@ final class RenderPipeline: @unchecked Sendable {
             hintSource = "External alpha input"
         } else if visionMask != nil {
             hintSource = "Vision subject mask"
+        } else if let reason = visionFailureReason {
+            hintSource = "Green-bias rough matte (\(reason))"
         } else {
             hintSource = "Green-bias rough matte"
         }
@@ -854,6 +869,15 @@ final class RenderPipeline: @unchecked Sendable {
         // dispatch. Saves three compute encoders and ~3 MB of
         // intermediate-texture bandwidth per 4K frame vs. the unfused
         // chain.
+        // Edge decontaminate operates on the foreground BEFORE the
+        // inverse rotation back to the original screen colour. So
+        // its `screenColor` reference must always be the canonical
+        // green (0.08, 0.84, 0.08) — that's the screen colour in
+        // the rotated/green domain that despill and edge decontam
+        // both work in. Using `screenTransform.estimatedScreenReference`
+        // here would pass `canonicalBlue` for blue screens, which
+        // produced incorrect edge decontamination on blue-screen
+        // footage (the residual projection used the wrong axis).
         let fusedForegroundConfig = RenderStages.FusedForegroundConfig(
             sourcePassthrough: request.state.sourcePassthroughEnabled,
             lightWrapEnabled: lightWrapActive,
@@ -862,7 +886,7 @@ final class RenderPipeline: @unchecked Sendable {
             edgeDecontaminateEnabled: request.state.edgeDecontaminateEnabled
                 && request.state.edgeDecontaminateStrength > 0,
             edgeDecontaminateStrength: Float(request.state.edgeDecontaminateStrength),
-            screenColor: screenTransform.estimatedScreenReference,
+            screenColor: SIMD3<Float>(0.08, 0.84, 0.08),
             inverseScreenMatrix: screenTransform.inverseMatrix,
             applyInverseRotation: !screenTransform.isIdentity
         )

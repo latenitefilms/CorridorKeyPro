@@ -274,13 +274,12 @@ final class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
 
     // MARK: - Drawing
 
-    /// Renders the hint dots into `destinationImage` via the cached
-    /// `corridorKeyDrawOSCKernel`. The destination texture is owned by
-    /// FxPlug and must be written through a render-target-compatible
-    /// path; on Apple Silicon a compute kernel that writes to the
-    /// IOSurface-backed texture works because every IOSurface texture
-    /// FxPlug hands us has `[.shaderRead, .shaderWrite, .renderTarget]`
-    /// usage flags.
+    /// Renders the hint dots into `destinationImage` via a render
+    /// pass (vertex + fragment shaders). FCP's OSC destination
+    /// texture is render-target-only — `.renderTarget` usage but
+    /// typically NOT `.shaderWrite` — so writing from a compute
+    /// kernel silently produces no output. The render-pass approach
+    /// matches the FxShape sample's working pattern.
     private func renderOSC(
         destinationImage: FxImageTile,
         points: [HintPoint],
@@ -298,17 +297,58 @@ final class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         guard let texture = destinationImage.metalTexture(for: device) else {
             throw MetalDeviceCacheError.unknownDevice(destinationImage.deviceRegistryID)
         }
+        let renderPipelines = try entry.renderPipelines(for: texture.pixelFormat)
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             throw MetalDeviceCacheError.commandBufferCreationFailed
         }
         commandBuffer.label = "Corridor Key Toolbox OSC Draw"
-        guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
+
+        // Set up the render pass. Clear to fully transparent so
+        // FCP's compositor only sees the dots we draw.
+        let passDescriptor = MTLRenderPassDescriptor()
+        passDescriptor.colorAttachments[0].texture = texture
+        passDescriptor.colorAttachments[0].loadAction = .clear
+        passDescriptor.colorAttachments[0].clearColor = MTLClearColorMake(0, 0, 0, 0)
+        passDescriptor.colorAttachments[0].storeAction = .store
+        guard let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: passDescriptor) else {
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "OSC Draw"
-        encoder.setComputePipelineState(entry.computePipelines.drawOSC)
-        encoder.setTexture(texture, index: Int(CKTextureIndexOutput.rawValue))
+        encoder.label = "Corridor Key Toolbox OSC"
 
+        let tileWidth = Float(destinationImage.tilePixelBounds.right - destinationImage.tilePixelBounds.left)
+        let tileHeight = Float(destinationImage.tilePixelBounds.top - destinationImage.tilePixelBounds.bottom)
+        let halfW = tileWidth * 0.5
+        let halfH = tileHeight * 0.5
+        var vertices: [CKVertex2D] = [
+            CKVertex2D(position: SIMD2<Float>(halfW, -halfH), textureCoordinate: SIMD2<Float>(1, 1)),
+            CKVertex2D(position: SIMD2<Float>(-halfW, -halfH), textureCoordinate: SIMD2<Float>(0, 1)),
+            CKVertex2D(position: SIMD2<Float>(halfW, halfH), textureCoordinate: SIMD2<Float>(1, 0)),
+            CKVertex2D(position: SIMD2<Float>(-halfW, halfH), textureCoordinate: SIMD2<Float>(0, 0))
+        ]
+        var viewportSize = SIMD2<UInt32>(UInt32(tileWidth), UInt32(tileHeight))
+
+        encoder.setViewport(MTLViewport(
+            originX: 0,
+            originY: 0,
+            width: Double(tileWidth),
+            height: Double(tileHeight),
+            znear: -1,
+            zfar: 1
+        ))
+        encoder.setRenderPipelineState(renderPipelines.drawOSC)
+        encoder.setVertexBytes(
+            &vertices,
+            length: MemoryLayout<CKVertex2D>.stride * vertices.count,
+            index: Int(CKVertexInputIndexVertices.rawValue)
+        )
+        encoder.setVertexBytes(
+            &viewportSize,
+            length: MemoryLayout<SIMD2<UInt32>>.size,
+            index: Int(CKVertexInputIndexViewportSize.rawValue)
+        )
+
+        // Pack the hint points and bind to the fragment shader. Match
+        // the Metal struct CKHintPoint exactly (16 bytes per point).
         struct PackedPoint {
             var x: Float32
             var y: Float32
@@ -328,37 +368,27 @@ final class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         if !packed.isEmpty {
             packed.withUnsafeMutableBytes { rawBytes in
                 if let base = rawBytes.baseAddress {
-                    encoder.setBytes(base, length: rawBytes.count, index: 0)
+                    encoder.setFragmentBytes(base, length: rawBytes.count, index: 0)
                 }
             }
         } else {
-            // Metal requires SOMETHING bound at index 0 even when count
-            // is zero, so push a single zero point that the kernel will
-            // ignore (loop condition `i < 0` skips immediately).
+            // Metal requires SOMETHING bound at index 0 even when
+            // count is zero. Push a sentinel point that the loop
+            // condition `i < 0` skips.
             var sentinel = PackedPoint(x: 0, y: 0, radius: 0, kind: 0)
             withUnsafeBytes(of: &sentinel) { bytes in
                 if let base = bytes.baseAddress {
-                    encoder.setBytes(base, length: bytes.count, index: 0)
+                    encoder.setFragmentBytes(base, length: bytes.count, index: 0)
                 }
             }
         }
-        encoder.setBytes(&pointCount, length: MemoryLayout<Int32>.size, index: 1)
-        encoder.setBytes(&activePart32, length: MemoryLayout<Int32>.size, index: 2)
+        encoder.setFragmentBytes(&pointCount, length: MemoryLayout<Int32>.size, index: 1)
+        encoder.setFragmentBytes(&activePart32, length: MemoryLayout<Int32>.size, index: 2)
 
-        let threadgroupWidth = min(entry.computePipelines.drawOSC.threadExecutionWidth, max(texture.width, 1))
-        let threadgroupHeight = max(
-            1,
-            min(
-                entry.computePipelines.drawOSC.maxTotalThreadsPerThreadgroup / max(threadgroupWidth, 1),
-                max(texture.height, 1)
-            )
-        )
-        let threadsPerThreadgroup = MTLSize(width: threadgroupWidth, height: threadgroupHeight, depth: 1)
-        let threadsPerGrid = MTLSize(width: max(texture.width, 1), height: max(texture.height, 1), depth: 1)
-        encoder.dispatchThreads(threadsPerGrid, threadsPerThreadgroup: threadsPerThreadgroup)
+        encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
         encoder.endEncoding()
         commandBuffer.commit()
-        commandBuffer.waitUntilCompleted()
+        commandBuffer.waitUntilScheduled()
     }
 
     private func clamp01(_ value: Double) -> Double {

@@ -137,29 +137,35 @@ final class VisionHintEngine: @unchecked Sendable {
     /// pre-inference target dimensions.
     func generateMask(source: any MTLTexture) throws -> VisionMask? {
         guard let baseImage = CIImage(mtlTexture: source, options: nil) else {
+            PluginLog.notice("Vision hint: CIImage(mtlTexture:) returned nil for source format \(source.pixelFormat.rawValue).")
             return nil
         }
-        // CIImage(mtlTexture:) yields a bottom-left origin image. Vision
-        // expects top-left, so apply a vertical flip via `oriented`.
-        // `.downMirrored` flips both axes; `.down` would only flip y.
-        // We need a vertical flip only, which is `.downMirrored` because
-        // CI's bottom-left origin is "left edge mirrored to right plus
-        // upside down" relative to image coordinates — see Core Image
-        // Programming Guide "Working with Coordinate Spaces". Tested
-        // against `MatteOrientationTests`.
-        let oriented = baseImage.oriented(.downMirrored)
-
-        let handler = VNImageRequestHandler(ciImage: oriented, options: [:])
+        // `CIImage(mtlTexture:)` yields a bottom-left origin image.
+        // Pass `.downMirrored` as the `orientation` parameter so
+        // Vision interprets the bytes correctly — pre-orienting the
+        // CIImage with `.oriented(...)` was producing inconsistent
+        // results because Core Image and Vision interpret the
+        // orientation hint differently.
+        let handler = VNImageRequestHandler(
+            ciImage: baseImage,
+            orientation: .downMirrored,
+            options: [:]
+        )
         let request = borrowRequest()
 
         do {
             try handler.perform([request])
         } catch {
+            PluginLog.error("Vision hint perform failed: \(error.localizedDescription)")
             throw VisionHintError.requestFailed(error)
         }
 
-        guard let observation = request.results?.first,
-              !observation.allInstances.isEmpty else {
+        guard let observation = request.results?.first else {
+            PluginLog.notice("Vision hint: no observation returned from foreground request.")
+            return nil
+        }
+        guard !observation.allInstances.isEmpty else {
+            PluginLog.notice("Vision hint: observation has zero instances — falling back to green-bias hint.")
             return nil
         }
 
@@ -170,9 +176,10 @@ final class VisionHintEngine: @unchecked Sendable {
                 from: handler
             )
         } catch {
+            PluginLog.error("Vision hint mask scaling failed: \(error.localizedDescription)")
             throw VisionHintError.maskGenerationFailed(error)
         }
-
+        PluginLog.notice("Vision hint: produced \(observation.allInstances.count) instance mask(s) at \(CVPixelBufferGetWidth(maskBuffer))×\(CVPixelBufferGetHeight(maskBuffer)).")
         return try wrapAsMetalTexture(pixelBuffer: maskBuffer)
     }
 

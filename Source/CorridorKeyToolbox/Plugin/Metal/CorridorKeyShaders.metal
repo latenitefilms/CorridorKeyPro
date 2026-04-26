@@ -519,20 +519,41 @@ struct CKHintPoint {
 // background points = filled red disc with white outline. The OSC
 // always renders over a transparent background — FCP composites the
 // OSC layer on top of the source frame.
+//
+// Uses a render pass (vertex/fragment shaders), not a compute kernel,
+// because FCP's OSC destination texture is render-target-only — it
+// has `.renderTarget` usage but typically NOT `.shaderWrite`. This
+// matches the FxShape sample's working pattern.
 
-kernel void corridorKeyDrawOSCKernel(
-    texture2d<float, access::write> destination [[texture(CKTextureIndexOutput)]],
+struct CKHintOSCRasterizerData {
+    float4 clipSpacePosition [[position]];
+    float2 textureCoordinate;
+};
+
+vertex CKHintOSCRasterizerData corridorKeyDrawOSCVertex(
+    uint vertexID [[vertex_id]],
+    constant CKVertex2D *vertices [[buffer(CKVertexInputIndexVertices)]],
+    constant vector_uint2 *viewportSize [[buffer(CKVertexInputIndexViewportSize)]]
+) {
+    CKHintOSCRasterizerData out;
+    float2 pixelPosition = vertices[vertexID].position;
+    float2 viewport = float2(*viewportSize);
+    out.clipSpacePosition.xy = pixelPosition / (viewport * 0.5);
+    out.clipSpacePosition.z = 0.0;
+    out.clipSpacePosition.w = 1.0;
+    out.textureCoordinate = vertices[vertexID].textureCoordinate;
+    return out;
+}
+
+fragment float4 corridorKeyDrawOSCFragment(
+    CKHintOSCRasterizerData in [[stage_in]],
     constant CKHintPoint *points [[buffer(0)]],
     constant int &pointCount [[buffer(1)]],
-    constant int &activePart [[buffer(2)]],
-    uint2 gid [[thread_position_in_grid]]
+    constant int &activePart [[buffer(2)]]
 ) {
-    uint width = destination.get_width();
-    uint height = destination.get_height();
-    if (gid.x >= width || gid.y >= height) { return; }
-
-    // Object-normalised coordinates of the current pixel.
-    float2 uv = (float2(gid) + 0.5) / float2(width, height);
+    // Texture coordinate is 0..1 across the OSC canvas, matching the
+    // object-normalised space hint points are stored in.
+    float2 uv = in.textureCoordinate;
 
     float4 colour = float4(0.0, 0.0, 0.0, 0.0);
     for (int i = 0; i < pointCount; ++i) {
@@ -545,7 +566,10 @@ kernel void corridorKeyDrawOSCKernel(
         float radius = max(p.radius, 0.001);
         float outerRadius = radius * 0.6;
         float innerRadius = radius * 0.5;
-        float outerEdge = 0.5 / float(min(width, height)); // ~1 px in obj-space
+        // ~1 px wide anti-alias band; dfdx/dfdy give per-fragment
+        // derivative magnitude in uv space, which is a tighter
+        // estimate than guessing from the dest size.
+        float outerEdge = max(fwidth(distance) * 0.5, 0.0005);
         float fillAlpha = 1.0 - smoothstep(innerRadius - outerEdge, innerRadius + outerEdge, distance);
         float ringAlpha = (1.0 - smoothstep(outerRadius - outerEdge, outerRadius + outerEdge, distance))
                          * smoothstep(innerRadius - outerEdge, innerRadius + outerEdge, distance);
@@ -559,13 +583,13 @@ kernel void corridorKeyDrawOSCKernel(
             ringColour = float3(1.0, 0.95, 0.40);
         }
 
-        // Composite in over previous result.
+        // Composite this dot over previous result.
         float3 dotColour = mix(ringColour, fillColour, fillAlpha);
         float dotAlpha = max(fillAlpha, ringAlpha);
         colour.rgb = mix(colour.rgb, dotColour, dotAlpha);
         colour.a = max(colour.a, dotAlpha);
     }
-    destination.write(colour, gid);
+    return colour;
 }
 
 // MARK: - Hint-point rasterisation
