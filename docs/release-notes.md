@@ -1,5 +1,21 @@
 # Release Notes
 
+### 1.0.0 (Build 3)
+
+**🎉 Released:**
+- 26th April 2026
+
+**🔨 Improvements:**
+- We now default to **Recommended** Quality (which picks best Quality setting based on your GPU memory).
+- Added on-screen controls with new **Subject Position** parameter.
+- Added **Temporal Stability** (matte flicker reduction) parameters.
+- Added **Auto Subject Hint** - which uses Apple's Vision Framework to use machine learning object detection for the hint matte hint.
+- Added new **Hint (Diagnostic)** Output, so you can see what the Hint is actually doing.
+- Added **Edge Spill** Parameters.
+- General improvements to memory usage and performance. It SHOULD be faster, more stable and better quality.
+
+---
+
 ### 1.0.0 (Build 2)
 
 **🎉 Released:**
