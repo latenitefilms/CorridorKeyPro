@@ -173,6 +173,12 @@ public enum OutputMode: Int, Sendable, CaseIterable, Codable {
     case foregroundOnly = 2
     case sourcePlusMatte = 3
     case foregroundPlusMatte = 4
+    /// Diagnostic mode: render the alpha *hint* the MLX bridge sees as
+    /// its 4th input channel. Lets the user verify the upstream hint
+    /// (Vision subject mask, OSC dots, or the green-bias rough matte)
+    /// before MLX inference is involved. Visualised as red-on-black:
+    /// red = "this is foreground" hint, black = "this is screen".
+    case hint = 5
 
     public var shaderValue: Int32 { Int32(rawValue) }
 
@@ -183,6 +189,7 @@ public enum OutputMode: Int, Sendable, CaseIterable, Codable {
         case .foregroundOnly: return "Foreground Only"
         case .sourcePlusMatte: return "Source + Matte"
         case .foregroundPlusMatte: return "Foreground + Matte"
+        case .hint: return "Hint (Diagnostic)"
         }
     }
 }

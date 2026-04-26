@@ -103,6 +103,7 @@ enum CorridorKeyOutputMode: Int32 {
     case CKOutputModeForegroundOnly = 2
     case CKOutputModeSourcePlusMatte = 3
     case CKOutputModeForegroundPlusMatte = 4
+    case CKOutputModeHint = 5
 }
 
 let CKOutputModeProcessed = CorridorKeyOutputMode.CKOutputModeProcessed
@@ -110,6 +111,7 @@ let CKOutputModeMatteOnly = CorridorKeyOutputMode.CKOutputModeMatteOnly
 let CKOutputModeForegroundOnly = CorridorKeyOutputMode.CKOutputModeForegroundOnly
 let CKOutputModeSourcePlusMatte = CorridorKeyOutputMode.CKOutputModeSourcePlusMatte
 let CKOutputModeForegroundPlusMatte = CorridorKeyOutputMode.CKOutputModeForegroundPlusMatte
+let CKOutputModeHint = CorridorKeyOutputMode.CKOutputModeHint
 
 // MARK: - Param structs
 

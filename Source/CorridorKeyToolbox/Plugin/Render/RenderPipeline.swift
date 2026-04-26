@@ -82,6 +82,22 @@ final class RenderPipeline: @unchecked Sendable {
             deviceRegistryID: context.entry.device.registryID
         )
 
+        // Diagnostic: when the user picks the Hint output mode, route
+        // straight to a path that runs the pre-inference hint stage and
+        // visualises the result. Skip MLX entirely so the user sees
+        // exactly what prior the network would receive — useful for
+        // diagnosing "why is the matte different than I expect" or
+        // "did Vision detect my subject correctly".
+        if request.state.outputMode == .hint {
+            return try renderHintDiagnostic(
+                request: request,
+                context: context,
+                screenTransform: screenTransform,
+                gamutTransform: gamutTransform,
+                inferenceResolution: inferenceResolution
+            )
+        }
+
         // Fast path: FxAnalyzer already ran for this clip and the inference
         // resolution matches the quality the user is asking for. Skip MLX
         // entirely — the cache already holds a network-quality matte.
@@ -408,6 +424,127 @@ final class RenderPipeline: @unchecked Sendable {
             backendDescription: "Source Pass-Through",
             guideSourceDescription: "Clip not analysed",
             effectiveInferenceResolution: 0,
+            deviceName: context.device.name
+        )
+    }
+
+    /// Diagnostic render path: visualises the upstream hint texture
+    /// (Vision mask, OSC dots, or green-bias rough matte) without
+    /// touching MLX. Lets users see exactly what prior the network is
+    /// receiving when investigating matte-quality issues.
+    private func renderHintDiagnostic(
+        request: RenderRequest,
+        context: DeviceContext,
+        screenTransform: ScreenColorTransform,
+        gamutTransform: WorkingSpaceTransform,
+        inferenceResolution: Int
+    ) throws -> RenderReport {
+        // Vision request runs synchronously on the Neural Engine in
+        // parallel with the GPU pre-pass — same pattern as the
+        // production analyse path so the diagnostic shows the same
+        // hint MLX would actually receive.
+        var visionMask: VisionMask? = nil
+        if request.state.autoSubjectHintEnabled,
+           request.alphaHintImage == nil,
+           #available(macOS 14.0, *) {
+            if let engine = context.entry.visionHintEngine() as? VisionHintEngine {
+                visionMask = try? engine.generateMask(source: context.sourceTexture)
+            }
+        }
+
+        guard let commandBuffer = context.commandQueue.makeCommandBuffer() else {
+            throw MetalDeviceCacheError.commandBufferCreationFailed
+        }
+        commandBuffer.label = "Corridor Key Toolbox Hint Diagnostic"
+
+        // Step 1: rotate into the screen-colour-canonical domain so
+        // the green-bias hint matches what runPreInference would see
+        // on a blue-screen clip.
+        let rotatedSourcePooled = try RenderStages.applyScreenMatrix(
+            source: context.sourceTexture,
+            matrix: screenTransform.forwardMatrix,
+            isIdentity: screenTransform.isIdentity,
+            entry: context.entry,
+            commandBuffer: commandBuffer
+        )
+        let rotatedSource = rotatedSourcePooled?.texture ?? context.sourceTexture
+
+        // Step 2: produce the hint texture exactly as the analyse path
+        // does (external > Vision > green-bias).
+        let hintPooled: PooledTexture
+        if let hintTile = request.alphaHintImage,
+           let hostTexture = hintTile.metalTexture(for: context.device) {
+            hintPooled = try RenderStages.extractHint(
+                source: hostTexture,
+                layout: hintTileLayoutValue(for: hostTexture),
+                targetWidth: rotatedSource.width,
+                targetHeight: rotatedSource.height,
+                entry: context.entry,
+                commandBuffer: commandBuffer
+            )
+        } else if let mask = visionMask {
+            hintPooled = try RenderStages.extractHint(
+                source: mask.texture,
+                layout: 1,
+                targetWidth: rotatedSource.width,
+                targetHeight: rotatedSource.height,
+                entry: context.entry,
+                commandBuffer: commandBuffer
+            )
+            mask.retainOnCompletion(of: commandBuffer)
+        } else {
+            hintPooled = try RenderStages.generateGreenHint(
+                source: rotatedSource,
+                entry: context.entry,
+                commandBuffer: commandBuffer
+            )
+        }
+
+        // Step 3: layer OSC hint points on top of whichever upstream
+        // hint we just produced — so the diagnostic also shows the
+        // user's manual dots.
+        if !request.state.hintPointSet.points.isEmpty {
+            try RenderStages.applyHintPoints(
+                hint: hintPooled.texture,
+                points: request.state.hintPointSet.points,
+                entry: context.entry,
+                commandBuffer: commandBuffer
+            )
+        }
+
+        // Step 4: compose the hint into the FCP destination tile via
+        // the existing compose pipeline; it sees `outputMode == .hint`
+        // (CKOutputModeHint) and renders the matte channel as red.
+        // We bind the hint texture to all three slots — only the
+        // matte slot is actually read for this output mode.
+        try compose(
+            source: hintPooled.texture,
+            foreground: hintPooled.texture,
+            matte: hintPooled.texture,
+            destination: context.destinationTexture,
+            destinationTile: request.destinationImage,
+            state: request.state,
+            pixelFormat: context.pixelFormat,
+            entry: context.entry,
+            commandBuffer: commandBuffer
+        )
+
+        try commitAndWait(commandBuffer: commandBuffer)
+        rotatedSourcePooled?.returnManually()
+        hintPooled.returnManually()
+
+        let hintSource: String
+        if request.alphaHintImage != nil {
+            hintSource = "External alpha input"
+        } else if visionMask != nil {
+            hintSource = "Vision subject mask"
+        } else {
+            hintSource = "Green-bias rough matte"
+        }
+        return RenderReport(
+            backendDescription: "Hint Diagnostic (\(hintSource))",
+            guideSourceDescription: hintSource,
+            effectiveInferenceResolution: inferenceResolution,
             deviceName: context.device.name
         )
     }

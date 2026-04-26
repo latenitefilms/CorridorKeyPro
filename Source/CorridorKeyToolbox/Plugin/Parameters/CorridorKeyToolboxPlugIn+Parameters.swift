@@ -136,10 +136,20 @@ extension CorridorKeyToolboxPlugIn {
             parameterFlags: CorridorKeyParameterFlags.nonAnimatableChoice.fxFlags
         )
 
+        // Vision hint defaults OFF in v1.0. The MLX bridge was trained
+        // on the soft gradient green-bias rough matte, and Vision's
+        // `VNGenerateForegroundInstanceMaskRequest` returns a *binary*
+        // mask which is structurally different — feeding it to the
+        // network at inference time can make the model trust hard
+        // boundaries that aren't actually subject edges, degrading
+        // matte quality on hair, motion blur, and translucent fabric.
+        // Surface as an opt-in so users can try it on subjects where
+        // Vision happens to nail the boundary; the default is the
+        // green-bias hint the model knows.
         create.addToggleButton(
             withName: "Auto Subject Hint",
             parameterID: ParameterIdentifier.autoSubjectHintEnabled,
-            defaultValue: true,
+            defaultValue: false,
             parameterFlags: CorridorKeyParameterFlags.nonAnimatableChoice.fxFlags
         )
 
@@ -254,10 +264,17 @@ extension CorridorKeyToolboxPlugIn {
             parameterFlags: CorridorKeyParameterFlags.default.fxFlags
         )
 
+        // Auto Despeckle defaults OFF in v1.0. The connected-components
+        // filter removes matte regions whose area is below the
+        // threshold, which is great for tracking dots and birds in the
+        // background — but on hair, fur, and feathered edges the model
+        // legitimately produces small connected components and
+        // despeckle eats them. Surface as opt-in; users with clean
+        // backgrounds can flick it on and tune the size threshold.
         create.addToggleButton(
             withName: "Auto Despeckle",
             parameterID: ParameterIdentifier.autoDespeckle,
-            defaultValue: true,
+            defaultValue: false,
             parameterFlags: CorridorKeyParameterFlags.nonAnimatableChoice.fxFlags
         )
 
@@ -295,14 +312,17 @@ extension CorridorKeyToolboxPlugIn {
             parameterFlags: CorridorKeyParameterFlags.default.fxFlags
         )
 
-        // Despill defaults to full strength because most green-screen
-        // shots expect a fully de-spilled foreground; the previous 0.5
-        // default sat halfway between "spill removed" and "spill
-        // visible" which read as a bug to users new to the plug-in.
+        // Reverted to the Build 2 defaults (strength 0.5, method
+        // Average). Bumping to 1.0 + Screen Subtract as a default in
+        // v1.0 was over-aggressive — it pushed the foreground colours
+        // away from their original screen-tinted look in ways that
+        // some clips depended on for the desired comp. The Screen
+        // Subtract method is still available in the popup, just not
+        // the default.
         create.addFloatSlider(
             withName: "Despill Strength",
             parameterID: ParameterIdentifier.despillStrength,
-            defaultValue: 1.0,
+            defaultValue: 0.5,
             parameterMin: 0,
             parameterMax: 1,
             sliderMin: 0,
@@ -311,15 +331,10 @@ extension CorridorKeyToolboxPlugIn {
             parameterFlags: CorridorKeyParameterFlags.default.fxFlags
         )
 
-        // Screen Subtract is the Keylight-style method most Nuke /
-        // Fusion artists default to: it scales spill removal by pixel
-        // saturation so neutral whites and hair specular stay neutral
-        // instead of getting pushed magenta. The legacy Average method
-        // is kept for backwards compatibility / parity testing.
         create.addPopupMenu(
             withName: "Spill Method",
             parameterID: ParameterIdentifier.spillMethod,
-            defaultValue: UInt32(SpillMethod.screenSubtract.rawValue),
+            defaultValue: UInt32(SpillMethod.average.rawValue),
             menuEntries: SpillMethod.allCases.map(\.displayName),
             parameterFlags: CorridorKeyParameterFlags.nonAnimatableChoice.fxFlags
         )
@@ -404,22 +419,24 @@ extension CorridorKeyToolboxPlugIn {
             parameterFlags: CorridorKeyParameterFlags.default.fxFlags
         )
 
+        // Temporal Stability defaults OFF in v1.0. The motion-gated EMA
+        // blend reliably damps edge-band flicker on slow-motion or
+        // static-camera footage, but on rapidly-moving subjects the
+        // motion gate occasionally lets a partial blend through which
+        // can soften legitimate detail for one or two frames.
+        // Surface as opt-in alongside the strength slider so users
+        // with flicker can turn it on per-clip.
         create.addToggleButton(
             withName: "Reduce Edge Flicker",
             parameterID: ParameterIdentifier.temporalStabilityEnabled,
-            defaultValue: true,
+            defaultValue: false,
             parameterFlags: CorridorKeyParameterFlags.nonAnimatableChoice.fxFlags
         )
 
-        // Strength of 0.35 is the sweet spot from the NikoDruid benchmark:
-        // edge-band σ drops from 0.42 to ~0.18 (over 2× reduction in
-        // visible flicker) without smearing fast hand motion. The legacy
-        // default of 0.5 was a starting point picked before the benchmark
-        // suite landed; with measured data we can tighten it.
         create.addFloatSlider(
             withName: "Stability Strength",
             parameterID: ParameterIdentifier.temporalStabilityStrength,
-            defaultValue: 0.35,
+            defaultValue: 0.5,
             parameterMin: 0,
             parameterMax: 1,
             sliderMin: 0,

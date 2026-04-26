@@ -76,24 +76,20 @@ struct PluginStateDataTests {
     @Test("Temporal stability defaults preserve backward compatibility")
     func temporalStabilityDefaults() {
         let defaults = PluginStateData()
-        // Defaults ON: the feature was validated by the v1.0 benchmark
-        // suite; edge-band σ on `NikoDruid` drops from 0.42 → ~0.18 at
-        // strength 0.35, which is a clear win over no temporal blend.
-        // The cost is paid during the analyse pass, not at playback,
-        // so users see the quality lift without paying any per-frame
-        // render cost.
-        #expect(defaults.temporalStabilityEnabled == true)
-        #expect(defaults.temporalStabilityStrength == 0.35)
+        // Defaults OFF in v1.0 — the feature is sound but on subjects
+        // with rapid hand or hair motion the gate occasionally lets a
+        // partial blend through which can soften legitimate detail
+        // for one or two frames. Surface as opt-in so users with
+        // visible flicker can enable it per-clip.
+        #expect(defaults.temporalStabilityEnabled == false)
+        #expect(defaults.temporalStabilityStrength == 0.5)
 
-        // A blob written before these keys existed must still decode
-        // cleanly and inherit the new defaults — otherwise projects
-        // saved by an earlier build would refuse to open. Existing
-        // analysed clips already have a cached matte without temporal
-        // blending; the new default only takes effect on the next
-        // Analyse Clip pass.
+        // A blob written before this key existed must still decode
+        // cleanly and inherit the new default — otherwise projects
+        // saved by an earlier build would refuse to open.
         let decoded = PluginStateData.decoded(from: NSData())
-        #expect(decoded.temporalStabilityEnabled == true)
-        #expect(decoded.temporalStabilityStrength == 0.35)
+        #expect(decoded.temporalStabilityEnabled == false)
+        #expect(decoded.temporalStabilityStrength == 0.5)
     }
 
     @Test("Empty blob falls back to defaults")
@@ -125,21 +121,24 @@ struct PluginStateDataTests {
         #expect(decoded.cachedMatteInferenceResolution == 0)
     }
 
-    @Test("Auto subject hint defaults to enabled and survives round-trip")
+    @Test("Auto subject hint defaults to disabled and survives round-trip")
     func autoSubjectHintDefaultsAndRoundTrip() throws {
         let defaults = PluginStateData()
-        #expect(defaults.autoSubjectHintEnabled == true)
+        // Defaults OFF in v1.0: the MLX bridge was trained on the
+        // soft gradient green-bias hint, and Vision returns a binary
+        // mask which is structurally different. Opt-in only.
+        #expect(defaults.autoSubjectHintEnabled == false)
 
-        // A blob written before this key existed must still decode cleanly
-        // and inherit `true` so existing projects pick up the better hint.
+        // A blob written before this key existed must still decode
+        // cleanly and inherit the safe default.
         let legacyDecoded = PluginStateData.decoded(from: NSData())
-        #expect(legacyDecoded.autoSubjectHintEnabled == true)
+        #expect(legacyDecoded.autoSubjectHintEnabled == false)
 
-        // Off explicitly should round-trip.
-        let original = PluginStateData(autoSubjectHintEnabled: false)
+        // On explicitly should round-trip.
+        let original = PluginStateData(autoSubjectHintEnabled: true)
         let encoded = try original.encodedForHost()
         let decoded = PluginStateData.decoded(from: encoded)
-        #expect(decoded.autoSubjectHintEnabled == false)
+        #expect(decoded.autoSubjectHintEnabled == true)
     }
 
     @Test("destinationPixelRadius scales by clip size")

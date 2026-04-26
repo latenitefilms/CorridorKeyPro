@@ -65,7 +65,12 @@ typedef enum CorridorKeyOutputMode {
     CKOutputModeMatteOnly = 1,
     CKOutputModeForegroundOnly = 2,
     CKOutputModeSourcePlusMatte = 3,
-    CKOutputModeForegroundPlusMatte = 4
+    CKOutputModeForegroundPlusMatte = 4,
+    /// Diagnostic: render the upstream alpha hint that MLX reads as its
+    /// 4th input channel (Vision mask, OSC overlays, or green-bias).
+    /// Visualised as red on black so the user can spot misalignment
+    /// between the hint and the subject before MLX touches it.
+    CKOutputModeHint = 5
 } CorridorKeyOutputMode;
 
 // Vertex layout for the full-screen quad in pixel space.

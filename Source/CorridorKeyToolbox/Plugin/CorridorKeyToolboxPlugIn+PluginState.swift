@@ -47,7 +47,7 @@ extension CorridorKeyToolboxPlugIn {
             retrieval: retrieval,
             parameterID: ParameterIdentifier.autoSubjectHintEnabled,
             time: renderTime,
-            default: true
+            default: false
         )
 
         // Interior
@@ -105,7 +105,7 @@ extension CorridorKeyToolboxPlugIn {
             retrieval: retrieval,
             parameterID: ParameterIdentifier.autoDespeckle,
             time: renderTime,
-            default: true
+            default: false
         )
         state.despeckleSize = intValue(
             retrieval: retrieval,
@@ -157,13 +157,13 @@ extension CorridorKeyToolboxPlugIn {
             retrieval: retrieval,
             parameterID: ParameterIdentifier.temporalStabilityEnabled,
             time: renderTime,
-            default: true
+            default: false
         )
         state.temporalStabilityStrength = floatValue(
             retrieval: retrieval,
             parameterID: ParameterIdentifier.temporalStabilityStrength,
             time: renderTime,
-            default: 0.35
+            default: 0.5
         )
 
         // Edge & spill
@@ -171,13 +171,13 @@ extension CorridorKeyToolboxPlugIn {
             retrieval: retrieval,
             parameterID: ParameterIdentifier.despillStrength,
             time: renderTime,
-            default: 1.0
+            default: 0.5
         )
         state.spillMethod = popupValue(
             retrieval: retrieval,
             parameterID: ParameterIdentifier.spillMethod,
             time: renderTime,
-            default: .screenSubtract
+            default: .average
         )
 
         // Output and performance

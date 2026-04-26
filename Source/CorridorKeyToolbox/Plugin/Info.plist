@@ -66,27 +66,30 @@
 			<array>
 				<string>FxFilter</string>
 			</array>
-			<key>supportedPlugins</key>
-			<array>
-				<dict>
-					<key>className</key>
-					<string>CorridorKeyHintOSC</string>
-					<key>displayName</key>
-					<string>Corridor Key Subject Points</string>
-					<key>infoString</key>
-					<string>Click to add foreground (green) or background (red) hint dots that guide the keyer.</string>
-					<key>protocolNames</key>
-					<array>
-						<string>FxOnScreenControl</string>
-					</array>
-					<key>uuid</key>
-					<string>F1A7B2D3-5C68-4E8F-9A02-D4E5F6A7B8C9</string>
-					<key>version</key>
-					<string>$(MARKETING_VERSION)</string>
-				</dict>
-			</array>
 			<key>uuid</key>
 			<string>D29F6B10-4F3A-4C5E-B611-7A2E8D4C9F08</string>
+			<key>version</key>
+			<string>$(MARKETING_VERSION)</string>
+		</dict>
+		<dict>
+			<key>className</key>
+			<string>CorridorKeyHintOSC</string>
+			<key>displayName</key>
+			<string>Corridor Key Subject Points</string>
+			<key>group</key>
+			<string>8F1B3A2C-6E54-4A18-9D7F-0C8B5E2A4931</string>
+			<key>infoString</key>
+			<string>Click to add foreground (green) or background (red) hint dots that guide the keyer.</string>
+			<key>protocolNames</key>
+			<array>
+				<string>FxOnScreenControl</string>
+			</array>
+			<key>supportedPlugins</key>
+			<array>
+				<string>D29F6B10-4F3A-4C5E-B611-7A2E8D4C9F08</string>
+			</array>
+			<key>uuid</key>
+			<string>F1A7B2D3-5C68-4E8F-9A02-D4E5F6A7B8C9</string>
 			<key>version</key>
 			<string>$(MARKETING_VERSION)</string>
 		</dict>

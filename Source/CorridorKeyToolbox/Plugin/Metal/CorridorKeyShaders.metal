@@ -88,6 +88,12 @@ fragment float4 corridorKeyComposeFragment(
             return float4(source * alpha, alpha);
         case CKOutputModeForegroundPlusMatte:
             return float4(foreground, alpha);
+        case CKOutputModeHint:
+            // Diagnostic: visualise the hint as red on black so the
+            // user can see the prior MLX is being given. Caller binds
+            // the hint texture (Vision mask, OSC dots, or green-bias)
+            // to the matte texture slot.
+            return float4(alpha, 0.0, 0.0, 1.0);
         case CKOutputModeProcessed:
         default:
             return float4(foreground * alpha, alpha);
