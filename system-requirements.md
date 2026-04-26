@@ -4,6 +4,8 @@
 
 It uses **Apple MLX** and requires a modern **Apple Silicon** Mac with as much RAM as you can throw it.
 
+It does **NOT** work on Intel Mac's.
+
 You can find Final Cut Pro's system requirements [here](https://support.apple.com/en-us/111903).
 
 ---
