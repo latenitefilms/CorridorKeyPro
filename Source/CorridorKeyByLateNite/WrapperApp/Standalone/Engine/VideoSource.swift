@@ -51,6 +51,15 @@ struct VideoSourceInfo: Sendable {
     /// Applied automatically by `AVAssetImageGenerator` and the export
     /// reader when `appliesPreferredTrackTransform` is true.
     let preferredTransform: CGAffineTransform
+    /// Source colour-space metadata read from the track's format
+    /// description. `nil` when the source omits the extension (most
+    /// SDR Rec.709 clips do — the exporter falls back to BT.709 in
+    /// that case). When present these fields are passed through
+    /// verbatim to the export writer so HDR / wide-gamut sources
+    /// keep their tags rather than being silently re-tagged BT.709.
+    let colorPrimaries: String?
+    let transferFunction: String?
+    let yCbCrMatrix: String?
 }
 
 enum VideoSourceError: Error, CustomStringConvertible {
@@ -179,8 +188,17 @@ final class VideoSource: @unchecked Sendable {
         // bit depth. Used by ExportSession to pick a matching output
         // pixel format for ProRes.
         let nativePixelFormat: OSType
+        var colorPrimaries: String?
+        var transferFunction: String?
+        var yCbCrMatrix: String?
         if let first = formatDescriptions.first {
             nativePixelFormat = CMFormatDescriptionGetMediaSubType(first)
+            // Format-description extensions carry the colour tags every
+            // mainstream codec writes. Reading them here lets the
+            // exporter forward HDR / Rec.2020 / DCI-P3 sources with
+            // their original primaries instead of silently
+            // re-tagging everything BT.709 SDR.
+            (colorPrimaries, transferFunction, yCbCrMatrix) = Self.readColorTags(from: first)
         } else {
             nativePixelFormat = kCVPixelFormatType_64RGBAHalf
         }
@@ -193,8 +211,27 @@ final class VideoSource: @unchecked Sendable {
             nativePixelFormat: nativePixelFormat,
             timescale: timescale,
             videoTrackID: trackID,
-            preferredTransform: preferredTransform
+            preferredTransform: preferredTransform,
+            colorPrimaries: colorPrimaries,
+            transferFunction: transferFunction,
+            yCbCrMatrix: yCbCrMatrix
         )
+    }
+
+    /// Pulls the standard colour-space extensions off a format
+    /// description. AV Foundation stores them as `CFString` values
+    /// keyed by the constants in `CMFormatDescription.h`. Returning
+    /// the bridged Swift `String` keeps the exporter's settings
+    /// dictionary plain — it can pass them straight through to
+    /// `AVVideoColorPropertiesKey`.
+    private static func readColorTags(
+        from formatDescription: CMFormatDescription
+    ) -> (primaries: String?, transfer: String?, matrix: String?) {
+        let extensions = CMFormatDescriptionGetExtensions(formatDescription) as? [CFString: Any] ?? [:]
+        let primaries = (extensions[kCMFormatDescriptionExtension_ColorPrimaries] as? String)
+        let transfer = (extensions[kCMFormatDescriptionExtension_TransferFunction] as? String)
+        let matrix = (extensions[kCMFormatDescriptionExtension_YCbCrMatrix] as? String)
+        return (primaries, transfer, matrix)
     }
 
     /// Snaps `time` to the nearest source frame and clamps to the

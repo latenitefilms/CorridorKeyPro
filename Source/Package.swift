@@ -57,29 +57,29 @@ let package = Package(
     targets: [
         .target(
             name: "CorridorKeyToolboxLogic",
-            path: "CorridorKeyToolbox/Plugin",
+            path: "CorridorKeyByLateNite/Plugin",
             // Keep the FxPlug-dependent files, the Xcode-managed resources,
             // and the shaders out of the SPM build — they only compile inside
             // the Xcode target.
             exclude: [
                 "Info.plist",
-                "CorridorKeyToolbox.entitlements",
+                "CorridorKeyByLateNite.entitlements",
                 "PluginLog.swift",
                 "main.swift",
-                "CorridorKeyToolboxPlugIn.swift",
-                "CorridorKeyToolboxPlugIn+Properties.swift",
-                "CorridorKeyToolboxPlugIn+Render.swift",
-                "CorridorKeyToolboxPlugIn+RenderRects.swift",
-                "CorridorKeyToolboxPlugIn+PluginState.swift",
-                "CorridorKeyToolboxPlugIn+FxAnalyzer.swift",
-                "Parameters/CorridorKeyToolboxPlugIn+Parameters.swift",
+                "CorridorKeyByLateNitePlugIn.swift",
+                "CorridorKeyByLateNitePlugIn+Properties.swift",
+                "CorridorKeyByLateNitePlugIn+Render.swift",
+                "CorridorKeyByLateNitePlugIn+RenderRects.swift",
+                "CorridorKeyByLateNitePlugIn+PluginState.swift",
+                "CorridorKeyByLateNitePlugIn+FxAnalyzer.swift",
+                "Parameters/CorridorKeyByLateNitePlugIn+Parameters.swift",
                 "Parameters/ParameterIdentifiers.swift",
                 "Inference/InferenceCoordinator.swift",
                 "Inference/KeyingInferenceEngine.swift",
                 "Inference/MLXKeyingEngine.swift",
                 "Inference/SharedMLXBridgeRegistry.swift",
                 "Inference/VisionHintEngine.swift",
-                "Inspector/CorridorKeyToolboxPlugIn+CustomViews.swift",
+                "Inspector/CorridorKeyByLateNitePlugIn+CustomViews.swift",
                 "Inspector/CorridorKeyInspectorBridge.swift",
                 "Inspector/CorridorKeyHeaderView.swift",
                 "Inspector/CorridorKeyHintOSC.swift",
@@ -112,7 +112,7 @@ let package = Package(
                 .product(name: "MLX", package: "mlx-swift"),
                 .product(name: "MLXNN", package: "mlx-swift")
             ],
-            path: "CorridorKeyToolbox/Plugin",
+            path: "CorridorKeyByLateNite/Plugin",
             // This target owns the Metal pool + MPS refiner + stage helpers
             // **and** the inference engines (MLX + rough-matte fallback).
             // Both layers share `MetalDeviceCacheEntry` and `RenderStages`,
@@ -122,21 +122,21 @@ let package = Package(
             // build from plain Swift + Metal + MPS + mlx-swift.
             exclude: [
                 "Info.plist",
-                "CorridorKeyToolbox.entitlements",
+                "CorridorKeyByLateNite.entitlements",
                 "main.swift",
-                "CorridorKeyToolboxPlugIn.swift",
-                "CorridorKeyToolboxPlugIn+Properties.swift",
-                "CorridorKeyToolboxPlugIn+Render.swift",
-                "CorridorKeyToolboxPlugIn+RenderRects.swift",
-                "CorridorKeyToolboxPlugIn+PluginState.swift",
-                "CorridorKeyToolboxPlugIn+FxAnalyzer.swift",
+                "CorridorKeyByLateNitePlugIn.swift",
+                "CorridorKeyByLateNitePlugIn+Properties.swift",
+                "CorridorKeyByLateNitePlugIn+Render.swift",
+                "CorridorKeyByLateNitePlugIn+RenderRects.swift",
+                "CorridorKeyByLateNitePlugIn+PluginState.swift",
+                "CorridorKeyByLateNitePlugIn+FxAnalyzer.swift",
                 "Parameters",
                 "Inspector",
                 "PostProcess",
                 "Resources",
                 "Metal/FxImageTilePixelFormat.swift",
                 "Render/RenderPipeline.swift",
-                "Shared/CorridorKeyToolbox-Bridging-Header.h",
+                "Shared/CorridorKeyByLateNite-Bridging-Header.h",
                 "Inference/AnalysisData.swift",
                 "Inference/DeviceCapabilityCache.swift",
                 "Inference/MatteCodec.swift"
@@ -181,32 +181,32 @@ let package = Package(
             ]
         ),
         .testTarget(
-            name: "CorridorKeyToolboxLogicTests",
+            name: "CorridorKeyByLateNiteLogicTests",
             dependencies: ["CorridorKeyToolboxLogic"],
-            path: "Tests/CorridorKeyToolboxLogicTests",
+            path: "Tests/CorridorKeyByLateNiteLogicTests",
             swiftSettings: [
                 .swiftLanguageMode(.v6)
             ]
         ),
         .testTarget(
-            name: "CorridorKeyToolboxMetalStagesTests",
+            name: "CorridorKeyByLateNiteMetalStagesTests",
             dependencies: [
                 "CorridorKeyToolboxMetalStages",
                 "CorridorKeyToolboxLogic"
             ],
-            path: "Tests/CorridorKeyToolboxMetalStagesTests",
+            path: "Tests/CorridorKeyByLateNiteMetalStagesTests",
             swiftSettings: [
                 .swiftLanguageMode(.v6)
             ]
         ),
         .testTarget(
-            name: "CorridorKeyToolboxInferenceTests",
+            name: "CorridorKeyByLateNiteInferenceTests",
             dependencies: [
                 "CorridorKeyToolboxMetalStages",
                 "CorridorKeyToolboxLogic",
                 .product(name: "MLX", package: "mlx-swift")
             ],
-            path: "Tests/CorridorKeyToolboxInferenceTests",
+            path: "Tests/CorridorKeyByLateNiteInferenceTests",
             // The 512px bridge is ~30 MB and exercises the same MLX code
             // path as the Maximum rung. Bundling just the smallest one
             // keeps the test target compact while still catching real

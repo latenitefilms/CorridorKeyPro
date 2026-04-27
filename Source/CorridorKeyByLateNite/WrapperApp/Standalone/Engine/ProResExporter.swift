@@ -3,8 +3,9 @@
 //  CorridorKey by LateNite — Standalone Editor
 //
 //  Streams every frame of the source clip through Corridor Key, then
-//  encodes the result as Apple ProRes 4444 (with optional alpha) into
-//  a QuickTime container via `AVAssetWriter`. Mirrors the FxPlug
+//  encodes the result as Apple ProRes (4444 / 422 HQ / 422 / 422 LT /
+//  422 Proxy) or HEVC (with optional alpha channel on Apple Silicon)
+//  into a QuickTime container via `AVAssetWriter`. Mirrors the FxPlug
 //  render path one frame at a time; cached mattes from the analyse
 //  pass let the exporter skip MLX entirely so the export wall-time
 //  scales with the post-process chain alone (~5–15 ms / 4K frame on
@@ -13,6 +14,20 @@
 //  Output dimensions match the clip's natural render size after the
 //  preferred-track-transform rotation, so portrait clips export the
 //  right way up.
+//
+//  Colour management: when the source clip carries explicit
+//  primaries / transfer / matrix tags (HDR, Rec.2020, DCI-P3, …) the
+//  exporter forwards them verbatim to AVAssetWriter so the resulting
+//  file stays correctly tagged. Sources without colour metadata fall
+//  back to BT.709 SDR, matching pre-v1.1 behaviour.
+//
+//  Hardware acceleration: AVAssetWriter on Apple Silicon routes
+//  ProRes encoding to the dedicated ProRes accelerator and HEVC to
+//  the Video Toolbox HEVC engine automatically. The
+//  `kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder`
+//  hint we set inside `videoSettings` is purely an explicit signal
+//  to those Toolbox sessions in case they would otherwise fall back
+//  to a software path on resource-starved configurations.
 //
 
 import Foundation
@@ -27,17 +42,23 @@ struct ExportOptions: Sendable, Equatable {
     /// user-selected location so the wrapper app's sandbox can write
     /// to it.
     let destination: URL
-    /// Pixel format chosen for ProRes encoding. ProRes 4444 supports
-    /// alpha; ProRes 422 HQ does not but produces a smaller file.
-    let codec: ProResCodec
-    /// When true, embeds the matte in ProRes 4444's alpha channel.
-    /// Ignored for ProRes 422 (no alpha channel).
+    /// Codec chosen for encoding. Drives both the `.mov` codec key
+    /// and which buffer pixel format the writer requests.
+    let codec: ExportCodec
+    /// When true, asks the exporter to embed the matte in the output
+    /// alpha channel. Only honoured when the codec actually carries
+    /// alpha (ProRes 4444 or HEVC with Alpha); silently ignored
+    /// otherwise.
     let preserveAlpha: Bool
 
-    enum ProResCodec: String, Sendable, CaseIterable, Identifiable {
+    enum ExportCodec: String, Sendable, CaseIterable, Identifiable {
         case proRes4444
         case proRes422HQ
         case proRes422
+        case proRes422LT
+        case proRes422Proxy
+        case hevcWithAlpha
+        case hevc
 
         var id: String { rawValue }
 
@@ -46,6 +67,10 @@ struct ExportOptions: Sendable, Equatable {
             case .proRes4444: return "Apple ProRes 4444"
             case .proRes422HQ: return "Apple ProRes 422 HQ"
             case .proRes422: return "Apple ProRes 422"
+            case .proRes422LT: return "Apple ProRes 422 LT"
+            case .proRes422Proxy: return "Apple ProRes 422 Proxy"
+            case .hevcWithAlpha: return "HEVC with Alpha (H.265)"
+            case .hevc: return "HEVC (H.265)"
             }
         }
 
@@ -55,15 +80,42 @@ struct ExportOptions: Sendable, Equatable {
             case .proRes4444: return .proRes4444
             case .proRes422HQ: return .proRes422HQ
             case .proRes422: return .proRes422
+            case .proRes422LT: return .proRes422LT
+            case .proRes422Proxy: return .proRes422Proxy
+            case .hevcWithAlpha: return .hevcWithAlpha
+            case .hevc: return .hevc
             }
         }
 
         /// True when this codec carries an alpha channel.
         var supportsAlpha: Bool {
             switch self {
-            case .proRes4444: return true
-            case .proRes422HQ, .proRes422: return false
+            case .proRes4444, .hevcWithAlpha: return true
+            case .proRes422HQ, .proRes422, .proRes422LT, .proRes422Proxy, .hevc: return false
             }
+        }
+
+        /// Whether this codec is in the ProRes family. Used to pick
+        /// pixel format / quality defaults that suit ProRes vs HEVC
+        /// without scattering codec-by-codec branches across the
+        /// exporter.
+        var isProRes: Bool {
+            switch self {
+            case .proRes4444, .proRes422HQ, .proRes422, .proRes422LT, .proRes422Proxy: return true
+            case .hevcWithAlpha, .hevc: return false
+            }
+        }
+
+        /// Buffer pixel format the exporter requests from
+        /// `AVAssetWriterInputPixelBufferAdaptor`. ProRes wants
+        /// `kCVPixelFormatType_64RGBAHalf` so the encoder gets full
+        /// 16-bit-float precision; HEVC wants 8-bit BGRA (with-alpha
+        /// builds need an alpha plane the encoder accepts).
+        var sourcePixelFormat: OSType {
+            if isProRes {
+                return kCVPixelFormatType_64RGBAHalf
+            }
+            return kCVPixelFormatType_32BGRA
         }
     }
 }
@@ -78,7 +130,7 @@ enum ExportRunnerEvent: @unchecked Sendable {
     case cancelled
 }
 
-/// Runs the Corridor-Key-then-ProRes pipeline for one clip. Owns the
+/// Runs the keyer-then-encoder pipeline for one clip. Owns the
 /// reader, writer, and pixel-buffer pool used by AVAssetWriter; held
 /// for the duration of an export and dropped on completion.
 actor ProResExporter {
@@ -130,21 +182,25 @@ actor ProResExporter {
             return
         }
 
-        let videoSettings: [String: Any] = [
+        var videoSettings: [String: Any] = [
             AVVideoCodecKey: options.codec.avFoundationCodec.rawValue,
             AVVideoWidthKey: Int(renderSize.width.rounded()),
             AVVideoHeightKey: Int(renderSize.height.rounded()),
-            AVVideoColorPropertiesKey: [
-                AVVideoColorPrimariesKey: AVVideoColorPrimaries_ITU_R_709_2,
-                AVVideoTransferFunctionKey: AVVideoTransferFunction_ITU_R_709_2,
-                AVVideoYCbCrMatrixKey: AVVideoYCbCrMatrix_ITU_R_709_2
-            ]
+            AVVideoColorPropertiesKey: Self.colorProperties(for: info)
         ]
+        // HEVC needs a quality target; ProRes is fixed-rate so this
+        // dictionary is left absent for those codecs.
+        if !options.codec.isProRes {
+            videoSettings[AVVideoCompressionPropertiesKey] = Self.hevcCompressionProperties(
+                forAlpha: options.codec.supportsAlpha && options.preserveAlpha
+            )
+        }
+
         let videoInput = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
         videoInput.expectsMediaDataInRealTime = false
 
         let pixelBufferAttrs: [String: Any] = [
-            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_64RGBAHalf,
+            kCVPixelBufferPixelFormatTypeKey as String: options.codec.sourcePixelFormat,
             kCVPixelBufferWidthKey as String: Int(renderSize.width.rounded()),
             kCVPixelBufferHeightKey as String: Int(renderSize.height.rounded()),
             kCVPixelBufferMetalCompatibilityKey as String: true,
@@ -264,6 +320,42 @@ actor ProResExporter {
         } else {
             eventHandler(.failed("Writer finished with status \(writer.status.rawValue)."))
         }
+    }
+
+    /// Builds the `AVVideoColorPropertiesKey` dictionary using the
+    /// source's tags when available. Forwarding the source tags is
+    /// what keeps HDR / Rec.2020 / DCI-P3 sources looking correct
+    /// downstream — silently re-tagging them BT.709 made wide-gamut
+    /// clips appear desaturated when reopened in pro tools.
+    private static func colorProperties(for info: VideoSourceInfo) -> [String: Any] {
+        let primaries = info.colorPrimaries ?? AVVideoColorPrimaries_ITU_R_709_2
+        let transfer = info.transferFunction ?? AVVideoTransferFunction_ITU_R_709_2
+        let matrix = info.yCbCrMatrix ?? AVVideoYCbCrMatrix_ITU_R_709_2
+        return [
+            AVVideoColorPrimariesKey: primaries,
+            AVVideoTransferFunctionKey: transfer,
+            AVVideoYCbCrMatrixKey: matrix
+        ]
+    }
+
+    /// HEVC compression-property dictionary. Targets a high-quality
+    /// preset; on Apple Silicon `AVAssetWriter` defaults the HEVC
+    /// encoder to hardware acceleration so no explicit opt-in is
+    /// required. When `forAlpha` is true, sets
+    /// `kVTCompressionPropertyKey_TargetQualityForAlpha` so semi-
+    /// transparent edges retain their detail — the default alpha
+    /// quality is conservative and visibly softens fine matte
+    /// gradients.
+    private static func hevcCompressionProperties(forAlpha: Bool) -> [String: Any] {
+        var compression: [String: Any] = [
+            AVVideoQualityKey: 0.85,
+            AVVideoExpectedSourceFrameRateKey: 60,
+            AVVideoMaxKeyFrameIntervalKey: 60
+        ]
+        if forAlpha {
+            compression[kVTCompressionPropertyKey_TargetQualityForAlpha as String] = 0.95
+        }
+        return compression
     }
 }
 

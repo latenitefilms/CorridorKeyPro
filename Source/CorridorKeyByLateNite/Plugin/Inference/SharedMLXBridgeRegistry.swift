@@ -41,6 +41,14 @@ final class SharedMLXBridgeRegistry: @unchecked Sendable {
         let rung: Int
     }
 
+    /// Per-key list of waiters that should be woken when warm-up
+    /// finishes (success or failure). Each waiter holds a
+    /// `DispatchSemaphore` so the analyser thread can park without
+    /// burning CPU on a 50 ms poll loop.
+    private final class WaiterList {
+        var semaphores: [DispatchSemaphore] = []
+    }
+
     private let lock = NSLock()
     private var engines: [Key: MLXKeyingEngine] = [:]
     /// Backing tasks for in-flight warm-ups. Removed when the task
@@ -49,6 +57,11 @@ final class SharedMLXBridgeRegistry: @unchecked Sendable {
     /// Last failure message per `(device, rung)`. Cleared on successful
     /// warm-up; surfaced to UI via `warmupStatus`.
     private var warmupFailures: [Key: String] = [:]
+    /// Threads parked in `waitForReady` waiting for `(device, rung)` to
+    /// finish warming up. Signalled by `store(...)` / `record(...)` so
+    /// the analyser wakes the moment warm-up completes instead of on
+    /// the next poll tick.
+    private var waiters: [Key: WaiterList] = [:]
 
     private init() {}
 
@@ -71,33 +84,73 @@ final class SharedMLXBridgeRegistry: @unchecked Sendable {
     /// silently mix two engines' output into the cached matte sequence
     /// and produce a low-quality, inconsistent result.
     ///
+    /// Implementation: enrolls a `DispatchSemaphore` on the per-key
+    /// waiter list before checking status, then parks on the semaphore
+    /// until the warm-up task signals it (success or failure). This
+    /// avoids the legacy 50 ms `Thread.sleep` poll loop — wake latency
+    /// is now bounded by GCD's signal delivery (<1 ms) instead of the
+    /// poll interval, and the analyser thread is blocked, not spinning.
+    ///
     /// Returns the engine on success, throws `KeyingInferenceError` on
     /// permanent failure.
     func waitForReady(
         deviceRegistryID: UInt64,
         rung: Int,
         cacheEntry: MetalDeviceCacheEntry,
-        pollInterval: TimeInterval = 0.05,
         timeout: TimeInterval = 120
     ) throws -> MLXKeyingEngine {
-        let deadline = Date().addingTimeInterval(timeout)
+        let key = Key(deviceRegistryID: deviceRegistryID, rung: rung)
         beginWarmup(deviceRegistryID: deviceRegistryID, rung: rung, cacheEntry: cacheEntry)
-        while Date() < deadline {
-            switch status(deviceRegistryID: deviceRegistryID, rung: rung) {
-            case .ready:
-                if let engine = readyEngine(deviceRegistryID: deviceRegistryID, rung: rung) {
-                    return engine
-                }
-                // Status flicked to ready but engine vanished — keep polling.
-            case .failed(let message):
-                throw KeyingInferenceError.modelUnavailable(message)
-            case .cold, .warming:
-                Thread.sleep(forTimeInterval: pollInterval)
+        let deadline = DispatchTime.now() + timeout
+
+        while true {
+            // Enroll a fresh waiter under the lock. The same lock guards
+            // status mutations in `store(...)` / `record(...)`, so any
+            // status change after this point is guaranteed to either be
+            // observed below or to signal the semaphore.
+            let semaphore = DispatchSemaphore(value: 0)
+            lock.lock()
+            if let engine = engines[key] {
+                lock.unlock()
+                return engine
             }
+            if let message = warmupFailures[key] {
+                lock.unlock()
+                throw KeyingInferenceError.modelUnavailable(message)
+            }
+            // Warm-up is in flight — register and wait.
+            let list = waiters[key] ?? WaiterList()
+            list.semaphores.append(semaphore)
+            waiters[key] = list
+            lock.unlock()
+
+            let result = semaphore.wait(timeout: deadline)
+            if result == .timedOut {
+                // Pull the semaphore back out so a delayed signal
+                // doesn't accidentally unblock a future caller.
+                detachWaiter(semaphore, forKey: key)
+                throw KeyingInferenceError.modelUnavailable(
+                    "MLX bridge for \(rung)px did not become ready within \(Int(timeout))s."
+                )
+            }
+            // Loop back to read state under the lock — covers the rare
+            // case where the warm-up task was cancelled and rescheduled
+            // between the signal and our wake-up.
         }
-        throw KeyingInferenceError.modelUnavailable(
-            "MLX bridge for \(rung)px did not become ready within \(Int(timeout))s."
-        )
+    }
+
+    /// Removes `semaphore` from the waiter list for `key`. Called when
+    /// `waitForReady` times out so a stray late signal can't unblock the
+    /// next caller's semaphore by accident. Safe to call when the
+    /// semaphore was already removed by a successful wake-up.
+    private func detachWaiter(_ semaphore: DispatchSemaphore, forKey key: Key) {
+        lock.lock()
+        defer { lock.unlock() }
+        guard let list = waiters[key] else { return }
+        list.semaphores.removeAll { $0 === semaphore }
+        if list.semaphores.isEmpty {
+            waiters.removeValue(forKey: key)
+        }
     }
 
     /// Kicks off a background warm-up for `(device, rung)` if one isn't
@@ -191,13 +244,20 @@ final class SharedMLXBridgeRegistry: @unchecked Sendable {
         engines[key] = engine
         warmupTasks[key] = nil
         warmupFailures[key] = nil
+        let parked = waiters.removeValue(forKey: key)?.semaphores ?? []
         lock.unlock()
+        // Wake every parked analyser thread. Calling `signal()` outside
+        // the lock keeps the wake path fast and prevents a waiter that
+        // immediately re-enters `waitForReady` from contending with us.
+        parked.forEach { $0.signal() }
     }
 
     private func record(failure message: String, forKey key: Key) {
         lock.lock()
         warmupTasks[key] = nil
         warmupFailures[key] = message
+        let parked = waiters.removeValue(forKey: key)?.semaphores ?? []
         lock.unlock()
+        parked.forEach { $0.signal() }
     }
 }

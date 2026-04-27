@@ -59,4 +59,34 @@ struct MetalDeviceCacheEntryTests {
         }
         #expect(abs(total - 1.0) < 1e-4)
     }
+
+    @Test("CC counts buffer is reused across despeckle frames at the same size")
+    func ccCountsBufferIsCached() throws {
+        let entry: MetalDeviceCacheEntry
+        do { entry = try TestHarness.makeEntry() } catch { throw XCTSkipError("\(error)") }
+
+        // Two requests at the same dimensions must return the same
+        // MTLBuffer instance — that is the whole point of the cache,
+        // and it's what removes ~64 MB of allocator churn per 4K
+        // despeckle frame. Identity comparison via `ObjectIdentifier`
+        // because `MTLBuffer` is a protocol existential (no `==`).
+        let firstSmall = entry.connectedComponentsCountsBuffer(width: 256, height: 256)
+        let secondSmall = entry.connectedComponentsCountsBuffer(width: 256, height: 256)
+        #expect(firstSmall != nil && secondSmall != nil)
+        if let firstSmall, let secondSmall {
+            #expect(ObjectIdentifier(firstSmall) == ObjectIdentifier(secondSmall),
+                    "Same dimensions must reuse the cached buffer")
+            // Buffer must be sized correctly: width*height + 2 entries
+            // each `UInt32`-stride wide.
+            #expect(firstSmall.length >= (256 * 256 + 2) * MemoryLayout<UInt32>.stride)
+        }
+
+        // Different dimensions live in their own slot so a window
+        // resize can't accidentally read the wrong buffer.
+        let differentSize = entry.connectedComponentsCountsBuffer(width: 512, height: 512)
+        if let firstSmall, let differentSize {
+            #expect(ObjectIdentifier(firstSmall) != ObjectIdentifier(differentSize),
+                    "Different dimensions must NOT share a buffer")
+        }
+    }
 }

@@ -14,7 +14,7 @@ struct ExportSheet: View {
     @Bindable var viewModel: EditorViewModel
     let dismiss: () -> Void
 
-    @State private var codec: ExportOptions.ProResCodec = .proRes4444
+    @State private var codec: ExportOptions.ExportCodec = .proRes4444
     @State private var preserveAlpha: Bool = true
     @State private var destinationURL: URL?
 
@@ -24,7 +24,7 @@ struct ExportSheet: View {
                 .font(.title2)
                 .bold()
 
-            Text("Renders the current parameters across every analysed frame and writes the result as Apple ProRes inside a QuickTime movie.")
+            Text("Renders the current parameters across every analysed frame and writes the result to a QuickTime movie. Apple ProRes carries the highest quality; HEVC keeps file sizes compact and is hardware-encoded on Apple Silicon. Choose a codec with alpha (ProRes 4444 or HEVC with Alpha) to embed the matte directly into the output file.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -101,7 +101,7 @@ struct ExportSheet: View {
     }
 }
 
-extension ExportOptions.ProResCodec: DisplayNamed {}
+extension ExportOptions.ExportCodec: DisplayNamed {}
 
 private struct ExportProgressLabel: View {
     let status: EditorExportStatus

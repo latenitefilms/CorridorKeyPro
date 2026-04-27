@@ -975,16 +975,17 @@ enum RenderStages {
         // by the filter kernel. Pixel count + 2 entries so labels assigned
         // at the bottom-right corner (`width * height`) have a valid slot,
         // plus index 0 stays reserved for background.
-        let labelCapacity = width * height + 2
-        guard let countsBuffer = entry.device.makeBuffer(
-            length: labelCapacity * MemoryLayout<UInt32>.stride,
-            options: .storageModeShared
-        ) else {
+        //
+        // Pulled from the device-cache pool so the despeckle pass no
+        // longer allocates ~64 MB per 4K frame. The buffer is shared
+        // across frames at the same (width, height), with a fresh
+        // GPU-side `fill(buffer:range:value:0)` zeroing it at the
+        // start of every pass — kernel semantics unchanged.
+        guard let countsBuffer = entry.connectedComponentsCountsBuffer(width: width, height: height) else {
             labelA.returnManually()
             labelB.returnManually()
             throw MetalDeviceCacheError.textureAllocationFailed
         }
-        countsBuffer.label = "CorridorKey by LateNite CC Counts"
         if let blit = commandBuffer.makeBlitCommandEncoder() {
             blit.label = "CorridorKey by LateNite CC Counts Zero"
             blit.fill(buffer: countsBuffer, range: 0..<countsBuffer.length, value: 0)

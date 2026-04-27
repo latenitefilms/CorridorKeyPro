@@ -534,6 +534,89 @@ final class MetalDeviceCacheEntry: @unchecked Sendable {
         return scaler
     }
 
+    /// Encodes a tiny throwaway pass through every MPS kernel we use
+    /// on the render hot path so MPS's internal Metal pipeline state
+    /// is compiled before the first user-facing render. Without this,
+    /// the first frame that hits MPS Lanczos / blur / morphology pays
+    /// a ~50–100 ms compile stall on the render thread.
+    ///
+    /// Idempotent and safe to call from a background Task — every
+    /// internal call is best-effort, failures are swallowed silently
+    /// (the worst case is the lazy compile happens on first user
+    /// render, which is exactly the legacy behaviour). Call once per
+    /// entry, after `init`, from a low-priority queue.
+    func prewarmMPSKernels() {
+        guard !mpsPrewarmDone.swap(true) else { return }
+        guard let queue = borrowCommandQueue() else { return }
+        defer { returnCommandQueue(queue) }
+        guard let commandBuffer = queue.makeCommandBuffer() else { return }
+        commandBuffer.label = "CK MPS Prewarm"
+
+        // 64×64 textures are small enough to stay off any meaningful
+        // memory pressure path while still triggering MPS's encode-
+        // time compile. Use `.rgba16Float` because that's the format
+        // every shipping render path uses.
+        let descriptor = MTLTextureDescriptor.texture2DDescriptor(
+            pixelFormat: .rgba16Float,
+            width: 64,
+            height: 64,
+            mipmapped: false
+        )
+        descriptor.usage = [.shaderRead, .shaderWrite]
+        descriptor.storageMode = .private
+        guard let source = device.makeTexture(descriptor: descriptor),
+              let intermediate = device.makeTexture(descriptor: descriptor),
+              let destination = device.makeTexture(descriptor: descriptor)
+        else { return }
+
+        let lanczos = mpsLanczosScale()
+        lanczos.edgeMode = .clamp
+        lanczos.encode(
+            commandBuffer: commandBuffer,
+            sourceTexture: source,
+            destinationTexture: destination
+        )
+
+        // Warm Gaussian blur and morphology at small kernel sizes so
+        // the pipeline state is JIT-compiled. We don't need every
+        // sigma/radius variant — MPS shares pipeline state across
+        // sizes once the underlying compute pipeline is warm.
+        if let blur = mpsGaussianBlur(sigma: 2.0) {
+            blur.encode(
+                commandBuffer: commandBuffer,
+                sourceTexture: source,
+                destinationTexture: intermediate
+            )
+        }
+        if let dilate = mpsDilate(kernelSide: 5) {
+            dilate.encode(
+                commandBuffer: commandBuffer,
+                sourceTexture: intermediate,
+                destinationTexture: destination
+            )
+        }
+        if let erode = mpsErode(kernelSide: 5) {
+            erode.encode(
+                commandBuffer: commandBuffer,
+                sourceTexture: destination,
+                destinationTexture: intermediate
+            )
+        }
+
+        commandBuffer.commit()
+        // No `waitUntilCompleted` — the GPU work is genuinely
+        // background; the next user-facing command buffer will
+        // serialise behind us automatically through the command
+        // queue. Keeping this fire-and-forget keeps the prewarm cost
+        // off the calling thread.
+    }
+
+    /// Set on first call to `prewarmMPSKernels` so the work only runs
+    /// once per entry. `OSAllocatedAtomic`-style swap via NSLock keeps
+    /// the contention minimal in the rare case two render threads
+    /// race to first-use.
+    private let mpsPrewarmDone = OneShotLatch()
+
     private static func roundedToOdd(_ value: Int) -> Int {
         let clamped = max(value, 1)
         return clamped % 2 == 0 ? clamped + 1 : clamped
@@ -639,6 +722,53 @@ final class MetalDeviceCacheEntry: @unchecked Sendable {
         return buffer
     }
 
+    // MARK: - Connected-components label-counts buffer
+
+    /// Per-(width, height) device-private buffer used as the atomic
+    /// counts target for the despeckle pass. Allocating fresh per
+    /// frame costs 64 MB at 4K (one UInt32 per pixel), which the
+    /// despeckle path was previously paying every render — caching
+    /// removes the allocation from the hot path entirely. The blit
+    /// fill that zeroes the buffer at the start of each pass remains,
+    /// so semantics are unchanged from the per-frame allocation case.
+    /// Storage mode is `.private` because no CPU read is required;
+    /// the count + filter kernels both run GPU-only.
+    private struct CCCountsBufferKey: Hashable {
+        let width: Int
+        let height: Int
+    }
+    private let ccCountsLock = NSLock()
+    private var ccCountsBuffers: [CCCountsBufferKey: any MTLBuffer] = [:]
+
+    func connectedComponentsCountsBuffer(width: Int, height: Int) -> (any MTLBuffer)? {
+        let key = CCCountsBufferKey(width: width, height: height)
+        ccCountsLock.lock()
+        if let existing = ccCountsBuffers[key] {
+            ccCountsLock.unlock()
+            return existing
+        }
+        ccCountsLock.unlock()
+
+        // `+ 2` matches the despeckle pass's labelCapacity: index 0 is
+        // reserved for background, and labels are 1-indexed up to
+        // `width * height` (inclusive) by the init kernel.
+        let labelCapacity = width * height + 2
+        let byteCount = labelCapacity * MemoryLayout<UInt32>.stride
+        guard let buffer = device.makeBuffer(length: byteCount, options: .storageModePrivate) else {
+            return nil
+        }
+        buffer.label = "CK CC Counts \(width)x\(height)"
+
+        ccCountsLock.lock()
+        if let existing = ccCountsBuffers[key] {
+            ccCountsLock.unlock()
+            return existing
+        }
+        ccCountsBuffers[key] = buffer
+        ccCountsLock.unlock()
+        return buffer
+    }
+
     // MARK: - Vision hint engine
 
     /// Lazily creates and returns a `VisionHintEngine` for this device.
@@ -711,6 +841,28 @@ final class MetalDeviceCacheEntry: @unchecked Sendable {
     }
 }
 
+/// One-shot latch used by `prewarmMPSKernels` to ensure the warm-up
+/// pass runs at most once per entry, even under racing first-use from
+/// multiple render threads. Pure NSLock-backed bool so the type stays
+/// available on every macOS version we support without dragging in
+/// `Synchronization` for a single flag.
+final class OneShotLatch: @unchecked Sendable {
+    private let lock = NSLock()
+    private var fired = false
+
+    /// Returns the previous value and unconditionally sets the flag.
+    /// Callers branch on the *return*: a `true` result means "someone
+    /// else already swapped" and the caller should skip its work.
+    @discardableResult
+    func swap(_ newValue: Bool) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        let previous = fired
+        fired = newValue
+        return previous
+    }
+}
+
 /// Singleton cache shared by every plug-in instance in the XPC service.
 final class MetalDeviceCache: @unchecked Sendable {
     static let shared = MetalDeviceCache()
@@ -720,12 +872,23 @@ final class MetalDeviceCache: @unchecked Sendable {
 
     func entry(for device: any MTLDevice) throws -> MetalDeviceCacheEntry {
         entriesLock.lock()
-        defer { entriesLock.unlock() }
-        if let existing = entries[device.registryID] {
+        let existing = entries[device.registryID]
+        if let existing {
+            entriesLock.unlock()
             return existing
         }
         let newEntry = try MetalDeviceCacheEntry(device: device)
         entries[device.registryID] = newEntry
+        entriesLock.unlock()
+        // First-touch MPS pre-warm runs off-thread so the calling
+        // render path doesn't pay the ~50–100 ms MPS pipeline-compile
+        // stall on its first frame. Best-effort; if the dispatched
+        // queue is busy or the device rejects the small textures the
+        // entry will lazily compile MPS state on first real use, the
+        // same as before this hook landed.
+        Task.detached(priority: .utility) {
+            newEntry.prewarmMPSKernels()
+        }
         return newEntry
     }
 
