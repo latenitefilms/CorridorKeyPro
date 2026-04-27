@@ -3,7 +3,7 @@
 
 // Marketing and build numbers are the single source of truth for the bundle.
 MARKETING_VERSION = 1.0.0
-CURRENT_PROJECT_VERSION = 5 // CorridorKey by LateNite v1.0.0 (Build 5)
+CURRENT_PROJECT_VERSION = 6 // CorridorKey by LateNite v1.0.0 (Build 6)
 
 // Apple Silicon only. CorridorKey by LateNite requires the Apple Neural Engine and
 // modern Metal features; Intel Macs are explicitly out of scope.
