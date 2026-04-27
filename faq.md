@@ -2,9 +2,9 @@
 
 ## Why does this exist?
 
-The official [CorridorKey](https://github.com/nikopueringer/CorridorKey) repository does work on Mac, it's written in Python and is not really optimised for the latest Apple Silicon hardware.
+The official [CorridorKey](https://github.com/nikopueringer/CorridorKey) repository does work on Mac, however, it's written in Python and is not really optimised for the latest Apple Silicon hardware.
 
-We wanted to take the amazing [MLX Models](https://huggingface.co/alexandrealvaro/corridorkey-models/tree/main) created by [Alexandre Alvaro](https://huggingface.co/alexandrealvaro), and use them in something that's specifically built and optimised for Final Cut Pro and Mac's.
+We wanted to take the amazing [MLX Models](https://huggingface.co/alexandrealvaro/corridorkey-models/tree/main) compiled by [Alexandre Alvaro](https://huggingface.co/alexandrealvaro) for [CorridorKey-Runtime](https://github.com/alexandremendoncaalvaro/CorridorKey-Runtime), and use them in something that's specifically built and optimised for Final Cut Pro and Mac's.
 
 Using the models as a starting point, we wanted to make something that feels native to Mac.
 
@@ -39,6 +39,7 @@ If you've tested and compared, please let us know in the [FCP Cafe Discord](http
 Here's some cool projects:
 
 - [EZ-CorridorKey](https://github.com/edenaion/EZ-CorridorKey) - a GUI for CorridorKey.
+- [CorridorKey-Runtime](https://github.com/alexandremendoncaalvaro/CorridorKey-Runtime) - Native AI keying runtime and OFX plugin for DaVinci Resolve.
 - [corridorkey-mlx](https://github.com/cmoyates/corridorkey-mlx) - MLX inference port of CorridorKey for Apple Silicon.
 - [CorridorKey Engine](https://github.com/99oblivius/CorridorKey-Engine) - Async multi-GPU inference, optimization profiles, a JSON-RPC engine API, and a Textual TUI.
 - [CorridorKeyOpenVINO](https://github.com/daniil-lyakhov/CorridorKeyOpenVINO) - Fast Inference on Intel Hardware with OpenVINO

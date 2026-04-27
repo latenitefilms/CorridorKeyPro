@@ -4,7 +4,7 @@
 
 This would **NOT** be possible without Niko's at [Corridor Digital's](https://www.corridordigital.com) amazing [CorridorKey](https://github.com/nikopueringer/CorridorKey).
 
-**HUGE** thank you to [Alexandre Alvaro](https://huggingface.co/alexandrealvaro) for the [MLX Models](https://huggingface.co/alexandrealvaro/corridorkey-models/tree/main).
+**HUGE** thank you to [Alexandre Alvaro](https://huggingface.co/alexandrealvaro) for the [MLX Models](https://huggingface.co/alexandrealvaro/corridorkey-models/tree/main) used in [CorridorKey-Runtime](https://github.com/alexandremendoncaalvaro/CorridorKey-Runtime).
 
 The temporary **CorridorKey by LateNite** icon was designed by the amazing [Matthew Skiles](http://matthewskiles.com) - he's working on a new unique icon!
 
@@ -60,7 +60,7 @@ You may use it freely including for commercial projects. You may not repackage o
 
 If you want to integrate CorridorKey into a commercial software product or paid inference service, reach out to Corridor Digital at [contact@corridordigital.com](mailto:contact@corridordigital.com).
 
-The [CorridorKey MLX Models](https://huggingface.co/alexandrealvaro/corridorkey-models/tree/main) by [Alexandre Alvaro](https://huggingface.co/alexandrealvaro) used in this project have the following license:
+The [CorridorKey MLX Models](https://huggingface.co/alexandrealvaro/corridorkey-models/tree/main) complied by [Alexandre Alvaro](https://huggingface.co/alexandrealvaro) for [CorridorKey-Runtime](https://github.com/alexandremendoncaalvaro/CorridorKey-Runtime) used in this project have the following license:
 
 ```
 CORRIDOR KEY LICENCE
