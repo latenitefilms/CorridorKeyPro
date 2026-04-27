@@ -35,7 +35,7 @@ All the Swift and website code in this repository is MIT license, however when d
 ```
 MIT License
 
-Copyright (c) 2022-2023 LateNite Films Pty Ltd.
+Copyright © 2026 LateNite Films Pty Ltd.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
