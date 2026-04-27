@@ -2,9 +2,9 @@
 
 **CorridorKey by LateNite** brings [Corridor Digital's](https://www.corridordigital.com) [CorridorKey](https://github.com/nikopueringer/CorridorKey) to Final Cut Pro. 🥳
 
-This is **NOT** a folk. We've taken the machine learning [MLX Models](https://huggingface.co/alexandrealvaro/corridorkey-models/tree/main) created by [Alexandre Alvaro](https://huggingface.co/alexandrealvaro) and built a completely new Swift & Swift UI engine powered by Metal & MLX. 🔥
+This is **NOT** a fork. We've taken the machine learning [MLX Models](https://huggingface.co/alexandrealvaro/corridorkey-models/tree/main) created by [Alexandre Alvaro](https://huggingface.co/alexandrealvaro) and built a completely new Swift & Swift UI engine powered by Metal & MLX. 🔥
 
-Whilst there are already some great folk's of CorridorKey, such as [EZ-CorridorKey](https://github.com/edenaion/EZ-CorridorKey), none of them are purposely build for Mac & Apple Silicon.
+Whilst there are already some great fork's of CorridorKey, such as [EZ-CorridorKey](https://github.com/edenaion/EZ-CorridorKey), none of them are purposely build for Mac & Apple Silicon.
 
 **CorridorKey by LateNite** brings an Effect directly into **Final Cut Pro**, as well as a **Standalone Editor** - optimised for ProRes 4444 in and out. 🏎️
 

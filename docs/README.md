@@ -12,9 +12,9 @@ We're just using a placeholder icon for now (taken from [VFX Toolbox](https://vf
 [Download](/download) on **TestFlight** and find the source code on [GitHub](https://github.com/latenitefilms/CorridorKeyByLateNite)!
 !!!
 
-This is **NOT** a folk. We've taken the machine learning [MLX Models](https://huggingface.co/alexandrealvaro/corridorkey-models/tree/main) created by [Alexandre Alvaro](https://huggingface.co/alexandrealvaro) and built a completely new Swift & Swift UI engine powered by Metal & MLX. 🔥
+This is **NOT** a fork. We've taken the machine learning [MLX Models](https://huggingface.co/alexandrealvaro/corridorkey-models/tree/main) created by [Alexandre Alvaro](https://huggingface.co/alexandrealvaro) and built a completely new Swift & Swift UI engine powered by Metal & MLX. 🔥
 
-Whilst there are already some great folk's of CorridorKey, such as [EZ-CorridorKey](https://github.com/edenaion/EZ-CorridorKey), none of them are purposely build for Mac & Apple Silicon.
+Whilst there are already some great fork's of CorridorKey, such as [EZ-CorridorKey](https://github.com/edenaion/EZ-CorridorKey), none of them are purposely build for Mac & Apple Silicon.
 
 **CorridorKey by LateNite** brings an Effect directly into **Final Cut Pro**, as well as a **Standalone Editor** - optimised for ProRes 4444 in and out. 🏎️
 
@@ -62,7 +62,7 @@ https://www.youtube.com/watch?v=Bx5OMAav0IY
 
 ## What is EZ-CorridorKey?
 
-[EZ-CorridorKey](https://github.com/edenaion/EZ-CorridorKey) is a folk of the hero CorridorKey repository that adds a friendly user interface.
+[EZ-CorridorKey](https://github.com/edenaion/EZ-CorridorKey) is a fork of the hero CorridorKey repository that adds a friendly user interface.
 
 It's basically a front-end for the original CorridorKey CLI.
 
