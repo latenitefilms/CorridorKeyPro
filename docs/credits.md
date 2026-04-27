@@ -18,6 +18,8 @@ You can learn more about LateNite's creations over at [FCP Cafe](https://fcp.caf
 
 The images of Niko used in the screenshots on this website are from the [CorridorKey Benchmarks](https://huggingface.co/datasets/nikopueringer/CorridorKey1.0_QualityBenchmark).
 
+It also uses Apple's [MLX Swift](https://github.com/ml-explore/mlx-swift) and [Swift Numerics](https://github.com/apple/swift-numerics).
+
 ---
 
 ## Code License
