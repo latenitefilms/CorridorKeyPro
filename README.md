@@ -1,8 +1,14 @@
 # CorridorKey by LateNite
 
-**CorridorKey by LateNite** is an Motion Template that brings [CorridorKey](https://github.com/nikopueringer/CorridorKey)'s keying power to Final Cut Pro.
+**CorridorKey by LateNite** brings [Corridor Digital's](https://www.corridordigital.com) [CorridorKey](https://github.com/nikopueringer/CorridorKey) to Final Cut Pro. 🥳
 
-Niko explains:
+This is **NOT** a folk. We've taken the machine learning [MLX Models](https://huggingface.co/alexandrealvaro/corridorkey-models/tree/main) created by [Alexandre Alvaro](https://huggingface.co/alexandrealvaro) and built a completely new Swift & Swift UI engine powered by Metal & MLX. 🔥
+
+Whilst there are already some great folk's of CorridorKey, such as [EZ-CorridorKey](https://github.com/edenaion/EZ-CorridorKey), none of them are purposely build for Mac & Apple Silicon.
+
+**CorridorKey by LateNite** brings an Effect directly into **Final Cut Pro**, as well as a **Standalone Editor** - optimised for ProRes 4444 in and out. 🏎️
+
+What is CorridorKey? Niko explains:
 
 > When you film something against a green screen, the edges of your subject inevitably blend with the green background. This creates pixels that are a mix of your subject's color and the green screen's color. Traditional keyers struggle to untangle these colors, forcing you to spend hours building complex edge mattes or manually rotoscoping. Even modern "AI Roto" solutions typically output a harsh binary mask, completely destroying the delicate, semi-transparent pixels needed for a realistic composite.
 >
