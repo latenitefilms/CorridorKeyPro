@@ -1,5 +1,19 @@
 # Release Notes
 
+### 1.0.0 (Build 6)
+
+**🎉 Released:**
+- 27th April 2026
+
+**🔨 Improvements:**
+- Added HEVC exports. Thanks for suggesting Alex "4D" Gollner!
+- General MLX and Vision Framework performance and stability improvements.
+- Better GPU caching and pre-loading.
+- Improvements to the Export window user interface in the Standalone Editor.
+- Improvements to the playback controls and playback performance in he Standalone Editor.
+
+---
+
 ### 1.0.0 (Build 5)
 
 **🎉 Released:**

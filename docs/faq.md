@@ -14,6 +14,26 @@ We hope this will be a great open source resource for people to really dive deep
 
 ---
 
+## Was this vibe coded?
+
+Yes, and no. I have absolutely used Claude Code (`Opus 4.7 1M Max`) and Codex (`GPT-5.5 Extra High`) during the development of this product, in both Xcode and in the Desktop applications, however, a lot of the code and/or techniques has been taken from my other applications such as [BRAW Toolbox](https://brawtoolbox.fcp.cafe), [Gyroflow Toolbox](https://gyroflowtoolbox.fcp.cafe), [Metaburner](https://metaburner.fcp.cafe) and [Keyframe Toolbox](https://keyframetoolbox.fcp.cafe).
+
+Because there's not a heap of information about FxPlug on the public Internet (aside from the stuff on [FCP Cafe](https://fcp.cafe/developers/fxplug/)), LLMs really struggle with FxPlug, and more nitty gritty Final Cut Pro specific stuff - so sometimes it's just easier and quicker to code things by hand.
+
+Unlike a lot of vibe coded projects, where the creator never opens Xcode, this is all build and made in Xcode v26.4.1.
+
+---
+
+## Is the quality as good as CorridorKey?
+
+To be honest, I'm really not sure - I haven't had a chance to properly test other CorridorKey projects yet.
+
+My priority has been getting **CorridorKey by LateNite** working great in Final Cut Pro - but performance wise, and quality wise - and I haven't really had a chance to compare speed or quality.
+
+If you've tested and compared, please let us know in the [FCP Cafe Discord](https://ltnt.tv/discord)!
+
+---
+
 ## What other CorridorKey projects exist?
 
 Here's some cool projects:

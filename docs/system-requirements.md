@@ -6,7 +6,7 @@ It uses **Apple MLX** and requires a modern **Apple Silicon** Mac with as much R
 
 It does **NOT** work on Intel Mac's - sorry!
 
-For reference, I'm building and testing it on a **2021 16-inch MacBook Pro (M1 Max, 64GB RAM, 8TB SDD)** - and it works great here at
+For reference, I'm building and testing it on a **2021 16-inch MacBook Pro (M1 Max, 64GB RAM, 8TB SDD)**, and it works great here at **Ultra (1536)** quality.
 
 You can find Final Cut Pro's system requirements [here](https://support.apple.com/en-us/111903).
 
@@ -27,3 +27,5 @@ For reference, the official CorridorKey GitHub repository has the following to s
 > *   **BiRefNet (Optional):** Lightweight AlphaHint generator option.
 >
 > Because GVM and VideoMaMa have huge model file sizes and extreme hardware requirements, installing their modules is completely optional. You can always provide your own Alpha Hints generated from your editing program, BiRefNet, or any other method. The better the AlphaHint, the better the result.
+
+**CorridorKey by LateNite** on the other hand has been HIGHLY optimised for Apple Silicon.
