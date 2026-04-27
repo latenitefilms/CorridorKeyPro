@@ -38,11 +38,11 @@ If you've tested and compared, please let us know in the [FCP Cafe Discord](http
 
 Here's some cool projects:
 
-- [EZ-CorridorKey](https://github.com/edenaion/EZ-CorridorKey) - a GUI for CorridorKey.
-- [CorridorKey-Runtime](https://github.com/alexandremendoncaalvaro/CorridorKey-Runtime) - Native AI keying runtime and OFX plugin for DaVinci Resolve.
-- [corridorkey-mlx](https://github.com/cmoyates/corridorkey-mlx) - MLX inference port of CorridorKey for Apple Silicon.
-- [CorridorKey Engine](https://github.com/99oblivius/CorridorKey-Engine) - Async multi-GPU inference, optimization profiles, a JSON-RPC engine API, and a Textual TUI.
-- [CorridorKeyOpenVINO](https://github.com/daniil-lyakhov/CorridorKeyOpenVINO) - Fast Inference on Intel Hardware with OpenVINO
+- [CorridorKey AE](https://github.com/iamjoshuadavies/corridorkey-ae) - Native Adobe After Effects plugin for advanced green-screen keying.
 - [CorridorKey by blace.ai](https://aescripts.com/corridorkey-by-blace-ai/) - High rendering performance (2x-4x faster rendering times) and completely C++ based for maximum stability.
+- [CorridorKey Engine](https://github.com/99oblivius/CorridorKey-Engine) - Async multi-GPU inference, optimization profiles, a JSON-RPC engine API, and a Textual TUI.
+- [corridorkey-mlx](https://github.com/cmoyates/corridorkey-mlx) - MLX inference port of CorridorKey for Apple Silicon.
+- [CorridorKey-Runtime](https://github.com/alexandremendoncaalvaro/CorridorKey-Runtime) - Native AI keying runtime and OFX plugin for DaVinci Resolve.
+- [CorridorKeyOpenVINO](https://github.com/daniil-lyakhov/CorridorKeyOpenVINO) - Fast Inference on Intel Hardware with OpenVINO
+- [EZ-CorridorKey](https://github.com/edenaion/EZ-CorridorKey) - a GUI for CorridorKey.
 - [Iris — CorridorKey](https://github.com/DomCoganda/Iris-CorridorKey) - A native desktop frontend for CorridorKey by Corridor Digital.
-
