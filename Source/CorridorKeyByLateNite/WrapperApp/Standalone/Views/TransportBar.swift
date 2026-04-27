@@ -109,9 +109,7 @@ struct TransportBar: View {
                 Text(frameCounterLabel)
                     .font(.callout.monospacedDigit())
                     .foregroundStyle(.secondary)
-                if viewModel.isPlaying {
-                    fpsIndicator
-                }
+                fpsIndicator
             }
             .frame(width: 110, alignment: .trailing)
         }
@@ -150,23 +148,41 @@ struct TransportBar: View {
         return "\(displayed)/\(viewModel.totalFrames) frames"
     }
 
-    /// Live "fps" badge underneath the frame counter. Only rendered
-    /// while playback is active (no measurement to display
-    /// otherwise). Green when the GPU keeps within 5% of the source
-    /// clip's frame rate, orange when it's falling behind — the
-    /// 5% slack absorbs scheduler jitter so a steady realtime
-    /// playback doesn't flash orange between frames.
-    @ViewBuilder
+    /// Live "fps" badge underneath the frame counter. Always
+    /// rendered so the transport bar's vertical extent stays
+    /// constant — toggling the row in/out of the layout when
+    /// playback starts visibly nudged the slider and surrounding
+    /// chrome by a few pixels each tick. The state-to-colour
+    /// mapping:
+    ///
+    /// * paused / stopped → "0fps" in white. Default text colour
+    ///   instead of green/orange because zero is not a measurement,
+    ///   it's just the resting label.
+    /// * playing & ≥ 95 % of target → green. The 5 % slack absorbs
+    ///   scheduler jitter so a steady realtime playback doesn't
+    ///   flash orange between frames.
+    /// * playing & below target → orange. The clip is still showing
+    ///   every frame; it's just running slower than realtime.
     private var fpsIndicator: some View {
         let achieved = viewModel.measuredPlaybackFPS
         let target = viewModel.targetPlaybackFPS
-        let isRealtime = target > 0 && achieved >= target * 0.95
-        Text("\(Int(achieved.rounded())) fps")
+        let isPlaying = viewModel.isPlaying
+        let isRealtime = isPlaying && target > 0 && achieved >= target * 0.95
+        let badgeColour: Color = isPlaying ? (isRealtime ? .green : .orange) : .white
+        return Text("\(Int(achieved.rounded()))fps")
             .font(.caption.monospacedDigit())
-            .foregroundStyle(isRealtime ? Color.green : Color.orange)
-            .help(isRealtime
-                  ? "Playing back at the source clip's frame rate."
-                  : "GPU is slower than the source frame rate — every frame still displays, but slower than realtime.")
+            .foregroundStyle(badgeColour)
+            .help(fpsIndicatorTooltip(isPlaying: isPlaying, isRealtime: isRealtime))
+    }
+
+    private func fpsIndicatorTooltip(isPlaying: Bool, isRealtime: Bool) -> String {
+        if !isPlaying {
+            return "Playback is paused. Press Play to see the live frame rate."
+        }
+        if isRealtime {
+            return "Playing back at the source clip's frame rate."
+        }
+        return "GPU is slower than the source frame rate — every frame still displays, but slower than realtime."
     }
 
     /// Wraps the SMPTE timecode helper so the transport bar uses
