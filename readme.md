@@ -26,7 +26,7 @@ Whilst there are already some great fork's of CorridorKey, such as [EZ-CorridorK
 
 It gives you all the power of CorridorKey, directly in your Final Cut Pro timeline.
 
-![Footage courtesy of Corridor Digital's Benchmark Data](/static/corridor-key-build-4.png)
+![Footage courtesy of Corridor Digital's Benchmark Test Footage](/static/corridor-key-build-4.png)
 
 ---
 
@@ -38,7 +38,7 @@ It makes full use of the GPU, Neural Engine, Metal and MPX - pushing the hardwar
 
 If you enable **Auto Subject Hint** it uses Apple's [Vision Framework](https://developer.apple.com/documentation/vision) to use machine learning to "cut out" any foreground people, to use as a "hint" for CorridorKey.
 
-![Footage courtesy of Corridor Digital's Benchmark Data](/static/corridor-key-standalone.png)
+![Footage courtesy of Corridor Digital's Benchmark Test Footage](/static/corridor-key-standalone.png)
 
 ---
 
