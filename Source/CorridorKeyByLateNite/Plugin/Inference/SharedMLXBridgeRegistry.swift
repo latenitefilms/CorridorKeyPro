@@ -172,7 +172,16 @@ final class SharedMLXBridgeRegistry: @unchecked Sendable {
         warmupFailures[key] = nil
         lock.unlock()
 
-        let task = Task.detached(priority: .utility) { [weak self] in
+        // Priority is `.userInitiated`, not `.utility`, so a
+        // synchronous `waitForReady` caller — usually the analyser
+        // thread, which itself runs at user-initiated QoS — never
+        // blocks a higher-priority thread on lower-priority work.
+        // macOS surfaces that pattern as a priority-inversion
+        // warning the moment a `DispatchSemaphore.wait` parks the
+        // analyse thread. Eager warm-up (no caller waiting) is
+        // also a one-shot per `(device, rung)`, so bumping the
+        // priority doesn't inflate steady-state CPU usage either.
+        let task = Task.detached(priority: .userInitiated) { [weak self] in
             guard let self else { return }
             await self.runWarmup(key: key, cacheEntry: cacheEntry, rung: rung)
         }
