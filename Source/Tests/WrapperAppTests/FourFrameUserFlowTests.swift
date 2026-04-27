@@ -29,7 +29,7 @@ import CoreMedia
 import CoreVideo
 import CoreImage
 import AVFoundation
-@testable import CorridorKeyToolboxApp
+@testable import CorridorKeyByLateNiteApp
 
 @Suite("Four-frame user flow", .serialized)
 struct FourFrameUserFlowTests {

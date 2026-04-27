@@ -15,7 +15,7 @@
 import Testing
 import Metal
 import CoreVideo
-@testable import CorridorKeyToolboxApp
+@testable import CorridorKeyByLateNiteApp
 
 @Suite("PixelBufferTextureBridge")
 struct PixelBufferTextureBridgeTests {

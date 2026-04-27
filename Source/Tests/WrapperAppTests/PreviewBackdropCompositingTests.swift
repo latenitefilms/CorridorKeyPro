@@ -21,7 +21,7 @@ import Testing
 import Foundation
 import Metal
 import CoreVideo
-@testable import CorridorKeyToolboxApp
+@testable import CorridorKeyByLateNiteApp
 
 @Suite("Preview backdrop compositing", .serialized)
 struct PreviewBackdropCompositingTests {

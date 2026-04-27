@@ -32,7 +32,7 @@ import Metal
 import CoreMedia
 import CoreVideo
 import AVFoundation
-@testable import CorridorKeyToolboxApp
+@testable import CorridorKeyByLateNiteApp
 
 @Suite("NikoDruid end-to-end", .serialized)
 struct NikoDruidEndToEndTests {

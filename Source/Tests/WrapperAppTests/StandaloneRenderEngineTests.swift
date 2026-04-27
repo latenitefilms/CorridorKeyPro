@@ -20,7 +20,7 @@ import Testing
 import Foundation
 import CoreMedia
 import CoreVideo
-@testable import CorridorKeyToolboxApp
+@testable import CorridorKeyByLateNiteApp
 
 @Suite("StandaloneRenderEngine", .serialized)
 struct StandaloneRenderEngineTests {

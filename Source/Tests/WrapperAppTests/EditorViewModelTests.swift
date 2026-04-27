@@ -12,7 +12,7 @@
 import Testing
 import Foundation
 import CoreMedia
-@testable import CorridorKeyToolboxApp
+@testable import CorridorKeyByLateNiteApp
 
 @Suite("EditorViewModel", .serialized)
 @MainActor

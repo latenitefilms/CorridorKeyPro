@@ -19,7 +19,7 @@
 import Testing
 import Foundation
 import CoreMedia
-@testable import CorridorKeyToolboxApp
+@testable import CorridorKeyByLateNiteApp
 
 @Suite("Transport polish", .serialized)
 struct TransportPolishTests {
@@ -62,18 +62,51 @@ struct TransportPolishTests {
         try #require(viewModel.totalFrames == 4)
 
         viewModel.scrub(toNormalized: 1.0)
-        // `scrub(toNormalized:)` hops to a background task to ask the
-        // VideoSource for a snapped time, then back to the main
-        // actor to assign the playhead. Spin briefly until that
-        // round-trip lands so the assertion is stable.
-        let deadline = Date().addingTimeInterval(2.0)
-        while Date() < deadline {
-            let frameIndex = Int((viewModel.playheadTime.seconds * 24).rounded())
-            if frameIndex == 3 { break }
-            try await Task.sleep(for: .milliseconds(20))
-        }
         let frameIndex = Int((viewModel.playheadTime.seconds * 24).rounded())
         #expect(frameIndex == 3, "Scrub-to-end produced frame index \(frameIndex); the transport bar would read 'N+1 / N f'.")
+    }
+
+    /// Slider position 1.0 must put the playhead on the **last
+    /// frame**. Repeats the round-trip across every frame index
+    /// so short clips can't sneak in a regression at the boundary
+    /// — the legacy duration-based mapping topped out at 0.75 on
+    /// a 4-frame clip, hiding the final sample behind the right
+    /// edge of the slider.
+    @Test("Slider reaches the last frame on a 4-frame clip and round-trips at every frame")
+    @MainActor
+    func sliderRoundTripsToFinalFrame() async throws {
+        let synthURL = try await SyntheticVideoFixture.writeMP4(frameCount: 4, fps: 24)
+        defer { try? FileManager.default.removeItem(at: synthURL.deletingLastPathComponent()) }
+        let engine = try StandaloneRenderEngine()
+        let viewModel = EditorViewModel(renderEngine: engine)
+        await viewModel.loadClip(at: synthURL)
+        try #require(viewModel.phase.isReady)
+        try #require(viewModel.totalFrames == 4)
+
+        // Walk every position in [0, 1] in 1/3 steps (the natural
+        // granularity of a 4-frame clip) and confirm we land on
+        // the right frame.
+        for (index, fraction) in [0.0, 1.0/3.0, 2.0/3.0, 1.0].enumerated() {
+            viewModel.scrub(toNormalized: fraction)
+            let landedFrame = Int((viewModel.playheadTime.seconds * 24).rounded())
+            #expect(landedFrame == index,
+                    "Slider \(fraction) should snap to frame \(index); landed on \(landedFrame).")
+        }
+    }
+
+    /// The fps-indicator state on `EditorViewModel` defaults to
+    /// zero outside of playback so the transport bar's badge is
+    /// safely hidden. `targetPlaybackFPS` only populates once
+    /// playback starts — a freshly-launched editor with no clip
+    /// must not flash a stray "0 fps" badge.
+    @Test("Playback fps state is zero before any clip loads")
+    @MainActor
+    func playbackFPSStartsZero() async throws {
+        let engine = try StandaloneRenderEngine()
+        let viewModel = EditorViewModel(renderEngine: engine)
+        #expect(viewModel.measuredPlaybackFPS == 0)
+        #expect(viewModel.targetPlaybackFPS == 0)
+        #expect(viewModel.isPlaying == false)
     }
 
     @Test("preview backdrop defaults to checkerboard and round-trips through PreviewBackdropMenu cases")

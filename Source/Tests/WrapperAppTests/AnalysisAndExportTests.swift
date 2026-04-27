@@ -18,7 +18,7 @@ import Testing
 import Foundation
 import AVFoundation
 import CoreMedia
-@testable import CorridorKeyToolboxApp
+@testable import CorridorKeyByLateNiteApp
 
 @Suite("AnalysisRunner & ProResExporter", .serialized)
 struct AnalysisAndExportTests {
