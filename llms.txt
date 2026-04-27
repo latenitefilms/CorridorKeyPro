@@ -1,6 +1,6 @@
 ﻿# CorridorKey by LateNite
 
-> **We're currently in a public beta testing phase. 👷
+> We're currently in a public beta testing phase. 👷
 
 - [CorridorKey by LateNite](https://corridorkeybylatenite.fcp.cafe/readme.md): CorridorKey by LateNite
 - [Download](https://corridorkeybylatenite.fcp.cafe/download.md): We're currently in a public beta testing phase.
