@@ -16,11 +16,13 @@ You can learn more about LateNite's creations over at [FCP Cafe](https://fcp.caf
 
 **CorridorKey by LateNite** would **NOT** be possible without Niko's amazing [CorridorKey](https://github.com/nikopueringer/CorridorKey).
 
+The images of Niko used in the screenshots on this website are from the [CorridorKey Benchmarks](https://huggingface.co/datasets/nikopueringer/CorridorKey1.0_QualityBenchmark).
+
 ---
 
 ## Code License
 
-All the Swift and website code in this repository is MIT license, however when distributed, it falls under the CorridorKey License below.
+All the Swift and website code in this repository is MIT license, however when distributed as an application, it falls under the CorridorKey License below.
 
 ```
 MIT License

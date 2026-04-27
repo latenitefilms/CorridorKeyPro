@@ -1,12 +1,22 @@
 # Release Notes
 
+### 1.0.0 (Build 5)
+
+**🎉 Released:**
+- 27th April 2026
+
+**🔨 Improvements:**
+- **Corridor Key Toolbox** has been renamed to **CorridorKey by LateNite**.
+
+---
+
 ### 1.0.0 (Build 4)
 
 **🎉 Released:**
 - 26th April 2026
 
 **🔨 Improvements:**
-- The **CorridorKey by LateNite** application in your `/Applications` folder now has a standalone editor built-in, allowing you to export without launching Final Cut Pro.
+- The **CorridorKey by LateNite** application in your `/Applications` folder now has a **Standalone Editor** built-in, allowing you to export without launching Final Cut Pro.
 
 ---
 
@@ -46,4 +56,4 @@
 **🎉 Released:**
 - 23rd April 2026
 
-This is the first public beta release of **CorridorKey by LateNite**. Woohoo!
+This is the first public beta release of **CorridorKey by LateNite**. Woohoo! 🥳
