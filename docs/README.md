@@ -1,7 +1,7 @@
 # CorridorKey by LateNite
 
 !!!primary
-**We're currently in a **public beta testing phase**. 👷
+We're currently in a **public beta testing phase**. 👷
 
 We're just using a placeholder icon for now (taken from [VFX Toolbox](https://vfxtoolbox.fcp.cafe)) - new icon coming soon!
 !!!
