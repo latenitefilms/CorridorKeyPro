@@ -10,9 +10,9 @@ You can find Final Cut Pro's system requirements [here](https://support.apple.co
 
 ---
 
-## Corridor Key Requirements
+## CorridorKey Requirements
 
-For reference, the official Corridor Key GitHub repository has the following to say about Hardware Requirements:
+For reference, the official CorridorKey GitHub repository has the following to say about Hardware Requirements:
 
 > This project was designed and built on a Linux workstation (Puget Systems PC) equipped with an NVIDIA RTX Pro 6000 with 96GB of VRAM. The community is ACTIVELY optimizing it for consumer GPUS.
 >

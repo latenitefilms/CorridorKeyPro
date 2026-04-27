@@ -1,12 +1,42 @@
 # How To Use
 
 !!!primary
-**CorridorKey by LateNite** is currently in a **public beta testing phase**.
+**CorridorKey by LateNite** is currently in a **public beta testing phase**. 👷
 
 We're just using a placeholder icon for now (taken from [VFX Toolbox](https://vfxtoolbox.fcp.cafe)).
-
-Feedback welcome!
 !!!
+
+## Standalone Editor
+
+Run **CorridorKey by LateNite** from your `/Applications` folder.
+
+Click **Open Standalone Editor**.
+
+![](/static/wrapper-app.png)
+
+You can now load in a clip.
+
+![](/static/standalone-editor.png)
+
+First pick your:
+
+- **Quality** (it defaults to **Recommended**)
+- Screen Colour (it defaults to **Green**)
+- Upscale Method (it defaults to **Lanczos**)
+- If you want to use Apple's Vision Framework to do the hint tick **Auto Subject Hint**
+- Alternatively, you can use **Show Subject Marker** to manually select the foreground object in your Viewer
+
+Then press **Analyse Clip**:
+
+![](/static/standalone-editor-result.png)
+
+Once you're happy to you can export your result as ProRes 4444 (with alpha).
+
+![](/static/standalone-export.png)
+
+---
+
+## Final Cut Pro
 
 Run **CorridorKey by LateNite** from your `/Applications` folder.
 
@@ -28,9 +58,11 @@ You can then apply the **CorridorKey by LateNite** effect to your clips from the
 
 First pick your:
 
-- **Quality** (it defaults to **Maximum**)
+- **Quality** (it defaults to **Recommended**)
 - Screen Colour (it defaults to **Green**)
 - Upscale Method (it defaults to **Lanczos**)
+- If you want to use Apple's Vision Framework to do the hint tick **Auto Subject Hint**
+- Alternatively, you can use **Show Subject Marker** to manually select the foreground object in your Viewer
 
 Then press **Analyse Clip**:
 
