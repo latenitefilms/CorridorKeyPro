@@ -10,7 +10,7 @@
 - General MLX and Vision Framework performance and stability improvements.
 - Better GPU caching and pre-loading.
 - Improvements to the Export window user interface in the Standalone Editor.
-- Improvements to the playback controls and playback performance in he Standalone Editor.
+- Improvements to the playback controls and playback performance in the Standalone Editor.
 
 ---
 
