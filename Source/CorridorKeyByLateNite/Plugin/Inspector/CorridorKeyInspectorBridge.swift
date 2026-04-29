@@ -8,25 +8,36 @@
 //
 
 import Foundation
+import Observation
 import AppKit
 import CoreMedia
 
 /// Main-actor-isolated bridge owned by the SwiftUI header. We hold the
 /// `apiManager` weakly-ish through a retained protocol existential so the
 /// host can still tear the plug-in down even while the view is alive.
+///
+/// `@Observable` over the legacy `ObservableObject` / `@Published` pair —
+/// SwiftUI tracks `snapshot` reads automatically, so the header view's
+/// keypath subscriptions are pinned per-property rather than per-object.
 @MainActor
-final class CorridorKeyInspectorBridge: ObservableObject {
+@Observable
+final class CorridorKeyInspectorBridge {
     /// Latest analysis snapshot the header draws from.
-    @Published private(set) var snapshot: CorridorKeyAnalysisSnapshot = .empty
+    private(set) var snapshot: CorridorKeyAnalysisSnapshot = .empty
 
+    @ObservationIgnored
     private let apiManager: any PROAPIAccessing
+    @ObservationIgnored
     private weak var plugin: CorridorKeyToolboxPlugIn?
 
     /// Rolling EMA of per-frame analysis wall-time (seconds). Populated by
     /// observing the frame count delta between refreshes; `nil` until we
     /// have at least two samples under the same session.
+    @ObservationIgnored
     private var lastAnalyzedCount: Int = 0
+    @ObservationIgnored
     private var lastRefreshDate: Date?
+    @ObservationIgnored
     private var smoothedPerFrameSeconds: Double?
 
     init(apiManager: any PROAPIAccessing, plugin: CorridorKeyToolboxPlugIn) {

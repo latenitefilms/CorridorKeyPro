@@ -16,16 +16,18 @@ import AppKit
 @MainActor
 struct CorridorKeyHeaderView: View {
 
-    /// `@StateObject` pins the bridge to this view's identity so SwiftUI can
-    /// keep the ObservableObject subscription alive across re-renders. With
-    /// `@ObservedObject` the subscription was only as stable as the caller's
+    /// `@State` pins the bridge to this view's identity so SwiftUI can
+    /// keep the per-property observation alive across re-renders. With a
+    /// plain `let` the subscription was only as stable as the caller's
     /// ownership — and when Final Cut Pro collapsed and re-expanded the
     /// inspector row, the struct was recycled before the hosting view was,
-    /// dropping the Published timer and leaving the header blank.
-    @StateObject private var bridge: CorridorKeyInspectorBridge
+    /// dropping the timer and leaving the header blank. `@State` mirrors
+    /// the old `@StateObject` ownership semantics for `@Observable`
+    /// classes.
+    @State private var bridge: CorridorKeyInspectorBridge
 
     init(bridge: CorridorKeyInspectorBridge) {
-        _bridge = StateObject(wrappedValue: bridge)
+        _bridge = State(wrappedValue: bridge)
     }
 
     private let applicationIcon: NSImage = CorridorKeyInspectorAssets.applicationIcon()

@@ -16,12 +16,14 @@
 //  the user clicks Analyse Clip or starts playback, MLX is already
 //  compiled and warm, eliminating the 2–5 s first-play stall.
 //
-//  Lifetime: engines are held strongly for the process's life. On Apple
-//  Silicon the underlying MLX buffers sit in unified memory and are
-//  released when the engine is dropped; since FCP can return to the
-//  same project repeatedly in a session, keeping engines warm matches
-//  user intent. Memory-pressure handling (release least-recently-used
-//  engines) is a v1.1 concern.
+//  Lifetime: engines are held strongly for the process's life until they
+//  fall out of LRU. On Apple Silicon the underlying MLX buffers sit in
+//  unified memory and are released when the engine is dropped; since FCP
+//  can return to the same project repeatedly in a session, keeping
+//  engines warm matches user intent. The per-device LRU cap is sized off
+//  `MTLDevice.recommendedMaxWorkingSetSize` so a 16 GB Mac mini holds
+//  fewer rungs than a 192 GB Mac Studio. The currently-active rung is
+//  pinned and never evicted; only older, unused rungs get released.
 //
 
 import Foundation
@@ -51,6 +53,10 @@ final class SharedMLXBridgeRegistry: @unchecked Sendable {
 
     private let lock = NSLock()
     private var engines: [Key: MLXKeyingEngine] = [:]
+    /// Recency tracker driving LRU eviction. Bumped on every
+    /// `readyEngine` lookup and on warm-up completion; consulted by
+    /// `evictLockedIfNeeded` when the per-device cap is exceeded.
+    private var engineLastUsedAt: [Key: ContinuousClock.Instant] = [:]
     /// Backing tasks for in-flight warm-ups. Removed when the task
     /// finishes so subsequent lookups don't chase a dead reference.
     private var warmupTasks: [Key: Task<Void, Never>] = [:]
@@ -68,12 +74,15 @@ final class SharedMLXBridgeRegistry: @unchecked Sendable {
     // MARK: - Public API
 
     /// Returns the engine immediately if it's already warm. Non-blocking,
-    /// used on the render hot path.
+    /// used on the render hot path. Bumps the LRU recency tag so a
+    /// rung that's actively rendering is never the one evicted.
     func readyEngine(deviceRegistryID: UInt64, rung: Int) -> MLXKeyingEngine? {
         let key = Key(deviceRegistryID: deviceRegistryID, rung: rung)
         lock.lock()
         defer { lock.unlock() }
-        return engines[key]
+        guard let engine = engines[key] else { return nil }
+        engineLastUsedAt[key] = .now
+        return engine
     }
 
     /// Blocks the calling thread until the `(device, rung)` engine is
@@ -238,7 +247,7 @@ final class SharedMLXBridgeRegistry: @unchecked Sendable {
             try Task.checkCancellation()
             try await engine.prepare(resolution: rung)
             try Task.checkCancellation()
-            store(engine: engine, forKey: key)
+            store(engine: engine, forKey: key, device: cacheEntry.device)
             PluginLog.notice("Shared MLX engine ready: \(rung)px on \(cacheEntry.device.name).")
         } catch is CancellationError {
             record(failure: "Warm-up cancelled.", forKey: key)
@@ -248,11 +257,13 @@ final class SharedMLXBridgeRegistry: @unchecked Sendable {
         }
     }
 
-    private func store(engine: MLXKeyingEngine, forKey key: Key) {
+    private func store(engine: MLXKeyingEngine, forKey key: Key, device: any MTLDevice) {
         lock.lock()
         engines[key] = engine
+        engineLastUsedAt[key] = .now
         warmupTasks[key] = nil
         warmupFailures[key] = nil
+        evictLockedIfNeeded(activeKey: key, device: device)
         let parked = waiters.removeValue(forKey: key)?.semaphores ?? []
         lock.unlock()
         // Wake every parked analyser thread. Calling `signal()` outside
@@ -268,5 +279,80 @@ final class SharedMLXBridgeRegistry: @unchecked Sendable {
         let parked = waiters.removeValue(forKey: key)?.semaphores ?? []
         lock.unlock()
         parked.forEach { $0.signal() }
+    }
+
+    // MARK: - LRU eviction
+
+    /// Drops least-recently-used engines on `device` until the resident
+    /// count fits the device-tier budget. Caller holds `lock`. The
+    /// freshly-stored `activeKey` is pinned (never evicted) so the rung
+    /// the user just analysed at can't be removed by its own warm-up.
+    private func evictLockedIfNeeded(activeKey: Key, device: any MTLDevice) {
+        let budget = bridgeBudget(for: device)
+        let perDeviceKeys = engines.keys.filter { $0.deviceRegistryID == device.registryID }
+        guard perDeviceKeys.count > budget else { return }
+        let toRemove = perDeviceKeys.count - budget
+        let candidates: [(Key, ContinuousClock.Instant)] = perDeviceKeys
+            .filter { $0 != activeKey }
+            .compactMap { key in
+                guard let when = engineLastUsedAt[key] else { return nil }
+                return (key, when)
+            }
+            .sorted { $0.1 < $1.1 }
+        for index in 0..<min(toRemove, candidates.count) {
+            let key = candidates[index].0
+            engines.removeValue(forKey: key)
+            engineLastUsedAt.removeValue(forKey: key)
+            PluginLog.notice(
+                "Evicted LRU MLX bridge: \(key.rung)px on device \(key.deviceRegistryID) (kept \(budget) bridges to fit unified-memory budget)."
+            )
+        }
+    }
+
+    /// Per-device cap on resident MLX bridges. Sized off
+    /// `recommendedMaxWorkingSetSize` so a 16 GB Mac mini holds only the
+    /// active rung plus one neighbour, while a 64 GB+ workstation keeps
+    /// every rung warm so quality-mode toggles are instant.
+    private func bridgeBudget(for device: any MTLDevice) -> Int {
+        let workingSetGB = Double(device.recommendedMaxWorkingSetSize) / (1024 * 1024 * 1024)
+        return Self.bridgeBudget(forWorkingSetGB: workingSetGB)
+    }
+
+    /// Testable helper: same budget rules as `bridgeBudget(for:)` but
+    /// keyed by a raw GB figure so unit tests can verify each tier
+    /// without needing a real `MTLDevice` of that size.
+    static func bridgeBudget(forWorkingSetGB workingSetGB: Double) -> Int {
+        switch workingSetGB {
+        case ..<14:
+            return 2
+        case 14..<22:
+            return 3
+        case 22..<48:
+            return 4
+        default:
+            // Plenty of headroom — cap matches the number of bundled
+            // rungs (512 / 768 / 1024 / 1536 / 2048) so we never have
+            // to touch a stored bridge once the user has loaded one
+            // of each.
+            return 5
+        }
+    }
+
+    // MARK: - Test hooks
+
+    /// Snapshot of `(rung, lastUsedAt)` pairs currently resident for
+    /// `device`. Test-only — production code never inspects this. The
+    /// values are copied out of the lock so the caller can iterate
+    /// without contention.
+    func residentEnginesSnapshot(deviceRegistryID: UInt64) -> [(rung: Int, lastUsedAt: ContinuousClock.Instant)] {
+        lock.lock()
+        defer { lock.unlock() }
+        return engines.keys
+            .filter { $0.deviceRegistryID == deviceRegistryID }
+            .compactMap { key in
+                guard let when = engineLastUsedAt[key] else { return nil }
+                return (rung: key.rung, lastUsedAt: when)
+            }
+            .sorted { $0.rung < $1.rung }
     }
 }

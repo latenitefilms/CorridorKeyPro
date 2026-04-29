@@ -69,13 +69,19 @@ enum EditorExportStatus: @unchecked Sendable, Equatable {
 /// Backdrop the preview surface composites the keyed image over.
 /// Defaults to a transparency-aware checkerboard so users can read
 /// the matte at a glance, with solid-colour options for alternate
-/// reference looks.
+/// reference looks. The two final cases — `.customColor` and
+/// `.customImage` — pair with `EditorViewModel.customBackdropColor`
+/// and `customBackdropTexture` respectively; the enum identity is
+/// what the Picker selects on, while the supporting data lives on
+/// the view model so the inline radio rows still get a stable tag.
 enum PreviewBackdrop: Hashable, Sendable, CaseIterable, Identifiable {
     case checkerboard
     case white
     case black
     case yellow
     case red
+    case customColor
+    case customImage
 
     var id: Self { self }
 
@@ -86,6 +92,8 @@ enum PreviewBackdrop: Hashable, Sendable, CaseIterable, Identifiable {
         case .black: return "Black"
         case .yellow: return "Yellow"
         case .red: return "Red"
+        case .customColor: return "Custom Colour…"
+        case .customImage: return "Custom Image…"
         }
     }
 
@@ -96,8 +104,25 @@ enum PreviewBackdrop: Hashable, Sendable, CaseIterable, Identifiable {
         case .black: return "rectangle.fill"
         case .yellow: return "rectangle.fill"
         case .red: return "rectangle.fill"
+        case .customColor: return "paintpalette"
+        case .customImage: return "photo"
         }
     }
+}
+
+/// Linear RGB triplet a custom backdrop is rendered with. Stored on
+/// the view model and persisted via UserDefaults so the user's last
+/// pick survives a launch. Lives as a value type rather than
+/// SwiftUI's `Color` so it's `Codable` and `Sendable` without
+/// pulling in environment lookups.
+struct BackdropColor: Hashable, Sendable, Codable {
+    var red: Double
+    var green: Double
+    var blue: Double
+
+    /// Neutral mid-grey default — readable on top of most clip
+    /// looks without biasing the user's eye toward any hue.
+    static let `default` = BackdropColor(red: 0.18, green: 0.18, blue: 0.18)
 }
 
 /// Modes the on-screen control overlay can be in. The user picks one
@@ -201,6 +226,25 @@ final class EditorViewModel {
     /// the transparency-aware checkerboard pattern; right-clicking
     /// the preview surfaces the picker.
     var previewBackdrop: PreviewBackdrop = .checkerboard
+    /// Colour rendered behind the keyed image when `previewBackdrop`
+    /// is `.customColor`. Persisted to UserDefaults so the user's
+    /// last pick survives a launch.
+    var customBackdropColor: BackdropColor = .default {
+        didSet {
+            guard customBackdropColor != oldValue else { return }
+            BackdropPreferences.saveCustomColor(customBackdropColor)
+        }
+    }
+    /// User-imported image rendered behind the keyed image when
+    /// `previewBackdrop` is `.customImage`. The texture is built
+    /// from the image data once at import time and re-used until
+    /// the user picks a different image. SwiftUI invalidates on
+    /// reassignment because the underlying object identity changes.
+    var customBackdropTexture: (any MTLTexture)?
+    /// Display name of the imported image (the URL's last path
+    /// component) — surfaced in the menu so the user knows which
+    /// file is currently in use.
+    var customBackdropImageName: String?
 
     // MARK: - Internal state
 
@@ -228,6 +272,122 @@ final class EditorViewModel {
 
     init(renderEngine: StandaloneRenderEngine) {
         self.renderEngine = renderEngine
+        self.customBackdropColor = BackdropPreferences.loadCustomColor() ?? .default
+        // Restore the user's last imported image asynchronously so
+        // the editor window appears immediately. If the bookmark is
+        // stale (file moved / deleted) we silently fall back to
+        // checkerboard rather than surfacing an error on launch.
+        if let bookmarkData = BackdropPreferences.loadImageBookmark() {
+            Task { [weak self, device = renderEngine.device] in
+                await Self.restoreCustomBackdropImage(
+                    bookmarkData: bookmarkData,
+                    device: device,
+                    into: self
+                )
+            }
+        }
+    }
+
+    // MARK: - Custom backdrop import
+
+    /// Loads `url` as the custom-image backdrop, switches the
+    /// preview backdrop to `.customImage`, and persists a security-
+    /// scoped bookmark so the same image is restored on next
+    /// launch. Throws if the file is too large or the decode fails;
+    /// callers surface the error in an alert.
+    ///
+    /// Decoding + texture upload runs on the main actor: `MTLTexture`
+    /// isn't `Sendable`, so we'd have to wrap it in an unchecked
+    /// transfer to push the work off main. For a typical backdrop
+    /// image (PNG / JPEG ≤ 64 MB) the work is fast enough to land
+    /// inside one frame; the import sheet is already modal so a few
+    /// hundred milliseconds of UI freeze isn't perceptible.
+    func importBackdropImage(from url: URL) async throws {
+        let scopeStarted = url.startAccessingSecurityScopedResource()
+        defer {
+            if scopeStarted {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
+        let data = try Data(contentsOf: url)
+        let bookmarkData = try url.bookmarkData(
+            options: .withSecurityScope,
+            includingResourceValuesForKeys: nil,
+            relativeTo: nil
+        )
+        let texture = try BackdropImageLoader.makeTexture(from: data, device: renderEngine.device)
+        self.customBackdropTexture = texture
+        self.customBackdropImageName = url.lastPathComponent
+        BackdropPreferences.saveImageBookmark(bookmarkData)
+        self.previewBackdrop = .customImage
+        renderPreview(at: playheadTime)
+    }
+
+    /// Drops the imported image and falls back to the checkerboard
+    /// backdrop. Clears the persisted bookmark too — next launch
+    /// won't try to re-load a file the user just removed.
+    func clearBackdropImage() {
+        customBackdropTexture = nil
+        customBackdropImageName = nil
+        BackdropPreferences.clearImageBookmark()
+        if previewBackdrop == .customImage {
+            previewBackdrop = .checkerboard
+            renderPreview(at: playheadTime)
+        }
+    }
+
+    /// Resolves a security-scoped bookmark and pushes the resulting
+    /// texture onto the view model. Runs on the main actor because
+    /// `MTLTexture` isn't `Sendable`; the decode is fast enough not
+    /// to disrupt the launch animation in practice (the editor
+    /// window is already drawing by the time this fires).
+    @MainActor
+    private static func restoreCustomBackdropImage(
+        bookmarkData: Data,
+        device: any MTLDevice,
+        into viewModel: EditorViewModel?
+    ) async {
+        var isStale = false
+        let url: URL
+        do {
+            url = try URL(
+                resolvingBookmarkData: bookmarkData,
+                options: .withSecurityScope,
+                relativeTo: nil,
+                bookmarkDataIsStale: &isStale
+            )
+        } catch {
+            // Bookmark unresolvable — likely the file was deleted
+            // or moved. Drop the saved bookmark so we don't keep
+            // trying.
+            BackdropPreferences.clearImageBookmark()
+            return
+        }
+        let scopeStarted = url.startAccessingSecurityScopedResource()
+        defer {
+            if scopeStarted {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
+        guard let data = try? Data(contentsOf: url) else { return }
+        let texture: any MTLTexture
+        do {
+            texture = try BackdropImageLoader.makeTexture(from: data, device: device)
+        } catch {
+            return
+        }
+        guard let viewModel else { return }
+        viewModel.customBackdropTexture = texture
+        viewModel.customBackdropImageName = url.lastPathComponent
+        if isStale {
+            if let refreshed = try? url.bookmarkData(
+                options: .withSecurityScope,
+                includingResourceValuesForKeys: nil,
+                relativeTo: nil
+            ) {
+                BackdropPreferences.saveImageBookmark(refreshed)
+            }
+        }
     }
 
     // MARK: - Clip loading
@@ -760,4 +920,37 @@ struct PreviewFrame {
     let texture: any MTLTexture
     let pixelBuffer: CVPixelBuffer
     let presentationTime: CMTime
+}
+
+/// Disk-backed persistence for the custom backdrop colour and
+/// imported image. Sits next to the view model rather than in a
+/// dedicated file because it has exactly one consumer; if a
+/// second consumer ever appears, lift it into its own file.
+enum BackdropPreferences {
+    static let customColorKey = "CorridorKey.PreviewBackdrop.CustomColor"
+    static let imageBookmarkKey = "CorridorKey.PreviewBackdrop.ImageBookmark"
+
+    static func loadCustomColor() -> BackdropColor? {
+        guard let data = UserDefaults.standard.data(forKey: customColorKey) else {
+            return nil
+        }
+        return try? JSONDecoder().decode(BackdropColor.self, from: data)
+    }
+
+    static func saveCustomColor(_ color: BackdropColor) {
+        guard let data = try? JSONEncoder().encode(color) else { return }
+        UserDefaults.standard.set(data, forKey: customColorKey)
+    }
+
+    static func loadImageBookmark() -> Data? {
+        UserDefaults.standard.data(forKey: imageBookmarkKey)
+    }
+
+    static func saveImageBookmark(_ data: Data) {
+        UserDefaults.standard.set(data, forKey: imageBookmarkKey)
+    }
+
+    static func clearImageBookmark() {
+        UserDefaults.standard.removeObject(forKey: imageBookmarkKey)
+    }
 }

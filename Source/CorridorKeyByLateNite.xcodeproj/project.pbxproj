@@ -77,6 +77,7 @@
 		SB0000000000000000000003 /* StandaloneRenderEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = SR0000000000000000000003 /* StandaloneRenderEngine.swift */; };
 		SB0000000000000000000004 /* AnalysisRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = SR0000000000000000000004 /* AnalysisRunner.swift */; };
 		SB0000000000000000000005 /* ProResExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = SR0000000000000000000005 /* ProResExporter.swift */; };
+		SB0000000000000000000030 /* BackdropImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = SR000000000000000000000D /* BackdropImageLoader.swift */; };
 		SB0000000000000000000006 /* ParameterRanges.swift in Sources */ = {isa = PBXBuildFile; fileRef = SR0000000000000000000006 /* ParameterRanges.swift */; };
 		SB0000000000000000000007 /* EditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = SR0000000000000000000007 /* EditorViewModel.swift */; };
 		SB0000000000000000000008 /* MetalPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SR0000000000000000000008 /* MetalPreviewView.swift */; };
@@ -253,6 +254,7 @@
 		SR0000000000000000000003 /* StandaloneRenderEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = StandaloneRenderEngine.swift; path = CorridorKeyByLateNite/WrapperApp/Standalone/Engine/StandaloneRenderEngine.swift; sourceTree = "<group>"; };
 		SR0000000000000000000004 /* AnalysisRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AnalysisRunner.swift; path = CorridorKeyByLateNite/WrapperApp/Standalone/Engine/AnalysisRunner.swift; sourceTree = "<group>"; };
 		SR0000000000000000000005 /* ProResExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ProResExporter.swift; path = CorridorKeyByLateNite/WrapperApp/Standalone/Engine/ProResExporter.swift; sourceTree = "<group>"; };
+		SR000000000000000000000D /* BackdropImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BackdropImageLoader.swift; path = CorridorKeyByLateNite/WrapperApp/Standalone/Engine/BackdropImageLoader.swift; sourceTree = "<group>"; };
 		SR0000000000000000000006 /* ParameterRanges.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ParameterRanges.swift; path = CorridorKeyByLateNite/WrapperApp/Standalone/Model/ParameterRanges.swift; sourceTree = "<group>"; };
 		SR0000000000000000000007 /* EditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = EditorViewModel.swift; path = CorridorKeyByLateNite/WrapperApp/Standalone/Model/EditorViewModel.swift; sourceTree = "<group>"; };
 		SR0000000000000000000008 /* MetalPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MetalPreviewView.swift; path = CorridorKeyByLateNite/WrapperApp/Standalone/Views/MetalPreviewView.swift; sourceTree = "<group>"; };
@@ -515,6 +517,7 @@
 			isa = PBXGroup;
 			children = (
 				SR0000000000000000000004 /* AnalysisRunner.swift */,
+				SR000000000000000000000D /* BackdropImageLoader.swift */,
 				SR0000000000000000000001 /* PixelBufferTextureBridge.swift */,
 				SR0000000000000000000005 /* ProResExporter.swift */,
 				SR0000000000000000000003 /* StandaloneRenderEngine.swift */,
@@ -740,6 +743,7 @@
 				SB0000000000000000000002 /* VideoSource.swift in Sources */,
 				SB0000000000000000000003 /* StandaloneRenderEngine.swift in Sources */,
 				SB0000000000000000000004 /* AnalysisRunner.swift in Sources */,
+				SB0000000000000000000030 /* BackdropImageLoader.swift in Sources */,
 				SB0000000000000000000005 /* ProResExporter.swift in Sources */,
 				SB0000000000000000000006 /* ParameterRanges.swift in Sources */,
 				SB0000000000000000000007 /* EditorViewModel.swift in Sources */,

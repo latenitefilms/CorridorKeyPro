@@ -34,6 +34,12 @@ struct MetalPreviewView: NSViewRepresentable {
     /// Right-click on the preview surfaces a picker that mutates this
     /// value through the editor view model.
     let backdrop: PreviewBackdrop
+    /// RGB triplet drawn as the clear colour when `backdrop` is
+    /// `.customColor`. Ignored otherwise.
+    let customColor: BackdropColor
+    /// User-imported texture drawn behind the keyed image when
+    /// `backdrop` is `.customImage`. Ignored otherwise.
+    let customImageTexture: (any MTLTexture)?
 
     func makeCoordinator() -> Coordinator {
         Coordinator(device: device)
@@ -57,6 +63,8 @@ struct MetalPreviewView: NSViewRepresentable {
             sourceTexture: frame?.texture,
             aspectFitSize: aspectFitSize,
             backdrop: backdrop,
+            customColor: customColor,
+            customImageTexture: customImageTexture,
             previewFrame: frame
         )
         nsView.setNeedsDisplay(nsView.bounds)
@@ -71,10 +79,13 @@ struct MetalPreviewView: NSViewRepresentable {
         let commandQueue: any MTLCommandQueue
         let pipelineState: any MTLRenderPipelineState
         let checkerPipelineState: any MTLRenderPipelineState
+        let imagePipelineState: any MTLRenderPipelineState
 
         private var sourceTexture: (any MTLTexture)?
         private var aspectFitSize: CGSize = .zero
         private var backdrop: PreviewBackdrop = .checkerboard
+        private var customColor: BackdropColor = .default
+        private var customImageTexture: (any MTLTexture)?
         /// Holding the whole `PreviewFrame` keeps the IOSurface backing
         /// the texture alive for the lifetime of the GPU work that
         /// draws it.
@@ -127,6 +138,21 @@ struct MetalPreviewView: NSViewRepresentable {
             } catch {
                 fatalError("CorridorKey by LateNite preview view could not build its checker pipeline: \(error.localizedDescription)")
             }
+            // Custom-image pipeline. No alpha blending — the
+            // imported texture is fully opaque and is the first
+            // thing drawn behind the keyed image, so a straight
+            // overwrite is what we want.
+            let imageDescriptor = MTLRenderPipelineDescriptor()
+            imageDescriptor.label = "Corridor Key Standalone Preview Image"
+            imageDescriptor.vertexFunction = library.makeFunction(name: "previewVertex")
+            imageDescriptor.fragmentFunction = library.makeFunction(name: "previewImageFragment")
+            imageDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
+            imageDescriptor.colorAttachments[0].isBlendingEnabled = false
+            do {
+                self.imagePipelineState = try device.makeRenderPipelineState(descriptor: imageDescriptor)
+            } catch {
+                fatalError("CorridorKey by LateNite preview view could not build its image backdrop pipeline: \(error.localizedDescription)")
+            }
             super.init()
         }
 
@@ -134,11 +160,15 @@ struct MetalPreviewView: NSViewRepresentable {
             sourceTexture: (any MTLTexture)?,
             aspectFitSize: CGSize,
             backdrop: PreviewBackdrop,
+            customColor: BackdropColor,
+            customImageTexture: (any MTLTexture)?,
             previewFrame: PreviewFrame?
         ) {
             self.sourceTexture = sourceTexture
             self.aspectFitSize = aspectFitSize
             self.backdrop = backdrop
+            self.customColor = customColor
+            self.customImageTexture = customImageTexture
             self.heldFrame = previewFrame
         }
 
@@ -199,8 +229,9 @@ struct MetalPreviewView: NSViewRepresentable {
 
         /// Shared encode path. Lays out the quad inside the
         /// drawable's bounds (or the test target's bounds), draws
-        /// the chequerboard pattern when that backdrop is selected,
-        /// then samples the keyed source onto the same quad with
+        /// the chequerboard / custom-image backdrop into the
+        /// aspect-fit quad when those backdrops are selected, then
+        /// samples the keyed source onto the same quad with
         /// premultiplied source-over blending. Both `draw(in:)` and
         /// `renderForTesting(into:)` call this so the test suite
         /// covers exactly the same shader path the live preview
@@ -219,17 +250,29 @@ struct MetalPreviewView: NSViewRepresentable {
                 for: aspectFitSize == .zero ? drawableSize : aspectFitSize,
                 in: drawableSize
             )
+            var quad = quadVertices(for: quadRect, drawableSize: drawableSize)
 
-            if backdrop == .checkerboard {
+            switch backdrop {
+            case .checkerboard:
                 encoder.setRenderPipelineState(checkerPipelineState)
-                var quad = quadVertices(for: quadRect, drawableSize: drawableSize)
                 encoder.setVertexBytes(&quad, length: MemoryLayout<PreviewVertex>.stride * 4, index: 0)
                 encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
+            case .customImage:
+                if let imageTexture = customImageTexture {
+                    encoder.setRenderPipelineState(imagePipelineState)
+                    encoder.setVertexBytes(&quad, length: MemoryLayout<PreviewVertex>.stride * 4, index: 0)
+                    encoder.setFragmentTexture(imageTexture, index: 0)
+                    encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
+                }
+            case .white, .black, .yellow, .red, .customColor:
+                // Solid-colour backdrops are painted by the clear
+                // colour set on the render pass descriptor — no
+                // extra quad needed.
+                break
             }
 
             if let texture = sourceTexture {
                 encoder.setRenderPipelineState(pipelineState)
-                var quad = quadVertices(for: quadRect, drawableSize: drawableSize)
                 encoder.setVertexBytes(&quad, length: MemoryLayout<PreviewVertex>.stride * 4, index: 0)
                 encoder.setFragmentTexture(texture, index: 0)
                 encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
@@ -242,8 +285,11 @@ struct MetalPreviewView: NSViewRepresentable {
         /// fills the area outside the aspect-fit quad. The
         /// checkerboard mode picks a neutral dark grey so the
         /// chequer pattern's edges blend into the surrounding
-        /// letterbox area; solid-colour modes use the picked
-        /// colour directly.
+        /// letterbox area; solid-colour modes (including the
+        /// user's custom pick) use the picked colour directly.
+        /// The custom-image mode also uses a neutral grey for the
+        /// letterbox region so the image still reads as the
+        /// "framed content" rather than the entire viewport.
         private func clearColorForBackdrop() -> MTLClearColor {
             switch backdrop {
             case .checkerboard:
@@ -256,6 +302,10 @@ struct MetalPreviewView: NSViewRepresentable {
                 return MTLClearColorMake(1.0, 0.85, 0.0, 1.0)
             case .red:
                 return MTLClearColorMake(0.95, 0.20, 0.18, 1.0)
+            case .customColor:
+                return MTLClearColorMake(customColor.red, customColor.green, customColor.blue, 1.0)
+            case .customImage:
+                return MTLClearColorMake(0.05, 0.05, 0.05, 1.0)
             }
         }
 
@@ -340,6 +390,20 @@ struct MetalPreviewView: NSViewRepresentable {
                 float3 darkCell  = float3(0.22, 0.22, 0.22);
                 float3 color = mix(darkCell, lightCell, chequer);
                 return float4(color, 1.0);
+            }
+
+            fragment float4 previewImageFragment(
+                PreviewVertexOut in [[stage_in]],
+                texture2d<float> backdrop [[texture(0)]]
+            ) {
+                constexpr sampler textureSampler(filter::linear, address::clamp_to_edge);
+                // Match the way the keyed image is sampled: linear
+                // filtering, edge clamping. The fragment writes
+                // alpha = 1.0 because the imported image is the
+                // final backdrop — no further blending is intended
+                // for it.
+                float3 rgb = backdrop.sample(textureSampler, in.uv).rgb;
+                return float4(rgb, 1.0);
             }
             """
             return try device.makeLibrary(source: source, options: nil)

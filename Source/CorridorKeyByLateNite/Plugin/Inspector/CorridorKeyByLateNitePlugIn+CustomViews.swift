@@ -14,7 +14,7 @@ import SwiftUI
 
 /// NSHostingView subclass with two jobs: stop the header from stealing
 /// first-responder when users click into the inspector, and own a strong
-/// reference to the `CorridorKeyInspectorBridge` so the SwiftUI ObservedObject
+/// reference to the `CorridorKeyInspectorBridge` so the SwiftUI `@Observable`
 /// subscription can't outlive its publisher if Final Cut Pro retains the
 /// view longer than we expect.
 @MainActor

@@ -23,6 +23,8 @@ struct EditorView: View {
     @State private var isExporting = false
     @State private var loadFailureMessage: String?
     @State private var isDropTargeted = false
+    @State private var isImportingBackdropImage = false
+    @State private var backdropImportError: String?
 
     /// `EditorViewModel` requires a `StandaloneRenderEngine` constructed
     /// at view-creation time so we can fail fast if Metal isn't
@@ -113,11 +115,36 @@ struct EditorView: View {
                     device: viewModel.renderEngine.device,
                     frame: viewModel.latestPreview,
                     aspectFitSize: viewModel.renderSize,
-                    backdrop: viewModel.previewBackdrop
+                    backdrop: viewModel.previewBackdrop,
+                    customColor: viewModel.customBackdropColor,
+                    customImageTexture: viewModel.customBackdropTexture
                 )
                 .contextMenu {
-                    PreviewBackdropMenu(viewModel: viewModel)
+                    PreviewBackdropMenu(
+                        viewModel: viewModel,
+                        onPickImage: { isImportingBackdropImage = true }
+                    )
                 }
+                .fileImporter(
+                    isPresented: $isImportingBackdropImage,
+                    allowedContentTypes: [.image, .png, .jpeg, .heic, .tiff],
+                    allowsMultipleSelection: false
+                ) { result in
+                    handleBackdropImageImport(result)
+                }
+                .alert(
+                    "Couldn't import image",
+                    isPresented: Binding(
+                        get: { backdropImportError != nil },
+                        set: { if !$0 { backdropImportError = nil } }
+                    ),
+                    actions: {
+                        Button("OK", role: .cancel) { backdropImportError = nil }
+                    },
+                    message: {
+                        Text(backdropImportError ?? "Unknown error.")
+                    }
+                )
                 OnScreenControlOverlay(
                     viewModel: viewModel,
                     renderSize: viewModel.renderSize
@@ -146,7 +173,7 @@ struct EditorView: View {
 
     // MARK: - File handling
 
-    private func handleImportResult(_ result: Result<[URL], Error>) {
+    private func handleImportResult(_ result: Result<[URL], any Error>) {
         switch result {
         case .success(let urls):
             guard let url = urls.first else { return }
@@ -160,7 +187,11 @@ struct EditorView: View {
         guard let provider = providers.first else { return false }
         _ = provider.loadObject(ofClass: URL.self) { url, _ in
             guard let url else { return }
-            DispatchQueue.main.async {
+            // The provider callback fires off the main actor; bounce
+            // back via structured concurrency rather than GCD so the
+            // task is cancellable alongside the rest of the editor's
+            // in-flight work.
+            Task { @MainActor in
                 self.loadClip(at: url)
             }
         }
@@ -172,15 +203,33 @@ struct EditorView: View {
             await viewModel.loadClip(at: url)
         }
     }
+
+    private func handleBackdropImageImport(_ result: Result<[URL], any Error>) {
+        switch result {
+        case .success(let urls):
+            guard let url = urls.first else { return }
+            Task {
+                do {
+                    try await viewModel.importBackdropImage(from: url)
+                } catch {
+                    backdropImportError = error.localizedDescription
+                }
+            }
+        case .failure(let error):
+            backdropImportError = error.localizedDescription
+        }
+    }
 }
 
 /// Right-click context menu on the preview surface. Lets the user
 /// pick the backdrop they want behind the keyed image — defaulting
 /// to a transparency-aware checkerboard, with solid colour
 /// alternatives for matching specific monitors / colour-grade
-/// references.
+/// references, plus a custom-colour picker and a custom-image
+/// importer for project-specific backings.
 private struct PreviewBackdropMenu: View {
     @Bindable var viewModel: EditorViewModel
+    let onPickImage: () -> Void
 
     var body: some View {
         Picker("Player Background", selection: $viewModel.previewBackdrop) {
@@ -190,6 +239,55 @@ private struct PreviewBackdropMenu: View {
             }
         }
         .pickerStyle(.inline)
+
+        Divider()
+
+        // Custom colour picker. The ColorPicker's binding is
+        // read/write on the view model, so the user sees the
+        // backdrop respond live as they drag the eyedropper or
+        // step through the macOS colour palette.
+        ColorPicker(
+            "Custom Colour…",
+            selection: Binding(
+                get: { viewModel.customBackdropColor.swiftUIColor },
+                set: { viewModel.customBackdropColor = BackdropColor(swiftUIColor: $0) }
+            ),
+            supportsOpacity: false
+        )
+
+        // Custom image import. The current file name is shown in
+        // the disabled label so the user can tell at a glance
+        // which image is loaded; the "Clear Image" affordance
+        // only appears once an image is actually loaded.
+        if let imageName = viewModel.customBackdropImageName {
+            Text("Image: \(imageName)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Button("Replace Image…", systemImage: "photo.badge.arrow.down", action: onPickImage)
+            Button("Clear Image", systemImage: "trash", action: viewModel.clearBackdropImage)
+        } else {
+            Button("Import Image…", systemImage: "photo.badge.arrow.down", action: onPickImage)
+        }
+    }
+}
+
+/// Bridges between `BackdropColor` (the Codable / Sendable value
+/// type stored on the view model) and SwiftUI's `Color` (which
+/// the `ColorPicker` natively binds to). Lives at file scope so
+/// the EditorViewModel doesn't need to import SwiftUI just to
+/// expose a colour. Conversions force the colour into sRGB so the
+/// triplet survives the round-trip through UserDefaults JSON.
+extension BackdropColor {
+    var swiftUIColor: Color {
+        Color(.sRGB, red: red, green: green, blue: blue)
+    }
+
+    init(swiftUIColor color: Color) {
+        let nsColor = NSColor(color)
+        let srgb = nsColor.usingColorSpace(.sRGB) ?? nsColor
+        self.red = Double(srgb.redComponent)
+        self.green = Double(srgb.greenComponent)
+        self.blue = Double(srgb.blueComponent)
     }
 }
 

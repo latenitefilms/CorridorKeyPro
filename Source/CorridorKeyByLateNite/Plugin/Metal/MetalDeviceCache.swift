@@ -182,6 +182,14 @@ final class MetalDeviceCacheEntry: @unchecked Sendable {
     private let queueLock = NSLock()
     private var commandQueues: [any MTLCommandQueue]
     private var availability: [Bool]
+    /// High-water mark of simultaneously-in-flight command queues. Surfaced
+    /// to `PluginLog` the first time the peak crosses the old (4-queue) cap
+    /// so a saturation pattern in the wild gets recorded for follow-up.
+    private var peakInFlightCount: Int = 0
+    /// Tracks whether we've already logged the "saturation crossed 4"
+    /// warning — keeps the log file from filling with the same line on
+    /// every render tile in a saturated session.
+    private var didLogSaturationWarning: Bool = false
 
     private let renderPipelinesLock = NSLock()
     private var renderPipelines: [MTLPixelFormat: CorridorKeyRenderPipelines] = [:]
@@ -247,7 +255,13 @@ final class MetalDeviceCacheEntry: @unchecked Sendable {
         self.computePipelines = try CorridorKeyComputePipelines(device: device, library: library)
         self.texturePool = IntermediateTexturePool(device: device)
 
-        let queueCount = 4
+        // Eight queues per device. Empirically four was tight at 4K
+        // 60-fps tiling — `borrowCommandQueue()` could return `nil` when
+        // FCP dispatched faster than Metal committed, dropping the
+        // tile. Doubling the pool removes that ceiling at negligible
+        // cost (queues are cheap; pipeline state is shared across
+        // them all).
+        let queueCount = 8
         var queues: [any MTLCommandQueue] = []
         queues.reserveCapacity(queueCount)
         for _ in 0..<queueCount {
@@ -276,6 +290,16 @@ final class MetalDeviceCacheEntry: @unchecked Sendable {
         defer { queueLock.unlock() }
         for index in availability.indices where availability[index] {
             availability[index] = false
+            let inFlight = availability.lazy.filter { !$0 }.count
+            if inFlight > peakInFlightCount {
+                peakInFlightCount = inFlight
+                if !didLogSaturationWarning, inFlight > 4 {
+                    didLogSaturationWarning = true
+                    PluginLog.warning(
+                        "Command queue pool peak in-flight reached \(inFlight) — would have saturated the legacy 4-queue pool. Pool size is now 8 with telemetry tracking."
+                    )
+                }
+            }
             return commandQueues[index]
         }
         return nil
@@ -288,6 +312,15 @@ final class MetalDeviceCacheEntry: @unchecked Sendable {
             availability[index] = true
             return
         }
+    }
+
+    /// Test / diagnostics hook returning the high-water mark of
+    /// simultaneously-in-flight command queues observed since the
+    /// cache entry was created. Safe to read at any time.
+    func currentPeakInFlightCount() -> Int {
+        queueLock.lock()
+        defer { queueLock.unlock() }
+        return peakInFlightCount
     }
 
     func renderPipelines(for pixelFormat: MTLPixelFormat) throws -> CorridorKeyRenderPipelines {

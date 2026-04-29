@@ -124,6 +124,129 @@ struct PreviewBackdropCompositingTests {
                 "Transparent source on black backdrop should render black, got \(blackPixel).")
     }
 
+    @Test("custom-colour backdrop fills the transparent area with the picked RGB triplet")
+    @MainActor
+    func customColorBackdropFillsTransparentArea() async throws {
+        let device = try #require(MTLCreateSystemDefaultDevice())
+        let backdropTester = try BackdropPreviewTester(device: device)
+        let transparentSource = try Self.makePremultipliedTexture(
+            device: device,
+            pixels: [(r: 0, g: 0, b: 0, a: 0)]
+        )
+
+        // Pick an unambiguous teal so the test fails on either a
+        // stale clear colour (would render dark grey) or a wrongly
+        // routed solid (would render one of the fixed presets).
+        let teal = BackdropColor(red: 0.10, green: 0.55, blue: 0.65)
+        let result = try backdropTester.composite(
+            source: transparentSource,
+            backdrop: .customColor,
+            customColor: teal
+        )
+        let pixel = result.sample(x: 0, y: 0)
+        #expect(abs(pixel.r - 0.10) < 0.05, "Red channel \(pixel.r) is not the picked custom-colour red.")
+        #expect(abs(pixel.g - 0.55) < 0.05, "Green channel \(pixel.g) is not the picked custom-colour green.")
+        #expect(abs(pixel.b - 0.65) < 0.05, "Blue channel \(pixel.b) is not the picked custom-colour blue.")
+    }
+
+    @Test("custom-image backdrop samples the imported texture in the transparent area")
+    @MainActor
+    func customImageBackdropSamplesTexture() async throws {
+        let device = try #require(MTLCreateSystemDefaultDevice())
+        let backdropTester = try BackdropPreviewTester(device: device)
+        let transparentSource = try Self.makePremultipliedTexture(
+            device: device,
+            pixels: [(r: 0, g: 0, b: 0, a: 0)]
+        )
+
+        // 1×1 magenta texture as the "imported image". The whole
+        // visible quad should sample to magenta after composition.
+        let magentaImage = try Self.makeShaderReadTexture(
+            device: device,
+            width: 1,
+            height: 1,
+            bytes: (r: 255, g: 0, b: 255, a: 255)
+        )
+        let result = try backdropTester.composite(
+            source: transparentSource,
+            backdrop: .customImage,
+            customImageTexture: magentaImage
+        )
+        let pixel = result.sample(x: 0, y: 0)
+        #expect(pixel.r > 0.9, "Red channel \(pixel.r) should be ~1 (magenta backdrop sampled).")
+        #expect(pixel.g < 0.1, "Green channel \(pixel.g) should be ~0 (magenta has no green).")
+        #expect(pixel.b > 0.9, "Blue channel \(pixel.b) should be ~1 (magenta backdrop sampled).")
+    }
+
+    @Test("opaque source over a custom image fully covers the imported backdrop")
+    @MainActor
+    func customImageBackdropIsCoveredByOpaqueSource() async throws {
+        let device = try #require(MTLCreateSystemDefaultDevice())
+        let backdropTester = try BackdropPreviewTester(device: device)
+        let opaqueSource = try Self.makePremultipliedTexture(
+            device: device,
+            pixels: [(r: 0.20, g: 0.85, b: 0.30, a: 1.0)]
+        )
+        let magentaImage = try Self.makeShaderReadTexture(
+            device: device,
+            width: 1,
+            height: 1,
+            bytes: (r: 255, g: 0, b: 255, a: 255)
+        )
+        let result = try backdropTester.composite(
+            source: opaqueSource,
+            backdrop: .customImage,
+            customImageTexture: magentaImage
+        )
+        let pixel = result.sample(x: 0, y: 0)
+        #expect(abs(pixel.r - 0.20) < 0.05, "Red channel \(pixel.r) — opaque source must cover the magenta backdrop.")
+        #expect(abs(pixel.g - 0.85) < 0.05, "Green channel \(pixel.g) — opaque source must cover the magenta backdrop.")
+        #expect(abs(pixel.b - 0.30) < 0.05, "Blue channel \(pixel.b) — opaque source must cover the magenta backdrop.")
+    }
+
+    /// Builds a 1-row shader-read texture filled with a single
+    /// RGBA8Unorm pixel — used as the synthetic "imported image"
+    /// in custom-image backdrop tests. Stays at `bgra8Unorm` to
+    /// match the format `MTKTextureLoader` produces from a real
+    /// imported PNG/JPEG so the shader path under test is the
+    /// same one the production import flow drives.
+    private static func makeShaderReadTexture(
+        device: any MTLDevice,
+        width: Int,
+        height: Int,
+        bytes rgba: (r: UInt8, g: UInt8, b: UInt8, a: UInt8)
+    ) throws -> any MTLTexture {
+        let descriptor = MTLTextureDescriptor.texture2DDescriptor(
+            pixelFormat: .bgra8Unorm,
+            width: width,
+            height: height,
+            mipmapped: false
+        )
+        descriptor.usage = [.shaderRead]
+        descriptor.storageMode = .shared
+        let texture = try #require(device.makeTexture(descriptor: descriptor))
+        // BGRA byte order in storage.
+        var byteBuffer = [UInt8]()
+        byteBuffer.reserveCapacity(width * height * 4)
+        for _ in 0..<(width * height) {
+            byteBuffer.append(rgba.b)
+            byteBuffer.append(rgba.g)
+            byteBuffer.append(rgba.r)
+            byteBuffer.append(rgba.a)
+        }
+        byteBuffer.withUnsafeBytes { raw in
+            if let base = raw.baseAddress {
+                texture.replace(
+                    region: MTLRegionMake2D(0, 0, width, height),
+                    mipmapLevel: 0,
+                    withBytes: base,
+                    bytesPerRow: width * 4
+                )
+            }
+        }
+        return texture
+    }
+
     // MARK: - Helpers
 
     /// Builds a 1-row premultiplied RGBA16Float texture from a list of
@@ -182,7 +305,12 @@ final class BackdropPreviewTester {
         self.coordinator = MetalPreviewView.Coordinator(device: device)
     }
 
-    func composite(source: any MTLTexture, backdrop: PreviewBackdrop) throws -> CompositedSurface {
+    func composite(
+        source: any MTLTexture,
+        backdrop: PreviewBackdrop,
+        customColor: BackdropColor = .default,
+        customImageTexture: (any MTLTexture)? = nil
+    ) throws -> CompositedSurface {
         let outputDescriptor = MTLTextureDescriptor.texture2DDescriptor(
             pixelFormat: .bgra8Unorm,
             width: source.width,
@@ -197,6 +325,8 @@ final class BackdropPreviewTester {
             sourceTexture: source,
             aspectFitSize: CGSize(width: source.width, height: source.height),
             backdrop: backdrop,
+            customColor: customColor,
+            customImageTexture: customImageTexture,
             previewFrame: nil
         )
         try coordinator.renderForTesting(into: outputTexture)
