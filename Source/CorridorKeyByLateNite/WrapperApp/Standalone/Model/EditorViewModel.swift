@@ -225,6 +225,17 @@ final class EditorViewModel {
     /// Currently-active OSC tool — drives the click handler on the
     /// preview surface.
     var oscTool: OnScreenControlTool = .disabled
+    /// While the user holds the "Show Original" button, this flips
+    /// to `true` and the preview renders the source frame straight
+    /// through (no pre-inference, no MLX, no post). Releasing the
+    /// button flips it back to `false`. The transient flag triggers
+    /// an immediate re-render via its `didSet`.
+    var isShowingOriginal: Bool = false {
+        didSet {
+            guard oldValue != isShowingOriginal else { return }
+            renderPreview(at: playheadTime)
+        }
+    }
     /// Backdrop drawn behind the keyed preview image. Defaults to
     /// the transparency-aware checkerboard pattern; right-clicking
     /// the preview surfaces the picker.
@@ -679,6 +690,7 @@ final class EditorViewModel {
             Int(renderSize.height.rounded())
         )
         let renderEngine = renderEngine
+        let showingOriginal = isShowingOriginal
 
         pendingPreviewTask?.cancel()
         pendingPreviewTask = Task { [weak self] in
@@ -693,11 +705,22 @@ final class EditorViewModel {
             }
             if Task.isCancelled { return }
             do {
-                let result = try renderEngine.render(
-                    source: pixelBuffer,
-                    state: stateForFrame,
-                    renderTime: frameTime
-                )
+                let result: StandaloneRenderResult
+                if showingOriginal {
+                    // Press-and-hold "Show Original" — bypass the
+                    // pipeline entirely so the comparison frame is
+                    // pixel-identical to the source bytes the
+                    // decoder produced. Pre-inference + MLX + post
+                    // can introduce subtle gamma / colour-management
+                    // shifts that would muddy the A/B comparison.
+                    result = try renderEngine.renderShowingOriginal(source: pixelBuffer)
+                } else {
+                    result = try renderEngine.render(
+                        source: pixelBuffer,
+                        state: stateForFrame,
+                        renderTime: frameTime
+                    )
+                }
                 if Task.isCancelled { return }
                 self.latestPreview = PreviewFrame(
                     texture: result.destinationTexture,
@@ -846,6 +869,14 @@ final class EditorViewModel {
                 total = fallbackTotalFrames
             }
             self.analysisStatus = .running(processed: frameIndex + 1, total: total)
+            // If the analyser just produced the matte for the frame
+            // the user is currently looking at, push a re-render so
+            // they see the keyed result the moment it's available
+            // — earlier builds left them staring at the source until
+            // the entire pass finished.
+            if frameIndex == currentFrameIndex(at: playheadTime) {
+                renderPreview(at: playheadTime)
+            }
         case .completed(let elapsed):
             self.analysisStatus = .completed(
                 elapsedSeconds: elapsed,

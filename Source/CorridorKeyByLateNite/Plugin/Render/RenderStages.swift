@@ -96,6 +96,39 @@ enum RenderStages {
         return output
     }
 
+    /// Allocates a hint texture and zeros every texel. Used by the
+    /// Manual Hint mode so the upstream chroma / Vision priors are
+    /// genuinely skipped — the only non-zero pixels in the resulting
+    /// hint channel come from `applyHintPoints` rasterising the
+    /// user's dots on top.
+    static func generateZeroHint(
+        width: Int,
+        height: Int,
+        entry: MetalDeviceCacheEntry,
+        commandBuffer: any MTLCommandBuffer
+    ) throws -> PooledTexture {
+        guard let output = entry.texturePool.acquire(
+            width: width,
+            height: height,
+            pixelFormat: .r16Float
+        ) else { throw MetalDeviceCacheError.textureAllocationFailed }
+        guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
+            output.returnManually()
+            throw MetalDeviceCacheError.commandEncoderCreationFailed
+        }
+        encoder.label = "CorridorKey by LateNite Zero Hint"
+        encoder.setComputePipelineState(entry.computePipelines.clearHint)
+        encoder.setTexture(output.texture, index: Int(CKTextureIndexOutput.rawValue))
+        dispatch(
+            encoder: encoder,
+            pipeline: entry.computePipelines.clearHint,
+            width: output.texture.width,
+            height: output.texture.height
+        )
+        encoder.endEncoding()
+        return output
+    }
+
     /// Extracts an alpha hint out of an externally-supplied texture. The
     /// layout flag tells the kernel which channel holds the hint value
     /// (`0` = alpha for RGBA layouts, `1` = R for single-channel, `2` = R

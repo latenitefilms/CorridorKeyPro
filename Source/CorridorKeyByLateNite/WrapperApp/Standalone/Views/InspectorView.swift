@@ -123,10 +123,10 @@ private struct AnalysisStatusGroup: View {
 
     private var warmupLabel: String {
         switch viewModel.warmupStatus {
-        case .cold: return "Neural model: cold"
-        case .warming(let resolution): return "Neural model: loading (\(resolution)px)…"
-        case .ready(let resolution): return "Neural model: ready (\(resolution)px)"
-        case .failed(let message): return "Neural model failed: \(message)"
+        case .cold: return "Neural Model: Cold"
+        case .warming(let resolution): return "Neural Model: Loading (\(resolution)px)…"
+        case .ready(let resolution): return "Neural Model: Ready (\(resolution)px)"
+        case .failed(let message): return "Neural Model Failed: \(message)"
         }
     }
 }
@@ -144,12 +144,12 @@ private struct AnalysisProgressLabel: View {
         case .running(let processed, let total):
             VStack(alignment: .leading, spacing: 4) {
                 ProgressView(value: Double(processed), total: Double(max(total, 1)))
-                Text("Analysing frame \(processed) of \(total)")
+                Text("Analysing frame \(processed) of \(total)…")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         case .completed(let elapsed, let frames):
-            Text("Analysed \(frames) frames in \(elapsed, format: .number.precision(.fractionLength(1))) s")
+            Text("Analysed \(frames) \(frames == 1 ? "frame" : "frames") in \(AnalysisDurationFormatter.format(seconds: elapsed)).")
                 .font(.callout)
                 .foregroundStyle(.green)
         case .failed(let message):
@@ -514,3 +514,25 @@ extension OutputMode: DisplayNamed, Identifiable { public var id: Int { rawValue
 extension SpillMethod: DisplayNamed, Identifiable { public var id: Int { rawValue } }
 extension UpscaleMethod: DisplayNamed, Identifiable { public var id: Int { rawValue } }
 extension HintMode: DisplayNamed, Identifiable { public var id: Int { rawValue } }
+
+/// Formats an elapsed duration in seconds as a human-readable string
+/// for the analysis-completed badge. Replaces the earlier "187.7 s"
+/// rendering with phrases like "3 minutes and 8 seconds" — easier to
+/// scan when the user comes back to a clip and wants to know how
+/// long the analysis pass took.
+enum AnalysisDurationFormatter {
+    static func format(seconds: Double) -> String {
+        let totalSeconds = max(Int(seconds.rounded()), 0)
+        if totalSeconds < 60 {
+            return "\(totalSeconds) \(totalSeconds == 1 ? "second" : "seconds")"
+        }
+        let minutes = totalSeconds / 60
+        let remainder = totalSeconds % 60
+        let minutesText = "\(minutes) \(minutes == 1 ? "minute" : "minutes")"
+        if remainder == 0 {
+            return minutesText
+        }
+        let secondsText = "\(remainder) \(remainder == 1 ? "second" : "seconds")"
+        return "\(minutesText) and \(secondsText)"
+    }
+}

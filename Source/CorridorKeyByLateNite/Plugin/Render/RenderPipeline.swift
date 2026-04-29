@@ -267,7 +267,7 @@ final class RenderPipeline: @unchecked Sendable {
         let pre = try runPreInference(
             sourceTexture: sourceTexture,
             hintTexture: nil,
-            useVisionHint: state.autoSubjectHintEnabled,
+            hintMode: state.hintMode,
             hintPoints: state.hintPointSet.points,
             device: device,
             entry: entry,
@@ -567,7 +567,7 @@ final class RenderPipeline: @unchecked Sendable {
         gamutTransform: WorkingSpaceTransform,
         inferenceResolution: Int
     ) throws -> RenderReport {
-        PluginLog.notice("Hint Diagnostic: render started (autoSubjectHint=\(inputs.state.autoSubjectHintEnabled), source=\(context.sourceTexture.width)x\(context.sourceTexture.height), pixelFormat=\(context.pixelFormat.rawValue))")
+        PluginLog.notice("Hint Diagnostic: render started (hintMode=\(inputs.state.hintMode.displayName), source=\(context.sourceTexture.width)x\(context.sourceTexture.height), pixelFormat=\(context.pixelFormat.rawValue))")
 
         // Vision request runs synchronously on the Neural Engine in
         // parallel with the GPU pre-pass — same pattern as the
@@ -577,7 +577,7 @@ final class RenderPipeline: @unchecked Sendable {
         // black?" can see the cause in Console.app.
         var visionMask: VisionMask? = nil
         var visionFailureReason: String? = nil
-        if inputs.state.autoSubjectHintEnabled,
+        if inputs.state.hintMode.usesVisionPrior,
            inputs.alphaHintTexture == nil,
            #available(macOS 14.0, *) {
             if let engine = context.entry.visionHintEngine() as? VisionHintEngine {
@@ -598,7 +598,7 @@ final class RenderPipeline: @unchecked Sendable {
                 PluginLog.notice("Hint Diagnostic: visionHintEngine() returned nil — Vision unavailable.")
             }
         } else {
-            PluginLog.notice("Hint Diagnostic: skipping Vision — autoSubjectHint=\(inputs.state.autoSubjectHintEnabled), externalHintAttached=\(inputs.alphaHintTexture != nil).")
+            PluginLog.notice("Hint Diagnostic: skipping Vision — hintMode=\(inputs.state.hintMode.displayName), externalHintAttached=\(inputs.alphaHintTexture != nil).")
         }
 
         guard let commandBuffer = context.commandQueue.makeCommandBuffer() else {
@@ -619,7 +619,7 @@ final class RenderPipeline: @unchecked Sendable {
         let rotatedSource = rotatedSourcePooled?.texture ?? context.sourceTexture
 
         // Step 2: produce the hint texture exactly as the analyse path
-        // does (external > Vision > green-bias).
+        // does (external > Vision > manual zero-base > green-bias).
         let hintPooled: PooledTexture
         if let hostTexture = inputs.alphaHintTexture {
             hintPooled = try RenderStages.extractHint(
@@ -640,6 +640,13 @@ final class RenderPipeline: @unchecked Sendable {
                 commandBuffer: commandBuffer
             )
             mask.retainOnCompletion(of: commandBuffer)
+        } else if inputs.state.hintMode == .manual {
+            hintPooled = try RenderStages.generateZeroHint(
+                width: rotatedSource.width,
+                height: rotatedSource.height,
+                entry: context.entry,
+                commandBuffer: commandBuffer
+            )
         } else {
             hintPooled = try RenderStages.generateGreenHint(
                 source: rotatedSource,
@@ -795,7 +802,7 @@ final class RenderPipeline: @unchecked Sendable {
     private func runPreInference(
         sourceTexture: any MTLTexture,
         hintTexture: (any MTLTexture)?,
-        useVisionHint: Bool,
+        hintMode: HintMode,
         hintPoints: [HintPoint],
         device: any MTLDevice,
         entry: MetalDeviceCacheEntry,
@@ -812,7 +819,7 @@ final class RenderPipeline: @unchecked Sendable {
         // no salient subject or fails for any reason; the render path
         // never silently degrades.
         var visionMask: VisionMask? = nil
-        if useVisionHint, hintTexture == nil, #available(macOS 14.0, *) {
+        if hintMode == .appleVision, hintTexture == nil, #available(macOS 14.0, *) {
             if let engine = entry.visionHintEngine() as? VisionHintEngine {
                 do {
                     visionMask = try engine.generateMask(source: sourceTexture)
@@ -858,6 +865,17 @@ final class RenderPipeline: @unchecked Sendable {
                 commandBuffer: preCommandBuffer
             )
             mask.retainOnCompletion(of: preCommandBuffer)
+        } else if hintMode == .manual {
+            // Manual mode skips both the chroma and Vision priors —
+            // the only non-zero pixels in the hint channel come from
+            // the user's dots, which the next stage rasterises onto
+            // this zero base.
+            hintTexturePooled = try RenderStages.generateZeroHint(
+                width: rotatedSource.width,
+                height: rotatedSource.height,
+                entry: entry,
+                commandBuffer: preCommandBuffer
+            )
         } else {
             hintTexturePooled = try RenderStages.generateGreenHint(
                 source: rotatedSource,

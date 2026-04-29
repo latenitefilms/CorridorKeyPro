@@ -241,6 +241,51 @@ kernel void corridorKeyDespillKernel(
     float g = rgba.g;
     float b = rgba.b;
 
+    // Ultra method — chroma-projection despill modelled on After
+    // Effects' Advanced Spill Suppressor. Works in BT.709 YCbCr:
+    // the screen colour (green here, since callers rotate blue
+    // into the green domain) sits at a fixed direction in CbCr
+    // space, so we project each pixel onto that direction and
+    // subtract the positive component while keeping luminance
+    // intact. Result: clean, flat removal that survives soft
+    // edges and translucency without the over-bright mids the
+    // Screen Subtract method introduces.
+    if (params.method == CKSpillMethodUltra && params.strength > 0.0) {
+        // BT.709 RGB → YCbCr (no offset; values are linear, not
+        // studio-range, so we keep Cb/Cr signed around zero).
+        float yLuma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        float cb    = -0.1146 * r - 0.3854 * g + 0.5000 * b;
+        float cr    =  0.5000 * r - 0.4542 * g - 0.0458 * b;
+
+        // Pure green's CbCr direction, normalised. Computed once
+        // from the BT.709 matrix above so the values track if the
+        // matrix ever changes.
+        const float2 greenDir = normalize(float2(-0.3854, -0.4542));
+        float2 chroma = float2(cb, cr);
+        float greenProjection = dot(chroma, greenDir);
+
+        // Only positive projections indicate spill — negative ones
+        // mean the pixel is biased *away* from the screen colour
+        // (red / orange / skin tones) and we leave them alone.
+        if (greenProjection > 0.0) {
+            float removed = greenProjection * params.strength;
+            float2 corrected = chroma - greenDir * removed;
+            cb = corrected.x;
+            cr = corrected.y;
+
+            // YCbCr → BT.709 RGB (inverse of the matrix above).
+            r = yLuma                 + 1.5748 * cr;
+            g = yLuma - 0.1873 * cb - 0.4681 * cr;
+            b = yLuma + 1.8556 * cb;
+
+            r = saturate(r);
+            g = saturate(g);
+            b = saturate(b);
+        }
+        destination.write(float4(r, g, b, rgba.a), gid);
+        return;
+    }
+
     float limit = 0.0;
     if (params.method == CKSpillMethodDoubleLimit) {
         limit = max(r, b);
@@ -672,6 +717,21 @@ kernel void corridorKeyGreenHintKernel(
     float greenBias = rgba.g - max(rgba.r, rgba.b);
     float matte = 1.0 - saturate(greenBias * 2.0);
     destination.write(float4(matte, 0.0, 0.0, 1.0), gid);
+}
+
+/// Writes 0.0 to every texel of an `r16Float` hint texture. The
+/// pre-inference path uses this for Manual Hint mode so the
+/// upstream chroma / Vision priors are skipped — the only
+/// non-zero pixels in the hint channel come from
+/// `corridorKeyApplyHintPointsKernel` rasterising the user's
+/// dots on top.
+kernel void corridorKeyClearHintKernel(
+    texture2d<float, access::write> destination [[texture(CKTextureIndexOutput)]],
+    uint2 gid [[thread_position_in_grid]]
+) {
+    uint2 dims = uint2(destination.get_width(), destination.get_height());
+    if (gid.x >= dims.x || gid.y >= dims.y) { return; }
+    destination.write(float4(0.0, 0.0, 0.0, 1.0), gid);
 }
 
 // MARK: - Source passthrough blending

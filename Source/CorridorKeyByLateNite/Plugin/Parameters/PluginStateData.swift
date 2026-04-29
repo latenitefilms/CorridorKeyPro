@@ -22,16 +22,6 @@ struct PluginStateData: Codable, Sendable {
     /// the three options (Automatic / Apple Vision / Manual).
     var hintMode: HintMode
 
-    /// Legacy mirror of the `appleVision` hint-mode option. Kept as a
-    /// computed boolean because so much of the rendering pipeline
-    /// already asks "should I run the Vision prior?" and rewriting
-    /// every call site at once would balloon this change. New
-    /// branches on the rendering path read `hintMode` directly.
-    var autoSubjectHintEnabled: Bool {
-        get { hintMode == .appleVision }
-        set { hintMode = newValue ? .appleVision : .automatic }
-    }
-
     /// Whether the on-screen subject marker should be drawn on the
     /// canvas. Drawn as a small ring + crosshair the user can drag.
     var showSubjectMarker: Bool
@@ -129,7 +119,14 @@ struct PluginStateData: Codable, Sendable {
         showSubjectMarker: Bool = true,
         subjectPositionX: Double = 0.5,
         subjectPositionY: Double = 0.5,
-        sourcePassthroughEnabled: Bool = true,
+        // Source Passthrough is off by default in v1.0 because the
+        // erode + blur it bakes into the matte's interior tends to
+        // pull the green / blue screen colour back through translucent
+        // hair and motion blur, which reads as visible chroma fringe
+        // on most footage. Off by default; users with very dark
+        // foreground edges who *want* the interior softened can flip
+        // it on.
+        sourcePassthroughEnabled: Bool = false,
         passthroughErodeNormalized: Double = 3.0,
         passthroughBlurNormalized: Double = 7.0,
         alphaBlackPoint: Double = 0.0,
@@ -203,11 +200,6 @@ struct PluginStateData: Codable, Sendable {
         case screenColor
         case qualityMode
         case hintMode
-        /// Legacy Bool — kept on the coding-keys list so projects
-        /// saved before the `HintMode` enum existed can still be
-        /// decoded. The decoder maps `true → .appleVision`,
-        /// `false → .automatic`.
-        case autoSubjectHintEnabled
         case showSubjectMarker
         case subjectPositionX
         case subjectPositionY
@@ -245,16 +237,7 @@ struct PluginStateData: Codable, Sendable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.screenColor = try container.decodeIfPresent(ScreenColor.self, forKey: .screenColor) ?? .green
         self.qualityMode = try container.decodeIfPresent(QualityMode.self, forKey: .qualityMode) ?? .automatic
-        if let mode = try container.decodeIfPresent(HintMode.self, forKey: .hintMode) {
-            self.hintMode = mode
-        } else if let legacyVisionFlag = try container.decodeIfPresent(Bool.self, forKey: .autoSubjectHintEnabled) {
-            // Pre-HintMode projects: map the old boolean toggle to
-            // the equivalent new mode so opening an existing file
-            // doesn't lose the user's prior pick.
-            self.hintMode = legacyVisionFlag ? .appleVision : .automatic
-        } else {
-            self.hintMode = .appleVision
-        }
+        self.hintMode = try container.decodeIfPresent(HintMode.self, forKey: .hintMode) ?? .appleVision
         self.showSubjectMarker = try container.decodeIfPresent(Bool.self, forKey: .showSubjectMarker) ?? true
         self.subjectPositionX = try container.decodeIfPresent(Double.self, forKey: .subjectPositionX) ?? 0.5
         self.subjectPositionY = try container.decodeIfPresent(Double.self, forKey: .subjectPositionY) ?? 0.5
@@ -288,17 +271,14 @@ struct PluginStateData: Codable, Sendable {
         self.hintPointSet = try container.decodeIfPresent(HintPointSet.self, forKey: .hintPointSet) ?? HintPointSet()
     }
 
-    /// Custom encoder. Required because `autoSubjectHintEnabled` is now
-    /// a computed mirror of `hintMode`; the synthesizer would otherwise
-    /// fail to map the (legacy) coding key to a stored property. The
-    /// encoder still emits both keys so older readers that only know
-    /// the boolean field continue to load a sensible value.
+    /// Custom encoder. We pair this with a custom decoder so the
+    /// `hintMode` field stays optional in saved blobs — old beta
+    /// projects without that key still load with the new default.
     func encode(to encoder: any Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(screenColor, forKey: .screenColor)
         try container.encode(qualityMode, forKey: .qualityMode)
         try container.encode(hintMode, forKey: .hintMode)
-        try container.encode(autoSubjectHintEnabled, forKey: .autoSubjectHintEnabled)
         try container.encode(showSubjectMarker, forKey: .showSubjectMarker)
         try container.encode(subjectPositionX, forKey: .subjectPositionX)
         try container.encode(subjectPositionY, forKey: .subjectPositionY)

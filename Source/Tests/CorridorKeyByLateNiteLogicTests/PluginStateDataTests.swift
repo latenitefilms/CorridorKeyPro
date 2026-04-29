@@ -50,7 +50,6 @@ struct PluginStateDataTests {
         #expect(decoded.screenColor == .blue)
         #expect(decoded.qualityMode == .ultra1536)
         #expect(decoded.hintMode == .automatic)
-        #expect(decoded.autoSubjectHintEnabled == false)
         #expect(decoded.sourcePassthroughEnabled == false)
         #expect(decoded.passthroughErodeNormalized == 12)
         #expect(decoded.passthroughBlurNormalized == 18)
@@ -84,10 +83,8 @@ struct PluginStateDataTests {
         #expect(defaults.temporalStabilityEnabled == true)
         #expect(defaults.temporalStabilityStrength == 0.5)
 
-        // A blob written before this key existed must still decode
-        // cleanly. Empty blobs hit the default branch which now
-        // returns an enabled stabiliser, matching the new product
-        // default.
+        // Empty blobs hit the default branch which now returns an
+        // enabled stabiliser, matching the new product default.
         let decoded = PluginStateData.decoded(from: NSData())
         #expect(decoded.temporalStabilityEnabled == true)
         #expect(decoded.temporalStabilityStrength == 0.5)
@@ -125,12 +122,11 @@ struct PluginStateDataTests {
     @Test("Hint mode defaults to Apple Vision and survives round-trip")
     func hintModeDefaultsAndRoundTrip() throws {
         let defaults = PluginStateData()
-        // Default ON in v1.0: Vision's foreground prior beats the
+        // Default in v1.0: Vision's foreground prior beats the
         // chroma prior on most footage, and the MLX network handles
         // the harder boundaries Vision produces well enough that
         // shipping it as the default is the right call.
         #expect(defaults.hintMode == .appleVision)
-        #expect(defaults.autoSubjectHintEnabled == true)
 
         // Empty blob falls back to the default mode.
         let legacyDecoded = PluginStateData.decoded(from: NSData())
@@ -141,7 +137,6 @@ struct PluginStateDataTests {
         let encoded = try manual.encodedForHost()
         let decoded = PluginStateData.decoded(from: encoded)
         #expect(decoded.hintMode == .manual)
-        #expect(decoded.autoSubjectHintEnabled == false)
 
         // Automatic should round-trip.
         let automatic = PluginStateData(screenColor: .green, qualityMode: .high1024, hintMode: .automatic)

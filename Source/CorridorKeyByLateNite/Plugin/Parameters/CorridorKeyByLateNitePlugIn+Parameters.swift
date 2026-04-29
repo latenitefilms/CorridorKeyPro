@@ -193,7 +193,7 @@ extension CorridorKeyToolboxPlugIn {
         create.addToggleButton(
             withName: "Source Passthrough",
             parameterID: ParameterIdentifier.sourcePassthrough,
-            defaultValue: true,
+            defaultValue: false,
             parameterFlags: CorridorKeyParameterFlags.nonAnimatableChoice.fxFlags
         )
 

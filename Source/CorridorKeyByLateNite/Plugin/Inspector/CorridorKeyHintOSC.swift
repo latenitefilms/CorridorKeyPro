@@ -3,16 +3,26 @@
 //  CorridorKey by LateNite
 //
 //  Sibling FxPlug plug-in that conforms to `FxOnScreenControl_v4` and
-//  draws a draggable subject marker on the Final Cut Pro canvas. The
-//  marker position is wired to the main filter's `subjectPosition`
-//  Point parameter (X/Y in object-normalised 0…1 space), so the user
-//  can drag the marker on the canvas OR enter X/Y directly in the
-//  inspector — both update the same underlying parameter, mirroring
-//  the working pattern from the Metaburner FxPlug.
+//  draws the hint-point overlay on the Final Cut Pro canvas. Mirrors
+//  the Standalone Editor's Subject Hints menu: foreground points
+//  steer the matte toward 1.0 in their neighbourhood, background
+//  points toward 0.0, and the user can erase nearest with a
+//  modifier-key click. Both interfaces write into the same
+//  `HintPointSet` custom parameter so a clip's hints travel with
+//  the project.
 //
-//  Drawing is a render pass (not a compute kernel) into the OSC
-//  destination texture FCP supplies; FxPlug's destination is render-
-//  target-only so compute writes silently produce nothing.
+//  Modifier-key click semantics — chosen to match Photoshop /
+//  Affinity / DaVinci's brush conventions:
+//
+//    Plain click          → drop a foreground hint
+//    Shift + click        → drop a background hint
+//    Option (alt) + click → erase the nearest hint within tolerance
+//
+//  Drawing is a render pass into the OSC destination texture FCP
+//  supplies; FxPlug's destination is render-target-only so compute
+//  writes silently produce nothing. The same `corridorKeyDrawOSCVertex`
+//  / `Fragment` shader pair the editor previews with renders here so
+//  the two surfaces look identical.
 //
 
 import Foundation
@@ -20,21 +30,14 @@ import AppKit
 import CoreMedia
 import Metal
 
-/// Active part identifiers — non-zero so a hit-test result of `0`
-/// unambiguously means "missed every control".
-private enum HitPart: Int {
-    case marker = 1
-}
-
 @objc(CorridorKeyHintOSC)
 class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
 
     private let apiManager: any PROAPIAccessing
-    private let dragLock = NSLock()
-    /// True while the user is mid-drag on the marker. Used to ignore
-    /// hover-driven `mouseMoved` callbacks that would otherwise fight
-    /// the drag.
-    private var dragging: Bool = false
+    /// Tolerance for option-click erase, in object-normalised units.
+    /// Matches the Standalone Editor's tolerance so a user with
+    /// muscle memory from one host hits the right hint in the other.
+    private static let eraseTolerance: Double = 0.05
 
     @objc(initWithAPIManager:)
     required init?(apiManager: any PROAPIAccessing) {
@@ -46,11 +49,9 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
     // MARK: - FxOnScreenControl_v4
 
     @objc func drawingCoordinates() -> FxDrawingCoordinates {
-        // We work in canvas pixel coordinates because the OSC API
-        // returns mouse positions in canvas space and the host's
-        // `convertPoint(fromSpace:…)` lets us round-trip into
-        // object-normalised space when reading/writing the Point
-        // parameter. Matches Metaburner's working setup.
+        // Canvas pixel coordinates because the OSC API returns mouse
+        // positions in canvas space; we round-trip into object-
+        // normalised space when reading / writing the hint point set.
         return FxDrawingCoordinates(kFxDrawingCoordinates_CANVAS)
     }
 
@@ -63,23 +64,13 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         at time: CMTime
     ) {
         guard subjectMarkerVisible(at: time) else { return }
-        let object = subjectPosition(at: time)
-        // Convert object-normalised position back to canvas pixels via
-        // FCP's coordinate API. This is the round-trip partner of
-        // `objectPosition(forCanvasX:canvasY:)`, so no matter what
-        // direction or scale convertPoint uses internally, dragging
-        // and drawing stay in sync. Without this round-trip the
-        // marker drifts away from the cursor near the frame edges
-        // because object-normalised coords don't map 1:1 onto the
-        // OSC tile (the tile usually extends beyond the object bounds).
-        let canvas = canvasPosition(forObjectPosition: object)
+        let hints = currentHintSet(at: time)
+        guard !hints.points.isEmpty else { return }
         do {
-            try renderMarker(
+            try renderMarkers(
                 destinationImage: destinationImage,
-                canvasX: canvas.x,
-                canvasY: canvas.y,
-                isActive: activePart == HitPart.marker.rawValue || isDragging,
-                time: time
+                hints: hints,
+                activePart: activePart
             )
         } catch {
             PluginLog.error("OSC draw failed: \(error.localizedDescription)")
@@ -97,15 +88,31 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
             activePart.pointee = 0
             return
         }
-        let canvasMarker = canvasPosition(forObjectPosition: subjectPosition(at: time))
-        let dx = canvasMarker.x - x
-        let dy = canvasMarker.y - y
-        let distance = (dx * dx + dy * dy).squareRoot()
-        // Hit radius matches the visual ring's outer edge so the user
-        // can grab the marker by clicking anywhere on or just outside
-        // the ring.
-        let hitRadius = canvasHitRadius()
-        activePart.pointee = (distance <= hitRadius) ? HitPart.marker.rawValue : 0
+        let hits = currentHintSet(at: time)
+        guard !hits.points.isEmpty else {
+            activePart.pointee = 0
+            return
+        }
+        let object = objectPosition(forCanvasX: x, canvasY: y)
+        var nearest: Int = 0
+        var nearestDistanceSquared = Double.infinity
+        for (index, point) in hits.points.enumerated() {
+            let dx = point.x - object.x
+            let dy = point.y - object.y
+            let distanceSquared = dx * dx + dy * dy
+            if distanceSquared < nearestDistanceSquared {
+                nearestDistanceSquared = distanceSquared
+                nearest = index + 1 // FxPlug expects non-zero for "hit"
+            }
+        }
+        // Use the same tolerance the erase action uses so the active
+        // highlight only appears when the user is close enough that
+        // option-click would actually delete the hint.
+        if nearestDistanceSquared <= Self.eraseTolerance * Self.eraseTolerance {
+            activePart.pointee = nearest
+        } else {
+            activePart.pointee = 0
+        }
     }
 
     @objc(mouseDownAtPositionX:positionY:activePart:modifiers:forceUpdate:atTime:)
@@ -121,14 +128,22 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
             forceUpdate.pointee = ObjCBool(false)
             return
         }
-        // Whether the click hit the marker or the empty canvas, snap
-        // the marker to the click position and start a drag. This is
-        // the most discoverable interaction model — users find the
-        // marker by clicking anywhere they want it.
         let object = objectPosition(forCanvasX: x, canvasY: y)
-        writeSubjectPosition(x: object.x, y: object.y, at: time)
-        logCoordinateRoundTripOnce(canvasX: x, canvasY: y, object: object)
-        beginDrag()
+        var hints = currentHintSet(at: time)
+        let action = hintAction(for: modifiers)
+        switch action {
+        case .addForeground:
+            hints.add(HintPoint(x: object.x, y: object.y, kind: .foreground))
+        case .addBackground:
+            hints.add(HintPoint(x: object.x, y: object.y, kind: .background))
+        case .eraseNearest:
+            let removed = hints.removeNearest(toX: object.x, y: object.y, tolerance: Self.eraseTolerance)
+            if !removed {
+                forceUpdate.pointee = ObjCBool(false)
+                return
+            }
+        }
+        writeHintSet(hints, at: time)
         forceUpdate.pointee = ObjCBool(true)
     }
 
@@ -141,13 +156,10 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         forceUpdate: UnsafeMutablePointer<ObjCBool>,
         at time: CMTime
     ) {
-        guard isDragging else {
-            forceUpdate.pointee = ObjCBool(false)
-            return
-        }
-        let object = objectPosition(forCanvasX: x, canvasY: y)
-        writeSubjectPosition(x: object.x, y: object.y, at: time)
-        forceUpdate.pointee = ObjCBool(true)
+        // Hint points are click-to-place (Photoshop brush style); we
+        // don't drag them. Reporting `false` here keeps FCP from
+        // dispatching a continuous drag stream we'd ignore anyway.
+        forceUpdate.pointee = ObjCBool(false)
     }
 
     @objc(mouseUpAtPositionX:positionY:activePart:modifiers:forceUpdate:atTime:)
@@ -159,8 +171,7 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         forceUpdate: UnsafeMutablePointer<ObjCBool>,
         at time: CMTime
     ) {
-        endDrag()
-        forceUpdate.pointee = ObjCBool(true)
+        forceUpdate.pointee = ObjCBool(false)
     }
 
     @objc(keyDownAtPositionX:positionY:keyPressed:modifiers:forceUpdate:didHandle:atTime:)
@@ -191,24 +202,28 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         forceUpdate.pointee = ObjCBool(false)
     }
 
-    // MARK: - Drag state
+    // MARK: - Tool action
 
-    private var isDragging: Bool {
-        dragLock.lock()
-        defer { dragLock.unlock() }
-        return dragging
+    private enum HintAction {
+        case addForeground
+        case addBackground
+        case eraseNearest
     }
 
-    private func beginDrag() {
-        dragLock.lock()
-        dragging = true
-        dragLock.unlock()
-    }
-
-    private func endDrag() {
-        dragLock.lock()
-        dragging = false
-        dragLock.unlock()
+    private func hintAction(for modifiers: FxModifierKeys) -> HintAction {
+        // `FxModifierKeys` is a `UInt` bitmask whose bits are defined
+        // in `FxOnScreenControl.h`. Option (alt) takes precedence
+        // over Shift so option+shift+click still erases — the
+        // dominant intent on a multi-modifier press is "remove this
+        // dot" rather than "swap kind".
+        let raw = UInt(modifiers)
+        if raw & UInt(kFxModifierKey_OPTION) != 0 {
+            return .eraseNearest
+        }
+        if raw & UInt(kFxModifierKey_SHIFT) != 0 {
+            return .addBackground
+        }
+        return .addForeground
     }
 
     // MARK: - Parameter I/O
@@ -222,19 +237,20 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         return raw.boolValue
     }
 
-    private func subjectPosition(at time: CMTime) -> (x: Double, y: Double) {
+    private func currentHintSet(at time: CMTime) -> HintPointSet {
         guard let retrieval = apiManager.api(for: (any FxParameterRetrievalAPI_v6).self) as? any FxParameterRetrievalAPI_v6 else {
-            return (0.5, 0.5)
+            return HintPointSet()
         }
-        var x: Double = 0.5
-        var y: Double = 0.5
-        retrieval.getXValue(&x, yValue: &y, fromParameter: ParameterIdentifier.subjectPosition, at: time)
-        return (x, y)
+        var raw: (any NSCopying & NSObjectProtocol & NSSecureCoding)?
+        retrieval.getCustomParameterValue(
+            &raw,
+            fromParameter: ParameterIdentifier.subjectPoints,
+            at: time
+        )
+        return HintPointSet.fromParameterDictionary(raw as? NSDictionary)
     }
 
-    private func writeSubjectPosition(x: Double, y: Double, at time: CMTime) {
-        let clampedX = max(0, min(1, x))
-        let clampedY = max(0, min(1, y))
+    private func writeHintSet(_ hints: HintPointSet, at time: CMTime) {
         guard let actionAPI = apiManager.api(for: (any FxCustomParameterActionAPI_v4).self) as? any FxCustomParameterActionAPI_v4 else {
             return
         }
@@ -243,32 +259,14 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         guard let setter = apiManager.api(for: (any FxParameterSettingAPI_v5).self) as? any FxParameterSettingAPI_v5 else {
             return
         }
-        setter.setXValue(clampedX, yValue: clampedY, toParameter: ParameterIdentifier.subjectPosition, at: time)
+        let dict = hints.asParameterDictionary()
+        setter.setCustomParameterValue(dict, toParameter: ParameterIdentifier.subjectPoints, at: time)
     }
 
     // MARK: - Coordinate conversion
 
-    /// Translates an object-normalised `(0…1)` position into canvas
-    /// pixel space using FCP's coordinate-conversion API.
-    private func canvasPosition(forObjectPosition object: (x: Double, y: Double)) -> (x: Double, y: Double) {
-        guard let oscAPI = apiManager.api(for: (any FxOnScreenControlAPI_v4).self) as? any FxOnScreenControlAPI_v4 else {
-            return (object.x, object.y)
-        }
-        var canvasX: Double = 0
-        var canvasY: Double = 0
-        oscAPI.convertPoint(
-            fromSpace: FxDrawingCoordinates(kFxDrawingCoordinates_OBJECT),
-            fromX: object.x,
-            fromY: object.y,
-            toSpace: FxDrawingCoordinates(kFxDrawingCoordinates_CANVAS),
-            toX: &canvasX,
-            toY: &canvasY
-        )
-        return (canvasX, canvasY)
-    }
-
-    /// Inverse: translates canvas pixel coordinates into object-
-    /// normalised `(0…1)` so we can write the Point parameter.
+    /// Translates canvas pixel coordinates into object-normalised
+    /// `(0…1)` so we can write the hint set parameter.
     private func objectPosition(forCanvasX x: Double, canvasY y: Double) -> (x: Double, y: Double) {
         guard let oscAPI = apiManager.api(for: (any FxOnScreenControlAPI_v4).self) as? any FxOnScreenControlAPI_v4 else {
             return (x, y)
@@ -286,60 +284,18 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         return (objectX, objectY)
     }
 
-    /// Hit radius for the marker in canvas pixels. Scales with the
-    /// canvas zoom so the marker stays clickable when the user zooms
-    /// out of the viewer.
-    private func canvasHitRadius() -> Double {
-        guard let oscAPI = apiManager.api(for: (any FxOnScreenControlAPI_v3).self) as? any FxOnScreenControlAPI_v3 else {
-            return 32
-        }
-        let zoom = oscAPI.canvasZoom()
-        return max(20, 32 * zoom)
-    }
-
-    // MARK: - One-shot coordinate diagnostic
-    //
-    // Logs the canvas → object → canvas round trip the first time the
-    // user clicks the OSC. Helps diagnose drift bugs without depending
-    // on the user to attach an Xcode debugger; the log shows whether
-    // `convertPoint` is returning Y-up or Y-down values, what the
-    // object bounds are, and whether the parameter setter / getter
-    // round-trips cleanly.
-    nonisolated(unsafe) private static var coordinateLogEmitted = false
-
-    private func logCoordinateRoundTripOnce(
-        canvasX: Double,
-        canvasY: Double,
-        object: (x: Double, y: Double)
-    ) {
-        guard !Self.coordinateLogEmitted else { return }
-        Self.coordinateLogEmitted = true
-        let oscAPI = apiManager.api(for: (any FxOnScreenControlAPI_v4).self) as? any FxOnScreenControlAPI_v4
-        var width: UInt = 0
-        var height: UInt = 0
-        var par: Double = 1
-        oscAPI?.objectWidth(&width, height: &height, pixelAspectRatio: &par)
-        let bounds = oscAPI?.objectBounds() ?? .zero
-        let zoom = oscAPI?.canvasZoom() ?? 0
-        let roundTrip = canvasPosition(forObjectPosition: object)
-        PluginLog.notice(
-            "OSC coordinate diagnostic — mouse(canvas)=(\(canvasX), \(canvasY)) → object=(\(object.x), \(object.y)) → canvas(roundtrip)=(\(roundTrip.x), \(roundTrip.y)); objectBounds=\(bounds); objectSize=\(width)×\(height) PAR=\(par); canvasZoom=\(zoom)."
-        )
-    }
-
     // MARK: - Drawing
 
-    /// Renders the marker via a render pass. Vertex/fragment shaders
-    /// in `CorridorKeyShaders.metal` (`corridorKeyDrawOSCVertex` and
-    /// `corridorKeyDrawOSCFragment`) draw a small ring + crosshair
-    /// at a tile-relative UV position computed from the supplied
-    /// canvas pixel coordinates.
-    private func renderMarker(
+    /// Renders every hint point as a coloured ring + dot via the
+    /// shared `corridorKeyDrawOSCFragment` shader. Foreground points
+    /// (`kind = 0`) draw green; background points (`kind = 1`) draw
+    /// red. The active-part index passed to the shader brightens the
+    /// matching ring so the user can see which hint they're about to
+    /// erase / interact with.
+    private func renderMarkers(
         destinationImage: FxImageTile,
-        canvasX: Double,
-        canvasY: Double,
-        isActive: Bool,
-        time: CMTime
+        hints: HintPointSet,
+        activePart: Int
     ) throws {
         let deviceCache = MetalDeviceCache.shared
         guard let device = deviceCache.device(forRegistryID: destinationImage.deviceRegistryID) else {
@@ -357,7 +313,7 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             throw MetalDeviceCacheError.commandBufferCreationFailed
         }
-        commandBuffer.label = "CorridorKey by LateNite OSC Marker"
+        commandBuffer.label = "CorridorKey by LateNite OSC Hints"
 
         let passDescriptor = MTLRenderPassDescriptor()
         passDescriptor.colorAttachments[0].texture = texture
@@ -367,7 +323,7 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         guard let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: passDescriptor) else {
             throw MetalDeviceCacheError.commandEncoderCreationFailed
         }
-        encoder.label = "OSC Marker"
+        encoder.label = "OSC Hint Markers"
 
         let tileWidth = Float(destinationImage.tilePixelBounds.right - destinationImage.tilePixelBounds.left)
         let tileHeight = Float(destinationImage.tilePixelBounds.top - destinationImage.tilePixelBounds.bottom)
@@ -398,42 +354,25 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
             index: Int(CKVertexInputIndexViewportSize.rawValue)
         )
 
-        // Pack a single point with the subject position. The fragment
-        // shader treats `kind = 0` as "foreground" (green dot); we
-        // toggle to `kind = 1` (yellow-ring style via the active-part
-        // path in the shader) when the marker is being hovered or
-        // dragged so the user gets visual feedback that they've
-        // grabbed the handle.
-        //
-        // Convert the canvas pixel position into the tile's local UV
-        // (0…1) so the fragment shader's `uv` and `p.x/p.y` live in
-        // the same space. Empirically the OSC destination texture
-        // ends up with `uv.y` aligned to the same direction as
-        // FxPlug canvas Y, so no Y flip is needed here — adding
-        // a `1 - …` flip inverts the drag direction (mouse up moves
-        // marker down).
-        let tileLeft = Double(destinationImage.tilePixelBounds.left)
-        let tileBottom = Double(destinationImage.tilePixelBounds.bottom)
-        let tilePixelWidth = Double(tileWidth)
-        let tilePixelHeight = Double(tileHeight)
-        let uvX = (canvasX - tileLeft) / max(tilePixelWidth, 1)
-        let uvY = (canvasY - tileBottom) / max(tilePixelHeight, 1)
         struct PackedPoint {
             var x: Float32
             var y: Float32
             var radius: Float32
             var kind: Int32
         }
-        var packed = [
+        // Pack one entry per stored hint. The shader's `kind` value
+        // matches `HintPointKind.rawValue` (0 = foreground / green,
+        // 1 = background / red) so no extra translation is needed.
+        var packed: [PackedPoint] = hints.points.map { point in
             PackedPoint(
-                x: Float(uvX),
-                y: Float(uvY),
-                radius: 0.05,
-                kind: isActive ? 1 : 0
+                x: Float(point.x),
+                y: Float(point.y),
+                radius: 0.04,
+                kind: Int32(point.kind.rawValue)
             )
-        ]
-        var pointCount: Int32 = 1
-        var activePart32: Int32 = isActive ? 1 : 0
+        }
+        var pointCount: Int32 = Int32(packed.count)
+        var activePart32: Int32 = Int32(activePart)
         packed.withUnsafeMutableBytes { rawBytes in
             if let base = rawBytes.baseAddress {
                 encoder.setFragmentBytes(base, length: rawBytes.count, index: 0)

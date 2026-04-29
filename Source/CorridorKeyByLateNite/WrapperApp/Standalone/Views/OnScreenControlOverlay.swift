@@ -22,18 +22,14 @@
 //
 
 import SwiftUI
+import AppKit
 
-struct OnScreenControlOverlay<MenuContent: View>: View {
+struct OnScreenControlOverlay: View {
     @Bindable var viewModel: EditorViewModel
     /// Logical render size of the loaded clip — used so the click
     /// target sits over the same letterboxed quad the preview shader
     /// draws.
     let renderSize: CGSize
-    /// Right-click context menu attached to the click target. Sharing
-    /// the editor's preview-backdrop menu here keeps the right-click
-    /// behaviour consistent whether the user is dropping hints or
-    /// just scrubbing.
-    @ViewBuilder let contextMenu: () -> MenuContent
 
     var body: some View {
         GeometryReader { proxy in
@@ -55,7 +51,6 @@ struct OnScreenControlOverlay<MenuContent: View>: View {
                                 atNormalizedPoint: CGPoint(x: normalisedX, y: normalisedY)
                             )
                         }
-                        .contextMenu { contextMenu() }
                         .help(toolHint)
                 }
 
@@ -242,6 +237,138 @@ extension OnScreenControlTool {
         case .foregroundHint: return "Mark Foreground"
         case .backgroundHint: return "Mark Background"
         case .eraseHint: return "Erase Nearest Hint"
+        }
+    }
+}
+
+/// Bridges between `BackdropColor` (the Codable / Sendable value
+/// type stored on the view model) and SwiftUI's `Color` (which the
+/// `ColorPicker` natively binds to). Lives at file scope here so
+/// every view that wants to show a custom-colour swatch can use it
+/// without re-implementing the sRGB round-trip. Conversions force
+/// the colour into sRGB so the triplet survives the round-trip
+/// through UserDefaults JSON.
+extension BackdropColor {
+    var swiftUIColor: Color {
+        Color(.sRGB, red: red, green: green, blue: blue)
+    }
+
+    init(swiftUIColor color: Color) {
+        let nsColor = NSColor(color)
+        let srgb = nsColor.usingColorSpace(.sRGB) ?? nsColor
+        self.red = Double(srgb.redComponent)
+        self.green = Double(srgb.greenComponent)
+        self.blue = Double(srgb.blueComponent)
+    }
+}
+
+/// Transport-bar button that opens a popover for picking the preview
+/// player background — checkerboard, solid colour, custom colour, or
+/// imported image. Replaces the right-click context menu the editor
+/// used to expose the same options through; a visible button is
+/// easier to discover and gives the colour picker a stable home that
+/// stays open while the user fine-tunes the colour swatch.
+struct BackdropButton: View {
+    @Bindable var viewModel: EditorViewModel
+    let onPickImage: () -> Void
+
+    @State private var isPopoverPresented = false
+
+    var body: some View {
+        Button(action: { isPopoverPresented.toggle() }) {
+            Label("Background", systemImage: backdropIcon)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.regular)
+        .help("Choose what's drawn behind the keyed image in the player.")
+        .popover(isPresented: $isPopoverPresented, arrowEdge: .bottom) {
+            BackdropPopoverContent(
+                viewModel: viewModel,
+                onPickImage: {
+                    isPopoverPresented = false
+                    onPickImage()
+                }
+            )
+            .padding(14)
+            .frame(width: 280)
+        }
+    }
+
+    /// Icon on the button label changes with the active backdrop so
+    /// the user can read at a glance what's currently behind the
+    /// keyed image without opening the popover.
+    private var backdropIcon: String {
+        switch viewModel.previewBackdrop {
+        case .checkerboard: return "checkerboard.rectangle"
+        case .white, .black, .yellow, .red, .customColor: return "paintpalette"
+        case .customImage: return "photo"
+        }
+    }
+}
+
+/// Content of the Background popover: a row of solid-colour swatches,
+/// a checkerboard / custom-image radio group, a `ColorPicker` for the
+/// custom-colour case, and the import-image affordance.
+private struct BackdropPopoverContent: View {
+    @Bindable var viewModel: EditorViewModel
+    let onPickImage: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Player Background")
+                .font(.headline)
+
+            Picker("Preset", selection: $viewModel.previewBackdrop) {
+                ForEach(PreviewBackdrop.allCases) { option in
+                    Label(option.displayName, systemImage: option.systemImage)
+                        .tag(option)
+                }
+            }
+            .pickerStyle(.inline)
+            .labelsHidden()
+
+            Divider()
+
+            // Always-visible Custom Colour row — the user can adjust
+            // the swatch up front, then switch the picker to Custom
+            // Colour to see it. Hiding the colour picker behind a
+            // mode-switch made it look like the feature was
+            // unfinished.
+            ColorPicker(
+                "Custom Colour",
+                selection: Binding(
+                    get: { viewModel.customBackdropColor.swiftUIColor },
+                    set: { viewModel.customBackdropColor = BackdropColor(swiftUIColor: $0) }
+                ),
+                supportsOpacity: false
+            )
+
+            // Custom image controls. Filename row only appears when
+            // an image is loaded so the popover stays compact for
+            // users who don't want one.
+            if let imageName = viewModel.customBackdropImageName {
+                HStack(spacing: 6) {
+                    Image(systemName: "photo")
+                        .foregroundStyle(.secondary)
+                    Text(imageName)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+                HStack(spacing: 8) {
+                    Button("Replace Image…", systemImage: "photo.badge.arrow.down", action: onPickImage)
+                    Button("Clear Image", systemImage: "trash") {
+                        viewModel.clearBackdropImage()
+                    }
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            } else {
+                Button("Import Image…", systemImage: "photo.badge.arrow.down", action: onPickImage)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+            }
         }
     }
 }

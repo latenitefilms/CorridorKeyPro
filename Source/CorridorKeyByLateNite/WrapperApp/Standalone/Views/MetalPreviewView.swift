@@ -80,6 +80,7 @@ struct MetalPreviewView: NSViewRepresentable {
         let pipelineState: any MTLRenderPipelineState
         let checkerPipelineState: any MTLRenderPipelineState
         let imagePipelineState: any MTLRenderPipelineState
+        let solidColorPipelineState: any MTLRenderPipelineState
 
         private var sourceTexture: (any MTLTexture)?
         private var aspectFitSize: CGSize = .zero
@@ -153,6 +154,25 @@ struct MetalPreviewView: NSViewRepresentable {
             } catch {
                 fatalError("CorridorKey by LateNite preview view could not build its image backdrop pipeline: \(error.localizedDescription)")
             }
+            // Solid-colour pipeline. Draws a uniform colour quad in
+            // the aspect-fit rect so the white / black / yellow / red
+            // / custom-colour backdrops only fill the framed video
+            // region, with letterbox bars at top and bottom staying
+            // black. Earlier builds painted the entire MTKView with
+            // the backdrop colour by setting it as the render pass's
+            // clear colour, which made bright colours like white
+            // bleed off the edges of the framed video.
+            let solidDescriptor = MTLRenderPipelineDescriptor()
+            solidDescriptor.label = "Corridor Key Standalone Preview Solid"
+            solidDescriptor.vertexFunction = library.makeFunction(name: "previewVertex")
+            solidDescriptor.fragmentFunction = library.makeFunction(name: "previewSolidFragment")
+            solidDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
+            solidDescriptor.colorAttachments[0].isBlendingEnabled = false
+            do {
+                self.solidColorPipelineState = try device.makeRenderPipelineState(descriptor: solidDescriptor)
+            } catch {
+                fatalError("CorridorKey by LateNite preview view could not build its solid backdrop pipeline: \(error.localizedDescription)")
+            }
             super.init()
         }
 
@@ -185,7 +205,10 @@ struct MetalPreviewView: NSViewRepresentable {
             else { return }
             commandBuffer.label = "Corridor Key Standalone Preview"
 
-            descriptor.colorAttachments[0].clearColor = clearColorForBackdrop()
+            // Letterbox is always black — the per-backdrop quad below
+            // paints the framed video region in whatever colour /
+            // pattern / image the user picked.
+            descriptor.colorAttachments[0].clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 1.0)
             descriptor.colorAttachments[0].loadAction = .clear
             descriptor.colorAttachments[0].storeAction = .store
 
@@ -212,7 +235,7 @@ struct MetalPreviewView: NSViewRepresentable {
 
             let descriptor = MTLRenderPassDescriptor()
             descriptor.colorAttachments[0].texture = target
-            descriptor.colorAttachments[0].clearColor = clearColorForBackdrop()
+            descriptor.colorAttachments[0].clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 1.0)
             descriptor.colorAttachments[0].loadAction = .clear
             descriptor.colorAttachments[0].storeAction = .store
 
@@ -265,10 +288,11 @@ struct MetalPreviewView: NSViewRepresentable {
                     encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
                 }
             case .white, .black, .yellow, .red, .customColor:
-                // Solid-colour backdrops are painted by the clear
-                // colour set on the render pass descriptor — no
-                // extra quad needed.
-                break
+                var rgb = solidColorRGB()
+                encoder.setRenderPipelineState(solidColorPipelineState)
+                encoder.setVertexBytes(&quad, length: MemoryLayout<PreviewVertex>.stride * 4, index: 0)
+                encoder.setFragmentBytes(&rgb, length: MemoryLayout<SIMD4<Float>>.stride, index: 0)
+                encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
             }
 
             if let texture = sourceTexture {
@@ -281,31 +305,34 @@ struct MetalPreviewView: NSViewRepresentable {
             encoder.endEncoding()
         }
 
-        /// Maps the user-selected backdrop to a clear colour that
-        /// fills the area outside the aspect-fit quad. The
-        /// checkerboard mode picks a neutral dark grey so the
-        /// chequer pattern's edges blend into the surrounding
-        /// letterbox area; solid-colour modes (including the
-        /// user's custom pick) use the picked colour directly.
-        /// The custom-image mode also uses a neutral grey for the
-        /// letterbox region so the image still reads as the
-        /// "framed content" rather than the entire viewport.
-        private func clearColorForBackdrop() -> MTLClearColor {
+        /// Returns the RGBA fill colour for the active solid-backdrop
+        /// case. Packed as a `SIMD4<Float>` so it can be blitted
+        /// straight into the fragment shader's uniform buffer via
+        /// `setFragmentBytes`. Alpha stays at 1.0 — the solid quad
+        /// always overwrites whatever was underneath it.
+        private func solidColorRGB() -> SIMD4<Float> {
             switch backdrop {
-            case .checkerboard:
-                return MTLClearColorMake(0.05, 0.05, 0.05, 1.0)
             case .white:
-                return MTLClearColorMake(1.0, 1.0, 1.0, 1.0)
+                return SIMD4<Float>(1.0, 1.0, 1.0, 1.0)
             case .black:
-                return MTLClearColorMake(0.0, 0.0, 0.0, 1.0)
+                return SIMD4<Float>(0.0, 0.0, 0.0, 1.0)
             case .yellow:
-                return MTLClearColorMake(1.0, 0.85, 0.0, 1.0)
+                return SIMD4<Float>(1.0, 0.85, 0.0, 1.0)
             case .red:
-                return MTLClearColorMake(0.95, 0.20, 0.18, 1.0)
+                return SIMD4<Float>(0.95, 0.20, 0.18, 1.0)
             case .customColor:
-                return MTLClearColorMake(customColor.red, customColor.green, customColor.blue, 1.0)
-            case .customImage:
-                return MTLClearColorMake(0.05, 0.05, 0.05, 1.0)
+                return SIMD4<Float>(
+                    Float(customColor.red),
+                    Float(customColor.green),
+                    Float(customColor.blue),
+                    1.0
+                )
+            case .checkerboard, .customImage:
+                // Should never be invoked for these — encodeQuad
+                // routes them through their own pipeline. Return a
+                // benign black so a future caller can't accidentally
+                // tint the backdrop if the switch above ever drifts.
+                return SIMD4<Float>(0.0, 0.0, 0.0, 1.0)
             }
         }
 
@@ -404,6 +431,19 @@ struct MetalPreviewView: NSViewRepresentable {
                 // for it.
                 float3 rgb = backdrop.sample(textureSampler, in.uv).rgb;
                 return float4(rgb, 1.0);
+            }
+
+            fragment float4 previewSolidFragment(
+                PreviewVertexOut in [[stage_in]],
+                constant float4 &fillColor [[buffer(0)]]
+            ) {
+                // The solid backdrop pipeline only ever covers the
+                // aspect-fit quad, so the fragment can be a constant
+                // — we don't even need to read `in.uv`. Letterbox
+                // bars stay black because the parent render pass
+                // cleared them to (0, 0, 0, 1) before this shader
+                // ran on the inner quad.
+                return fillColor;
             }
             """
             return try device.makeLibrary(source: source, options: nil)

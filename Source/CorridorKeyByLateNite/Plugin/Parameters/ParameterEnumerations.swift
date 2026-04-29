@@ -57,9 +57,7 @@ public enum HintMode: Int, Sendable, CaseIterable, Codable {
     }
 
     /// Whether this mode runs the Vision foreground request when
-    /// computing the upstream hint. Mirrors the legacy
-    /// `autoSubjectHintEnabled` boolean so existing pre-inference
-    /// code can ask one question.
+    /// computing the upstream hint.
     public var usesVisionPrior: Bool {
         self == .appleVision
     }
@@ -203,6 +201,14 @@ public enum SpillMethod: Int, Sendable, CaseIterable, Codable {
     case doubleLimit = 1
     case neutral = 2
     case screenSubtract = 3
+    /// Advanced Ultra-style despill — projects each pixel's chroma
+    /// onto the screen-colour direction in YCbCr space and subtracts
+    /// that projection while preserving luminance. Removes the soft
+    /// chroma fringe that the Average / Double Limit paths leave on
+    /// hair and feathered edges, without the over-bright mids the
+    /// Screen Subtract path can introduce on translucent fabric.
+    /// Modelled on After Effects' Advanced Spill Suppressor.
+    case ultra = 4
 
     public var shaderValue: Int32 { Int32(rawValue) }
 
@@ -212,6 +218,7 @@ public enum SpillMethod: Int, Sendable, CaseIterable, Codable {
         case .doubleLimit: return "Double Limit"
         case .neutral: return "Neutral"
         case .screenSubtract: return "Screen Subtract"
+        case .ultra: return "Ultra (Chroma Project)"
         }
     }
 }

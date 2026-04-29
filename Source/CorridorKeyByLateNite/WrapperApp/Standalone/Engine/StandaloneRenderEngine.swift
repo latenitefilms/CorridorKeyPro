@@ -115,6 +115,29 @@ final class StandaloneRenderEngine: @unchecked Sendable {
         )
     }
 
+    /// Returns the source frame untouched, wrapped as a
+    /// `StandaloneRenderResult`. Drives the "Show Original" push-and-
+    /// hold button: the user gets a side-by-side comparison against
+    /// the unkeyed plate without paying the MLX / post-process cost.
+    /// Re-uses the bridge so the source IOSurface and the wrapping
+    /// `MTLTexture` share memory — the preview layer is reading the
+    /// same bytes the decoder produced, not a copy.
+    func renderShowingOriginal(
+        source pixelBuffer: CVPixelBuffer
+    ) throws -> StandaloneRenderResult {
+        let sourceBacked = try bridge.makeTexture(for: pixelBuffer, usage: .shaderRead)
+        return StandaloneRenderResult(
+            destinationPixelBuffer: pixelBuffer,
+            destinationTexture: sourceBacked.metalTexture,
+            report: RenderReport(
+                backendDescription: "Show Original (Press-and-Hold)",
+                guideSourceDescription: "—",
+                effectiveInferenceResolution: 0,
+                deviceName: device.name
+            )
+        )
+    }
+
     // MARK: - Analysis
 
     /// Runs the FxAnalyzer-equivalent extraction step on a single

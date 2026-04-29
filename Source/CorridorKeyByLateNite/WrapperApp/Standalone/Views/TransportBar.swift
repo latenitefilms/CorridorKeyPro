@@ -20,6 +20,10 @@ struct TransportBar: View {
     let onImport: () -> Void
     let onClose: () -> Void
     let onExport: () -> Void
+    /// Tells the host editor to surface its `.fileImporter` for the
+    /// backdrop image. Threaded in as a closure so `BackdropButton`
+    /// can stay independent of `EditorView`'s private @State.
+    let onPickBackdropImage: () -> Void
 
     var body: some View {
         VStack(spacing: 10) {
@@ -43,6 +47,14 @@ struct TransportBar: View {
                 .toggleStyle(.button)
                 .controlSize(.regular)
                 .help("Restart playback when the clip ends.")
+
+                ShowOriginalButton(viewModel: viewModel)
+                    .disabled(!viewModel.phase.isReady)
+
+                BackdropButton(
+                    viewModel: viewModel,
+                    onPickImage: onPickBackdropImage
+                )
 
                 SubjectHintsMenu(viewModel: viewModel)
                     .disabled(!viewModel.phase.isReady)
@@ -193,6 +205,51 @@ struct TransportBar: View {
     private func timeLabel(for time: CMTime) -> String {
         let frameRate = Double(viewModel.clipInfo?.nominalFrameRate ?? 24)
         return TransportTimecodeFormatter(frameRate: frameRate).format(time)
+    }
+}
+
+/// "Show Original" push-and-hold button. While the user holds the
+/// pointer down the preview reverts to the unmodified source frame;
+/// releasing flips it back to whatever Output mode the inspector is
+/// set to. Lets the user A/B the keyed result against the source
+/// without losing their parameter pick.
+///
+/// SwiftUI's `Button` only fires on click-up, so the press / release
+/// edges come from a zero-distance `DragGesture` attached
+/// `simultaneously`. The gesture's `onChanged` fires once for the
+/// initial press (and again for tiny mouse jitter, which is harmless
+/// because we set the same flag). `onEnded` fires on release / drag
+/// out. Both edges write to the view model, which re-renders the
+/// preview.
+struct ShowOriginalButton: View {
+    @Bindable var viewModel: EditorViewModel
+
+    var body: some View {
+        Label("Show Original", systemImage: "eye")
+            .labelStyle(.iconOnly)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(viewModel.isShowingOriginal ? Color.accentColor.opacity(0.3) : Color.clear)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(Color.secondary.opacity(0.4), lineWidth: 0.5)
+            )
+            .contentShape(.rect)
+            .gesture(
+                DragGesture(minimumDistance: 0, coordinateSpace: .local)
+                    .onChanged { _ in
+                        if !viewModel.isShowingOriginal {
+                            viewModel.isShowingOriginal = true
+                        }
+                    }
+                    .onEnded { _ in
+                        viewModel.isShowingOriginal = false
+                    }
+            )
+            .help("Press and hold to compare with the unkeyed source frame.")
     }
 }
 

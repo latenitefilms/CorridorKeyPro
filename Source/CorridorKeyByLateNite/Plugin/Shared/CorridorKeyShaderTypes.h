@@ -56,7 +56,8 @@ typedef enum CorridorKeySpillMethod {
     CKSpillMethodAverage = 0,
     CKSpillMethodDoubleLimit = 1,
     CKSpillMethodNeutral = 2,
-    CKSpillMethodScreenSubtract = 3
+    CKSpillMethodScreenSubtract = 3,
+    CKSpillMethodUltra = 4
 } CorridorKeySpillMethod;
 
 // Mirrors the Swift `OutputMode` enum.

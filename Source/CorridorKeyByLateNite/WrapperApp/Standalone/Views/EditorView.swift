@@ -56,7 +56,8 @@ struct EditorView: View {
                 viewModel: viewModel,
                 onImport: { isImporting = true },
                 onClose: viewModel.closeClip,
-                onExport: { isExporting = true }
+                onExport: { isExporting = true },
+                onPickBackdropImage: { isImportingBackdropImage = true }
             )
         }
         .navigationTitle(toolbarTitle)
@@ -127,12 +128,6 @@ struct EditorView: View {
                     customColor: viewModel.customBackdropColor,
                     customImageTexture: viewModel.customBackdropTexture
                 )
-                .contextMenu {
-                    PreviewBackdropMenu(
-                        viewModel: viewModel,
-                        onPickImage: { isImportingBackdropImage = true }
-                    )
-                }
                 .fileImporter(
                     isPresented: $isImportingBackdropImage,
                     allowedContentTypes: [.image, .png, .jpeg, .heic, .tiff],
@@ -156,23 +151,21 @@ struct EditorView: View {
                 OnScreenControlOverlay(
                     viewModel: viewModel,
                     renderSize: viewModel.renderSize
-                ) {
-                    // Right-click on the click-target rectangle —
-                    // shows the same backdrop picker the
-                    // `MetalPreviewView` exposes when the OSC tool
-                    // is off, so the user can change their preview
-                    // background while marking subject hints.
-                    PreviewBackdropMenu(
-                        viewModel: viewModel,
-                        onPickImage: { isImportingBackdropImage = true }
-                    )
-                }
+                )
                 if viewModel.latestPreview == nil {
                     Text("Rendering preview…")
                         .foregroundStyle(.secondary)
                 }
             }
         }
+    }
+
+    /// Triggers the backdrop-image picker. Lifted out of `EditorView`'s
+    /// inline closures so the new `BackdropButton` in the transport
+    /// bar can call it without re-implementing the import / clear
+    /// state machine.
+    func startBackdropImageImport() {
+        isImportingBackdropImage = true
     }
 
     private var toolbarTitle: String {
@@ -233,76 +226,6 @@ struct EditorView: View {
         case .failure(let error):
             backdropImportError = error.localizedDescription
         }
-    }
-}
-
-/// Right-click context menu on the preview surface. Lets the user
-/// pick the backdrop they want behind the keyed image — defaulting
-/// to a transparency-aware checkerboard, with solid colour
-/// alternatives for matching specific monitors / colour-grade
-/// references, plus a custom-colour picker and a custom-image
-/// importer for project-specific backings.
-private struct PreviewBackdropMenu: View {
-    @Bindable var viewModel: EditorViewModel
-    let onPickImage: () -> Void
-
-    var body: some View {
-        Picker("Player Background", selection: $viewModel.previewBackdrop) {
-            ForEach(PreviewBackdrop.allCases) { option in
-                Label(option.displayName, systemImage: option.systemImage)
-                    .tag(option)
-            }
-        }
-        .pickerStyle(.inline)
-
-        Divider()
-
-        // Custom colour picker. The ColorPicker's binding is
-        // read/write on the view model, so the user sees the
-        // backdrop respond live as they drag the eyedropper or
-        // step through the macOS colour palette.
-        ColorPicker(
-            "Custom Colour…",
-            selection: Binding(
-                get: { viewModel.customBackdropColor.swiftUIColor },
-                set: { viewModel.customBackdropColor = BackdropColor(swiftUIColor: $0) }
-            ),
-            supportsOpacity: false
-        )
-
-        // Custom image import. The current file name is shown in
-        // the disabled label so the user can tell at a glance
-        // which image is loaded; the "Clear Image" affordance
-        // only appears once an image is actually loaded.
-        if let imageName = viewModel.customBackdropImageName {
-            Text("Image: \(imageName)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Button("Replace Image…", systemImage: "photo.badge.arrow.down", action: onPickImage)
-            Button("Clear Image", systemImage: "trash", action: viewModel.clearBackdropImage)
-        } else {
-            Button("Import Image…", systemImage: "photo.badge.arrow.down", action: onPickImage)
-        }
-    }
-}
-
-/// Bridges between `BackdropColor` (the Codable / Sendable value
-/// type stored on the view model) and SwiftUI's `Color` (which
-/// the `ColorPicker` natively binds to). Lives at file scope so
-/// the EditorViewModel doesn't need to import SwiftUI just to
-/// expose a colour. Conversions force the colour into sRGB so the
-/// triplet survives the round-trip through UserDefaults JSON.
-extension BackdropColor {
-    var swiftUIColor: Color {
-        Color(.sRGB, red: red, green: green, blue: blue)
-    }
-
-    init(swiftUIColor color: Color) {
-        let nsColor = NSColor(color)
-        let srgb = nsColor.usingColorSpace(.sRGB) ?? nsColor
-        self.red = Double(srgb.redComponent)
-        self.green = Double(srgb.greenComponent)
-        self.blue = Double(srgb.blueComponent)
     }
 }
 
