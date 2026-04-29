@@ -62,14 +62,26 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
     /// is grabbable by clicking anywhere on or just outside it.
     private static let subjectMarkerHitRadius: Double = 0.04
 
-    /// Drag state. `lastObjectPosition` records the user's pointer
-    /// in object-normalised space at the most recent move; the
-    /// dragged handler computes the delta against it and writes
-    /// that into the Subject Position parameter. Mirrors
-    /// MetaburnerOSC's lock-protected pattern.
+    /// Drag state. We record both the pointer's object-space position
+    /// at click-down and the Subject Position at the same moment, then
+    /// compute every drag-tick destination as
+    /// `subjectAnchor + (currentMouseObject - mouseAnchor)`.
+    ///
+    /// The earlier implementation used an *incremental* delta — each
+    /// tick re-read the Subject Position via `getXValue`, added the
+    /// per-tick mouse delta, and wrote it back. That re-read is what
+    /// regressed the drag in Build 7 onward: any quantisation,
+    /// keyframe interpolation, or write-then-read propagation lag in
+    /// FCP's parameter system between our `setXValue` and the next
+    /// `getXValue` introduced a tiny error each tick, and the errors
+    /// accumulated as the user moved farther from the click point.
+    /// Anchoring against a value captured once on `mouseDown` makes
+    /// the round-trip irrelevant — the next destination is always a
+    /// fresh sum, never a recursive one.
     private let dragLock = NSLock()
-    private var lastObjectPosition: CGPoint = CGPoint(x: -1, y: -1)
     private var dragging: Bool = false
+    private var mouseAnchorObject: CGPoint = CGPoint(x: -1, y: -1)
+    private var subjectAnchor: CGPoint = CGPoint(x: 0.5, y: 0.5)
 
     @objc(initWithAPIManager:)
     required init?(apiManager: any PROAPIAccessing) {
@@ -104,35 +116,124 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         // enabled — without a visible affordance Final Cut Pro
         // stops routing canvas mouse events to the OSC, which is
         // how the marker-drag regression slipped in.
-        var points: [PackedPoint] = []
-        points.append(
-            PackedPoint(
-                x: Float(subjectAnchor.x),
-                y: Float(subjectAnchor.y),
-                radius: Float(Self.subjectMarkerHitRadius * 1.6),
-                kind: 2
+        //
+        // Markers are stored in OBJECT space (0…1 normalised within
+        // the source frame). The OSC destination tile is sized to
+        // the FCP CANVAS, which can be larger than the source frame
+        // (FCP adds a small render-margin, plus letterboxing for
+        // mismatched aspect ratios, plus pan/zoom in the viewer).
+        // So we map every marker through `convertPoint(OBJECT →
+        // CANVAS)` here and pre-bake the canvas-uv each one should
+        // render at — earlier builds drew the marker at
+        // `uv = (p.x, p.y)` on the *canvas*, which placed it at the
+        // right fraction of the canvas instead of the right fraction
+        // of the source frame, producing the linear "marker drifts
+        // away from the mouse the further you move from centre"
+        // behaviour the FxPlug regressed on.
+        var packed: [PackedPoint] = []
+        let appendPacked: (Double, Double, Double, Int32) -> Void = { px, py, radius, kind in
+            let mapped = self.objectToCanvasUV(
+                objectX: px,
+                objectY: py,
+                tileWidth: Double(destinationImage.tilePixelBounds.right - destinationImage.tilePixelBounds.left),
+                tileHeight: Double(destinationImage.tilePixelBounds.top - destinationImage.tilePixelBounds.bottom)
             )
-        )
-        for hint in hints.points {
-            points.append(
+            packed.append(
                 PackedPoint(
-                    x: Float(hint.x),
-                    y: Float(hint.y),
-                    radius: Float(hint.radiusNormalized),
-                    kind: Int32(hint.kind.rawValue)
+                    x: Float(mapped.canvasU),
+                    y: Float(mapped.canvasV),
+                    radius: Float(radius * mapped.objectScaleU),
+                    kind: kind
                 )
             )
+        }
+        appendPacked(subjectAnchor.x, subjectAnchor.y, Self.subjectMarkerHitRadius * 1.6, 2)
+        for hint in hints.points {
+            appendPacked(hint.x, hint.y, hint.radiusNormalized, Int32(hint.kind.rawValue))
         }
         do {
             try renderMarkers(
                 destinationImage: destinationImage,
-                points: points,
+                points: packed,
                 activePart: activePart,
                 screenColor: screen
             )
         } catch {
             PluginLog.error("OSC draw failed: \(error.localizedDescription)")
         }
+    }
+
+    /// Maps a marker's OBJECT-space position (0…1 in the source
+    /// frame) to a canvas-uv suitable for the OSC fragment shader,
+    /// and returns a single object→canvas scale so callers can
+    /// resize per-marker radii into the same canvas-uv space.
+    /// Falls back to identity when the OSC API isn't available so
+    /// the OSC stays drawable in degraded environments.
+    private func objectToCanvasUV(
+        objectX: Double,
+        objectY: Double,
+        tileWidth: Double,
+        tileHeight: Double
+    ) -> (canvasU: Double, canvasV: Double, objectScaleU: Double) {
+        guard tileWidth > 0, tileHeight > 0,
+              let oscAPI = apiManager.api(for: (any FxOnScreenControlAPI_v4).self) as? any FxOnScreenControlAPI_v4
+        else {
+            return (objectX, objectY, 1)
+        }
+        var canvasX: Double = 0
+        var canvasY: Double = 0
+        oscAPI.convertPoint(
+            fromSpace: FxDrawingCoordinates(kFxDrawingCoordinates_OBJECT),
+            fromX: objectX,
+            fromY: objectY,
+            toSpace: FxDrawingCoordinates(kFxDrawingCoordinates_CANVAS),
+            toX: &canvasX,
+            toY: &canvasY
+        )
+        // Probe (0,0) and (1,0) so we recover the canvas-uv width
+        // per object-uv unit — the per-marker radius scale. Two
+        // extra convertPoint calls per draw, each a couple of
+        // matrix multiplications inside FCP, are noise next to the
+        // GPU pass we're about to issue.
+        var canvasOriginX: Double = 0
+        var canvasOriginY: Double = 0
+        oscAPI.convertPoint(
+            fromSpace: FxDrawingCoordinates(kFxDrawingCoordinates_OBJECT),
+            fromX: 0,
+            fromY: 0,
+            toSpace: FxDrawingCoordinates(kFxDrawingCoordinates_CANVAS),
+            toX: &canvasOriginX,
+            toY: &canvasOriginY
+        )
+        var canvasUnitX: Double = 0
+        var canvasUnitY: Double = 0
+        oscAPI.convertPoint(
+            fromSpace: FxDrawingCoordinates(kFxDrawingCoordinates_OBJECT),
+            fromX: 1,
+            fromY: 0,
+            toSpace: FxDrawingCoordinates(kFxDrawingCoordinates_CANVAS),
+            toX: &canvasUnitX,
+            toY: &canvasUnitY
+        )
+        // Empirically, FxPlug's CANVAS/OBJECT spaces share the same
+        // Y-down convention as Metal texture coordinates — even
+        // though `FxOnScreenControl.h` documents Y-up. The proof is
+        // the existing hint-point flow: clicks land at the user's
+        // cursor position when stored as `(object.x, object.y)` and
+        // drawn at `uv = (p.x, p.y)`, which is only consistent if
+        // both axes count the same direction. Apple's FxShape
+        // sample applies `destImageHeight - canvasY` for a separate
+        // reason — it's converting CANVAS pixel coords to Metal
+        // *NDC vertex* coords (which **are** Y-up post-viewport),
+        // not to texture-coord uv. We're rendering with
+        // texture-coord uv directly, so no flip is needed; an extra
+        // flip here is what made the subject marker move opposite
+        // to the mouse on Y-axis drags.
+        let canvasU = canvasX / tileWidth
+        let canvasV = canvasY / tileHeight
+        let objectWidthCanvas = abs(canvasUnitX - canvasOriginX)
+        let scaleU = objectWidthCanvas / tileWidth
+        return (canvasU, canvasV, scaleU)
     }
 
     @objc(hitTestOSCAtMousePositionX:mousePositionY:activePart:atTime:)
@@ -196,11 +297,19 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
             // Begin a drag on the subject marker. We don't write
             // anything yet — the actual position update happens in
             // `mouseDragged` so single-click without movement is a
-            // no-op. Recording the click position in object space
-            // lets the dragged handler compute deltas without
-            // re-reading the mouse on every tick.
+            // no-op. Capture both the mouse anchor (in object space)
+            // *and* the current Subject Position parameter value at
+            // the same instant so every subsequent drag tick can
+            // compute its destination as `subjectAnchor + (mouseNow
+            // − mouseAnchor)`. Read the subject value here, while
+            // the host is still in the mouseDown action scope —
+            // that's the cleanest moment to snapshot it.
             let object = objectPosition(forCanvasX: x, canvasY: y)
-            beginSubjectMarkerDrag(at: object)
+            let currentSubject = subjectPosition(at: time)
+            beginSubjectMarkerDrag(
+                mouseAnchor: object,
+                subjectAnchor: currentSubject
+            )
             forceUpdate.pointee = ObjCBool(true)
             return
         }
@@ -242,16 +351,14 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
             return
         }
         let object = objectPosition(forCanvasX: x, canvasY: y)
-        let delta = subjectMarkerDragDelta(updatingTo: object)
-        guard delta.x != 0 || delta.y != 0 else {
+        guard let next = subjectPositionFromAnchoredDrag(currentMouseObject: object) else {
+            // Same mouse position as the click — nothing to write,
+            // but FCP keeps polling drag ticks even when the mouse
+            // doesn't move, so a `false` here saves the host one
+            // graph re-evaluation per tick.
             forceUpdate.pointee = ObjCBool(false)
             return
         }
-        let current = subjectPosition(at: time)
-        let next = (
-            x: min(max(current.x + delta.x, 0), 1),
-            y: min(max(current.y + delta.y, 0), 1)
-        )
         writeSubjectPosition(x: next.x, y: next.y, at: time)
         forceUpdate.pointee = ObjCBool(true)
     }
@@ -305,27 +412,43 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         return dragging
     }
 
-    private func beginSubjectMarkerDrag(at object: (x: Double, y: Double)) {
+    private func beginSubjectMarkerDrag(
+        mouseAnchor: (x: Double, y: Double),
+        subjectAnchor: (x: Double, y: Double)
+    ) {
         dragLock.lock()
         defer { dragLock.unlock() }
-        lastObjectPosition = CGPoint(x: object.x, y: object.y)
-        dragging = true
+        self.mouseAnchorObject = CGPoint(x: mouseAnchor.x, y: mouseAnchor.y)
+        self.subjectAnchor = CGPoint(x: subjectAnchor.x, y: subjectAnchor.y)
+        self.dragging = true
     }
 
-    private func subjectMarkerDragDelta(updatingTo object: (x: Double, y: Double)) -> (x: Double, y: Double) {
+    /// Computes the target Subject Position for a given drag-tick
+    /// mouse object-space position. Returns `nil` when the mouse
+    /// hasn't moved measurably since the click anchor (so callers
+    /// can short-circuit a redundant `setXValue`). The output is
+    /// already clamped to the legal `0...1` range FxPlug Point
+    /// parameters expect.
+    private func subjectPositionFromAnchoredDrag(
+        currentMouseObject: (x: Double, y: Double)
+    ) -> (x: Double, y: Double)? {
         dragLock.lock()
         defer { dragLock.unlock() }
-        let dx = object.x - Double(lastObjectPosition.x)
-        let dy = object.y - Double(lastObjectPosition.y)
-        lastObjectPosition = CGPoint(x: object.x, y: object.y)
-        return (dx, dy)
+        guard dragging else { return nil }
+        let dx = currentMouseObject.x - Double(mouseAnchorObject.x)
+        let dy = currentMouseObject.y - Double(mouseAnchorObject.y)
+        guard dx != 0 || dy != 0 else { return nil }
+        let nextX = min(max(Double(subjectAnchor.x) + dx, 0), 1)
+        let nextY = min(max(Double(subjectAnchor.y) + dy, 0), 1)
+        return (nextX, nextY)
     }
 
     private func endSubjectMarkerDrag() {
         dragLock.lock()
         defer { dragLock.unlock() }
         dragging = false
-        lastObjectPosition = CGPoint(x: -1, y: -1)
+        mouseAnchorObject = CGPoint(x: -1, y: -1)
+        subjectAnchor = CGPoint(x: 0.5, y: 0.5)
     }
 
     // MARK: - Tool action

@@ -64,6 +64,7 @@
 		DC0100000000000000000001 /* DeviceCapabilityCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC0200000000000000000001 /* DeviceCapabilityCache.swift */; };
 		EB0000000000000000000001 /* RealClipFixture.swift in Sources */ = {isa = PBXBuildFile; fileRef = ER0000000000000000000001 /* RealClipFixture.swift */; };
 		EB0000000000000000000002 /* NikoDruidEndToEndTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ER0000000000000000000002 /* NikoDruidEndToEndTests.swift */; };
+		EB0000000000000000000003 /* FirstFrameParityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ER0000000000000000000003 /* FirstFrameParityTests.swift */; };
 		FT0400000000000000000001 /* FourFrameUserFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT0300000000000000000001 /* FourFrameUserFlowTests.swift */; };
 		HP0100000000000000000001 /* HintPointSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = HP0200000000000000000001 /* HintPointSet.swift */; };
 		MX0200000000000000000002 /* MLXKeyingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = MX0100000000000000000003 /* MLXKeyingEngine.swift */; };
@@ -238,6 +239,7 @@
 		DC0200000000000000000001 /* DeviceCapabilityCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DeviceCapabilityCache.swift; path = CorridorKeyByLateNite/Plugin/Inference/DeviceCapabilityCache.swift; sourceTree = "<group>"; };
 		ER0000000000000000000001 /* RealClipFixture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RealClipFixture.swift; path = Tests/WrapperAppTests/RealClipFixture.swift; sourceTree = "<group>"; };
 		ER0000000000000000000002 /* NikoDruidEndToEndTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NikoDruidEndToEndTests.swift; path = Tests/WrapperAppTests/NikoDruidEndToEndTests.swift; sourceTree = "<group>"; };
+		ER0000000000000000000003 /* FirstFrameParityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FirstFrameParityTests.swift; path = Tests/WrapperAppTests/FirstFrameParityTests.swift; sourceTree = "<group>"; };
 		FT0300000000000000000001 /* FourFrameUserFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FourFrameUserFlowTests.swift; path = Tests/WrapperAppTests/FourFrameUserFlowTests.swift; sourceTree = "<group>"; };
 		HP0200000000000000000001 /* HintPointSet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HintPointSet.swift; path = CorridorKeyByLateNite/Plugin/Inspector/HintPointSet.swift; sourceTree = "<group>"; };
 		MX0100000000000000000003 /* MLXKeyingEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MLXKeyingEngine.swift; path = CorridorKeyByLateNite/Plugin/Inference/MLXKeyingEngine.swift; sourceTree = "<group>"; };
@@ -566,6 +568,7 @@
 				FT0300000000000000000001 /* FourFrameUserFlowTests.swift */,
 				ER0000000000000000000001 /* RealClipFixture.swift */,
 				ER0000000000000000000002 /* NikoDruidEndToEndTests.swift */,
+				ER0000000000000000000003 /* FirstFrameParityTests.swift */,
 				WR0000000000000000000002 /* SyntheticVideoFixture.swift */,
 				WR0000000000000000000003 /* PixelBufferTextureBridgeTests.swift */,
 				WR0000000000000000000004 /* VideoSourceTests.swift */,
@@ -834,6 +837,7 @@
 				FT0400000000000000000001 /* FourFrameUserFlowTests.swift in Sources */,
 				EB0000000000000000000001 /* RealClipFixture.swift in Sources */,
 				EB0000000000000000000002 /* NikoDruidEndToEndTests.swift in Sources */,
+				EB0000000000000000000003 /* FirstFrameParityTests.swift in Sources */,
 				WB0000000000000000000002 /* SyntheticVideoFixture.swift in Sources */,
 				WB0000000000000000000003 /* PixelBufferTextureBridgeTests.swift in Sources */,
 				WB0000000000000000000004 /* VideoSourceTests.swift in Sources */,
