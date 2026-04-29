@@ -27,8 +27,11 @@
 //  supplies (FxPlug's destination is render-target-only so compute
 //  writes silently produce nothing). The shared
 //  `corridorKeyDrawOSCFragment` shader handles the three marker
-//  styles via its `kind` field — 0 = foreground hint, 1 = background
-//  hint, 2 = subject marker.
+//  styles via its `kind` field — 0 = foreground hint (dark disc
+//  with a white person silhouette inside, mirroring the editor's
+//  `person.fill` icon), 1 = background hint (rounded swatch in the
+//  current screen colour, mirroring the editor's screen-colour
+//  rectangle), 2 = subject marker (yellow ring + dark fill).
 //
 
 import Foundation
@@ -95,6 +98,7 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         guard subjectMarkerVisible(at: time) else { return }
         let hints = currentHintSet(at: time)
         let subjectAnchor = subjectPosition(at: time)
+        let screen = currentScreenColor(at: time)
 
         // Always draw at least the subject marker when the OSC is
         // enabled — without a visible affordance Final Cut Pro
@@ -123,7 +127,8 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
             try renderMarkers(
                 destinationImage: destinationImage,
                 points: points,
-                activePart: activePart
+                activePart: activePart,
+                screenColor: screen
             )
         } catch {
             PluginLog.error("OSC draw failed: \(error.localizedDescription)")
@@ -368,6 +373,21 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         return (x, y)
     }
 
+    /// Reads the active Screen Colour parameter so the background-hint
+    /// markers can be tinted with the same green / blue swatch the
+    /// Standalone Editor's `HintPointMarker.backgroundMarker` uses —
+    /// otherwise the FxPlug's marker visually disagrees with the
+    /// Standalone Editor's icon styling and the user has to remember
+    /// which colour means "drop this region" on each surface.
+    private func currentScreenColor(at time: CMTime) -> ScreenColor {
+        guard let retrieval = apiManager.api(for: (any FxParameterRetrievalAPI_v6).self) as? any FxParameterRetrievalAPI_v6 else {
+            return .green
+        }
+        var raw: Int32 = Int32(ScreenColor.green.rawValue)
+        retrieval.getIntValue(&raw, fromParameter: ParameterIdentifier.screenColor, at: time)
+        return ScreenColor(rawValue: Int(raw)) ?? .green
+    }
+
     /// Writes the dragged subject-marker position back to the
     /// `Subject Position` parameter. Called from inside `mouseDragged`,
     /// which the host has already wrapped in a parameter-write action
@@ -432,8 +452,11 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
     // MARK: - Drawing
 
     /// Wire-format point sent to the OSC fragment shader.
-    /// `kind = 0` → foreground hint (green), `1` → background hint
-    /// (red), `2` → subject marker (yellow ring + dark fill).
+    /// `kind = 0` → foreground hint (dark disc with white person
+    /// silhouette and white outline ring), `1` → background hint
+    /// (rounded screen-colour swatch with black border, matching the
+    /// Standalone Editor's icon-style markers), `2` → subject marker
+    /// (yellow ring + dark fill).
     private struct PackedPoint {
         var x: Float32
         var y: Float32
@@ -444,11 +467,14 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
     /// Renders every supplied marker via the shared
     /// `corridorKeyDrawOSCFragment` shader. Active-part tracking
     /// matches the array index so hover highlight follows whichever
-    /// marker `hitTestOSC` reported.
+    /// marker `hitTestOSC` reported. `screenColor` is forwarded to
+    /// the shader so the background-hint swatch is drawn in the
+    /// user's chosen screen colour.
     private func renderMarkers(
         destinationImage: FxImageTile,
         points: [PackedPoint],
-        activePart: Int
+        activePart: Int,
+        screenColor: ScreenColor
     ) throws {
         guard !points.isEmpty else { return }
 
@@ -512,6 +538,7 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         var packed = points
         var pointCount: Int32 = Int32(packed.count)
         var activePart32: Int32 = Int32(activePart)
+        var screenColourLinear = Self.linearScreenColour(for: screenColor)
         packed.withUnsafeMutableBytes { rawBytes in
             if let base = rawBytes.baseAddress {
                 encoder.setFragmentBytes(base, length: rawBytes.count, index: 0)
@@ -519,10 +546,27 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         }
         encoder.setFragmentBytes(&pointCount, length: MemoryLayout<Int32>.size, index: 1)
         encoder.setFragmentBytes(&activePart32, length: MemoryLayout<Int32>.size, index: 2)
+        // SIMD3<Float> has a 16-byte stride on Metal — the shader
+        // reads it as `float3` (also 16-byte aligned), so the layout
+        // matches once we hand over the in-memory representation.
+        encoder.setFragmentBytes(&screenColourLinear, length: MemoryLayout<SIMD3<Float>>.stride, index: 3)
 
         encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
         encoder.endEncoding()
         commandBuffer.commit()
         commandBuffer.waitUntilScheduled()
+    }
+
+    /// Background-hint swatch colours. Values mirror the SwiftUI
+    /// `screenColorSwatch` palette in `OnScreenControlOverlay` so the
+    /// FxPlug OSC and the Standalone Editor mark out a "drop this
+    /// region" tile in identical green / blue.
+    private static func linearScreenColour(for screenColor: ScreenColor) -> SIMD3<Float> {
+        switch screenColor {
+        case .green:
+            return SIMD3<Float>(0.20, 0.78, 0.30)
+        case .blue:
+            return SIMD3<Float>(0.20, 0.42, 0.95)
+        }
     }
 }

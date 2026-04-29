@@ -562,8 +562,11 @@ struct CKHintPoint {
 // MARK: - OSC overlay rendering
 //
 // Draws the user's hint points onto Final Cut Pro's OSC destination
-// canvas. Foreground points = filled green disc with white outline;
-// background points = filled red disc with white outline. The OSC
+// canvas. Foreground points are dark discs with a white person
+// silhouette inside (matching the Standalone Editor's
+// `Image(systemName: "person.fill")` marker); background points are
+// rounded rectangles in the user's screen colour with a black
+// border (matching the editor's screen-swatch marker). The OSC
 // always renders over a transparent background — FCP composites the
 // OSC layer on top of the source frame.
 //
@@ -592,11 +595,56 @@ vertex CKHintOSCRasterizerData corridorKeyDrawOSCVertex(
     return out;
 }
 
+/// Procedural "person.fill" silhouette — head + shoulders.
+/// Returns a positive value outside the silhouette and a negative
+/// value inside, suitable for a smoothstep-based AA edge. Tuned so
+/// the proportions roughly match Apple's SF Symbol when the marker's
+/// inner fill radius is 1.0 in the local space.
+static inline float corridorKeyPersonSilhouetteSDF(float2 localPosition) {
+    // Local coordinate convention: +Y is "down" (matching the OSC
+    // canvas), origin at the marker centre, units = inner-fill radii.
+    // Head: small circle slightly above centre.
+    float2 headOffset = localPosition - float2(0.0, -0.34);
+    float headRadius = 0.30;
+    float headDistance = length(headOffset) - headRadius;
+
+    // Shoulders / torso: a horizontally-wider rounded rectangle below
+    // the head. Modelled as an SDF for a rounded box centred a touch
+    // below the centre point.
+    float2 bodyOffset = localPosition - float2(0.0, 0.30);
+    float2 bodyHalfExtent = float2(0.55, 0.30);
+    float bodyCornerRadius = 0.30;
+    float2 bodyEdge = abs(bodyOffset) - bodyHalfExtent + bodyCornerRadius;
+    float bodyDistance = length(max(bodyEdge, 0.0)) +
+                         min(max(bodyEdge.x, bodyEdge.y), 0.0) -
+                         bodyCornerRadius;
+
+    // Smooth-min keeps the head and shoulders visually fused so the
+    // silhouette reads as one figure rather than two stacked shapes.
+    float k = 0.06;
+    float h = clamp(0.5 + 0.5 * (bodyDistance - headDistance) / k, 0.0, 1.0);
+    return mix(bodyDistance, headDistance, h) - k * h * (1.0 - h);
+}
+
+/// SDF for a rounded box used by the background marker. `localPosition`
+/// is in inner-fill-radius units relative to the marker centre.
+static inline float corridorKeyRoundedBoxSDF(
+    float2 localPosition,
+    float2 halfExtent,
+    float cornerRadius
+) {
+    float2 q = abs(localPosition) - halfExtent + cornerRadius;
+    return length(max(q, 0.0)) +
+           min(max(q.x, q.y), 0.0) -
+           cornerRadius;
+}
+
 fragment float4 corridorKeyDrawOSCFragment(
     CKHintOSCRasterizerData in [[stage_in]],
     constant CKHintPoint *points [[buffer(0)]],
     constant int &pointCount [[buffer(1)]],
-    constant int &activePart [[buffer(2)]]
+    constant int &activePart [[buffer(2)]],
+    constant float3 &screenColour [[buffer(3)]]
 ) {
     // Texture coordinate is 0..1 across the OSC canvas, matching the
     // object-normalised space hint points are stored in.
@@ -607,47 +655,107 @@ fragment float4 corridorKeyDrawOSCFragment(
     for (int i = 0; i < pointCount; ++i) {
         CKHintPoint p = points[i];
         float2 offset = uv - float2(p.x, p.y);
-        float distance = length(offset);
-        // Outer ring (white outline) at radius * 0.6, inner fill at
-        // radius * 0.5. Smooth fall-off keeps the dots crisp without
-        // jaggies.
-        float radius = max(p.radius, 0.001);
-        float outerRadius = radius * 0.6;
-        float innerRadius = radius * 0.5;
         // ~1 px wide anti-alias band; dfdx/dfdy give per-fragment
         // derivative magnitude in uv space, which is a tighter
         // estimate than guessing from the dest size.
-        float outerEdge = max(fwidth(distance) * 0.5, 0.0005);
-        float fillAlpha = 1.0 - smoothstep(innerRadius - outerEdge, innerRadius + outerEdge, distance);
-        float ringAlpha = (1.0 - smoothstep(outerRadius - outerEdge, outerRadius + outerEdge, distance))
-                         * smoothstep(innerRadius - outerEdge, innerRadius + outerEdge, distance);
+        float aaBand = max(fwidth(offset.x), fwidth(offset.y)) * 0.5;
+        aaBand = max(aaBand, 0.0005);
 
-        // kind = 0 → foreground hint (green)
-        // kind = 1 → background hint (red)
-        // kind = 2 → subject marker (yellow ring + dark interior).
-        //          Lets the FxPlug OSC distinguish the draggable
-        //          subject anchor from click-to-place hint points
-        //          at a glance.
-        float3 fillColour;
-        float3 ringColour = float3(1.0);
+        float radius = max(p.radius, 0.001);
+        float innerRadius = radius * 0.5;
+        bool isActive = ((i + 1) == activePart);
+
         if (p.kind == 2) {
-            fillColour = float3(0.10, 0.12, 0.18);
-            ringColour = float3(1.0, 0.85, 0.20);
-        } else if (p.kind == 1) {
-            fillColour = float3(0.86, 0.21, 0.21);
-        } else {
-            fillColour = float3(0.18, 0.78, 0.30);
+            // Subject marker: yellow ring + dark interior. Kept as a
+            // disc — matches Final Cut Pro's standard draggable handle
+            // affordance and stays clear of the foreground/background
+            // hint icons sharing the canvas.
+            float distance = length(offset);
+            float outerRadius = radius * 0.6;
+            float fillAlpha = 1.0 - smoothstep(innerRadius - aaBand, innerRadius + aaBand, distance);
+            float ringAlpha = (1.0 - smoothstep(outerRadius - aaBand, outerRadius + aaBand, distance))
+                             * smoothstep(innerRadius - aaBand, innerRadius + aaBand, distance);
+            float3 fillColour = float3(0.10, 0.12, 0.18);
+            float3 ringColour = isActive
+                ? float3(1.0, 0.95, 0.40)
+                : float3(1.0, 0.85, 0.20);
+            float3 dotColour = mix(ringColour, fillColour, fillAlpha);
+            float dotAlpha = max(fillAlpha, ringAlpha);
+            colour.rgb = mix(colour.rgb, dotColour, dotAlpha);
+            colour.a = max(colour.a, dotAlpha);
+            continue;
         }
 
-        // If this point is the active hit, brighten the ring so the
-        // user can see which dot they're about to interact with.
-        if ((i + 1) == activePart) {
-            ringColour = float3(1.0, 0.95, 0.40);
+        if (p.kind == 1) {
+            // Background hint — rounded rectangle in the user's
+            // screen colour with a black outline. Mirrors the
+            // standalone editor's `RoundedRectangle` background
+            // marker (16x14 swatch, rounded 3px, 1.5px black border).
+            // Local coordinates with Y-down so the canvas-space
+            // marker reads "screen swatch sat at this point".
+            float2 swatchHalfExtent = float2(radius * 0.55, radius * 0.48);
+            float swatchCornerRadius = radius * 0.12;
+            float boxDistance = corridorKeyRoundedBoxSDF(
+                offset,
+                swatchHalfExtent,
+                swatchCornerRadius
+            );
+            float fillAlpha = 1.0 - smoothstep(-aaBand, aaBand, boxDistance);
+            float borderThickness = max(radius * 0.06, aaBand * 1.5);
+            float borderInner = boxDistance + borderThickness;
+            float borderAlpha = (1.0 - smoothstep(-aaBand, aaBand, boxDistance))
+                              * smoothstep(-aaBand, aaBand, borderInner);
+            // Black border for the active marker brightens to the
+            // FCP yellow used elsewhere so the user's drag target is
+            // unambiguous against any background.
+            float3 fillColour = clamp(screenColour, 0.0, 1.0);
+            float3 borderColour = isActive
+                ? float3(1.0, 0.85, 0.20)
+                : float3(0.0);
+            float3 swatchColour = mix(borderColour, fillColour, 1.0 - clamp(borderAlpha, 0.0, 1.0));
+            float swatchAlpha = max(fillAlpha, borderAlpha);
+            colour.rgb = mix(colour.rgb, swatchColour, swatchAlpha);
+            colour.a = max(colour.a, swatchAlpha);
+            continue;
         }
 
-        // Composite this dot over previous result.
+        // Foreground hint (kind == 0). Dark filled disc with white
+        // outline and a centred white person silhouette — matches the
+        // standalone editor's `Image(systemName: "person.fill")` over
+        // a circle marker so the visual language is identical across
+        // the two surfaces.
+        float distance = length(offset);
+        float fillAlpha = 1.0 - smoothstep(innerRadius - aaBand, innerRadius + aaBand, distance);
+        float outerRadius = radius * 0.6;
+        float ringAlpha = (1.0 - smoothstep(outerRadius - aaBand, outerRadius + aaBand, distance))
+                         * smoothstep(innerRadius - aaBand, innerRadius + aaBand, distance);
+        float3 fillColour = float3(0.10, 0.12, 0.18);
+        float3 ringColour = isActive
+            ? float3(1.0, 0.95, 0.40)
+            : float3(1.0, 1.0, 1.0);
+
+        // Render the silhouette inside the inner disc. The local
+        // coordinate is the offset normalised by inner radius, so the
+        // SDF is independent of the marker's size.
+        float silhouetteScale = innerRadius * 0.92;
+        float2 localPosition = offset / max(silhouetteScale, 0.0001);
+        float silhouetteSDF = corridorKeyPersonSilhouetteSDF(localPosition);
+        // `aaBand` is in uv units; convert to silhouette-local
+        // coordinates so the AA band has consistent width regardless
+        // of the marker radius.
+        float silhouetteAA = max(aaBand / max(silhouetteScale, 0.0001), 0.04);
+        float silhouetteAlpha = (1.0 - smoothstep(-silhouetteAA, silhouetteAA, silhouetteSDF))
+                              * fillAlpha;
+
+        // Layer order (back-to-front): outer ring → dark fill →
+        // white silhouette inside the dark fill.
         float3 dotColour = mix(ringColour, fillColour, fillAlpha);
-        float dotAlpha = max(fillAlpha, ringAlpha);
+        // Silhouette punches white through the dark interior. The
+        // active state keeps the silhouette white so it stays
+        // legible against the brightened ring colour.
+        dotColour = mix(dotColour, float3(1.0), silhouetteAlpha);
+
+        float dotAlpha = max(max(fillAlpha, ringAlpha), silhouetteAlpha);
         colour.rgb = mix(colour.rgb, dotColour, dotAlpha);
         colour.a = max(colour.a, dotAlpha);
     }

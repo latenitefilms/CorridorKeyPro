@@ -145,6 +145,50 @@ struct PluginStateDataTests {
         #expect(decodedAutomatic.hintMode == .automatic)
     }
 
+    @Test("Decoder fallbacks match designated-init defaults")
+    func decoderFallbacksMatchInitDefaults() throws {
+        // Encode a `PluginStateData` plist that's missing every key
+        // FxPlug might omit when reading back a project saved with an
+        // older build, then verify the decoded value matches the
+        // current product default. Drift between the designated init
+        // and `init(from decoder:)` is what made the FxPlug ship with
+        // a fundamentally different look from the Standalone Editor
+        // for users opening pre-v1.0 libraries — the decoder gave
+        // them stale "off" defaults for the post-process toggles
+        // while the editor (constructing `PluginStateData()`) ran
+        // with the comp-ready "on" defaults.
+        let encoder = PropertyListEncoder()
+        encoder.outputFormat = .binary
+        struct LegacyState: Encodable {
+            // Only the four genuinely required fields — every other
+            // key is intentionally absent so `decodeIfPresent` falls
+            // through to its default.
+            var screenColor: ScreenColor
+            var qualityMode: QualityMode
+            var hintMode: HintMode
+        }
+        let legacy = LegacyState(
+            screenColor: .green,
+            qualityMode: .automatic,
+            hintMode: .appleVision
+        )
+        let blob = try encoder.encode(legacy)
+        let decoded = PluginStateData.decoded(from: NSData(data: blob))
+        let defaults = PluginStateData()
+
+        #expect(decoded.sourcePassthroughEnabled == defaults.sourcePassthroughEnabled)
+        #expect(decoded.autoDespeckleEnabled == defaults.autoDespeckleEnabled)
+        #expect(decoded.lightWrapEnabled == defaults.lightWrapEnabled)
+        #expect(decoded.edgeDecontaminateEnabled == defaults.edgeDecontaminateEnabled)
+        #expect(decoded.temporalStabilityEnabled == defaults.temporalStabilityEnabled)
+        #expect(decoded.spillMethod == defaults.spillMethod)
+        #expect(decoded.refinerStrength == defaults.refinerStrength)
+        #expect(decoded.lightWrapStrength == defaults.lightWrapStrength)
+        #expect(decoded.lightWrapRadius == defaults.lightWrapRadius)
+        #expect(decoded.edgeDecontaminateStrength == defaults.edgeDecontaminateStrength)
+        #expect(decoded.temporalStabilityStrength == defaults.temporalStabilityStrength)
+    }
+
     @Test("destinationPixelRadius scales by clip size")
     func destinationPixelRadiusScales() {
         var state = PluginStateData()

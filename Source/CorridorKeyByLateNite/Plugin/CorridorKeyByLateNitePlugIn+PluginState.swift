@@ -69,12 +69,19 @@ extension CorridorKeyToolboxPlugIn {
         state.subjectPositionX = subjectX
         state.subjectPositionY = subjectY
 
-        // Interior
+        // Interior. Defaults below mirror `PluginStateData()`'s
+        // designated initialiser exactly so the FxPlug and the
+        // Standalone Editor land on the same matte when nothing
+        // overrides — earlier drift here meant a fresh FCP project
+        // ran the keyer with Source Passthrough on / Auto Despeckle
+        // off / Light Wrap off / Edge Decontaminate off / Temporal
+        // Stability off, while the Standalone Editor ran with the
+        // opposite combination.
         state.sourcePassthroughEnabled = boolValue(
             retrieval: retrieval,
             parameterID: ParameterIdentifier.sourcePassthrough,
             time: renderTime,
-            default: true
+            default: false
         )
         state.passthroughErodeNormalized = floatValue(
             retrieval: retrieval,
@@ -124,7 +131,7 @@ extension CorridorKeyToolboxPlugIn {
             retrieval: retrieval,
             parameterID: ParameterIdentifier.autoDespeckle,
             time: renderTime,
-            default: false
+            default: true
         )
         state.despeckleSize = intValue(
             retrieval: retrieval,
@@ -144,7 +151,7 @@ extension CorridorKeyToolboxPlugIn {
             retrieval: retrieval,
             parameterID: ParameterIdentifier.lightWrapEnabled,
             time: renderTime,
-            default: false
+            default: true
         )
         state.lightWrapStrength = floatValue(
             retrieval: retrieval,
@@ -162,7 +169,7 @@ extension CorridorKeyToolboxPlugIn {
             retrieval: retrieval,
             parameterID: ParameterIdentifier.edgeDecontaminateEnabled,
             time: renderTime,
-            default: false
+            default: true
         )
         state.edgeDecontaminateStrength = floatValue(
             retrieval: retrieval,
@@ -176,7 +183,7 @@ extension CorridorKeyToolboxPlugIn {
             retrieval: retrieval,
             parameterID: ParameterIdentifier.temporalStabilityEnabled,
             time: renderTime,
-            default: false
+            default: true
         )
         state.temporalStabilityStrength = floatValue(
             retrieval: retrieval,
@@ -196,7 +203,7 @@ extension CorridorKeyToolboxPlugIn {
             retrieval: retrieval,
             parameterID: ParameterIdentifier.spillMethod,
             time: renderTime,
-            default: .average
+            default: .ultra
         )
 
         // Output and performance

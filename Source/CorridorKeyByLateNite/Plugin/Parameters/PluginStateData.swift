@@ -248,7 +248,14 @@ struct PluginStateData: Codable, Sendable {
         self.showSubjectMarker = try container.decodeIfPresent(Bool.self, forKey: .showSubjectMarker) ?? true
         self.subjectPositionX = try container.decodeIfPresent(Double.self, forKey: .subjectPositionX) ?? 0.5
         self.subjectPositionY = try container.decodeIfPresent(Double.self, forKey: .subjectPositionY) ?? 0.5
-        self.sourcePassthroughEnabled = try container.decodeIfPresent(Bool.self, forKey: .sourcePassthroughEnabled) ?? true
+        // Decoder fallbacks must match the v1.0 product defaults (the
+        // designated initialiser) so a saved plist that predates a key
+        // is upgraded to the current default rather than silently
+        // landing on a stale value. Drift here was the root cause of
+        // the FxPlug producing a poor matte while the Standalone
+        // Editor — which constructs `PluginStateData()` directly and
+        // therefore always sees the modern defaults — looked clean.
+        self.sourcePassthroughEnabled = try container.decodeIfPresent(Bool.self, forKey: .sourcePassthroughEnabled) ?? false
         self.passthroughErodeNormalized = try container.decodeIfPresent(Double.self, forKey: .passthroughErodeNormalized) ?? 3.0
         self.passthroughBlurNormalized = try container.decodeIfPresent(Double.self, forKey: .passthroughBlurNormalized) ?? 7.0
         self.alphaBlackPoint = try container.decodeIfPresent(Double.self, forKey: .alphaBlackPoint) ?? 0.0
@@ -256,17 +263,17 @@ struct PluginStateData: Codable, Sendable {
         self.alphaErodeNormalized = try container.decodeIfPresent(Double.self, forKey: .alphaErodeNormalized) ?? 0.0
         self.alphaSoftnessNormalized = try container.decodeIfPresent(Double.self, forKey: .alphaSoftnessNormalized) ?? 0.0
         self.alphaGamma = try container.decodeIfPresent(Double.self, forKey: .alphaGamma) ?? 1.0
-        self.autoDespeckleEnabled = try container.decodeIfPresent(Bool.self, forKey: .autoDespeckleEnabled) ?? false
+        self.autoDespeckleEnabled = try container.decodeIfPresent(Bool.self, forKey: .autoDespeckleEnabled) ?? true
         self.despeckleSize = try container.decodeIfPresent(Int.self, forKey: .despeckleSize) ?? 100
         self.refinerStrength = try container.decodeIfPresent(Double.self, forKey: .refinerStrength) ?? 1.0
         self.despillStrength = try container.decodeIfPresent(Double.self, forKey: .despillStrength) ?? 0.5
         self.spillMethod = try container.decodeIfPresent(SpillMethod.self, forKey: .spillMethod) ?? .ultra
-        self.lightWrapEnabled = try container.decodeIfPresent(Bool.self, forKey: .lightWrapEnabled) ?? false
+        self.lightWrapEnabled = try container.decodeIfPresent(Bool.self, forKey: .lightWrapEnabled) ?? true
         self.lightWrapStrength = try container.decodeIfPresent(Double.self, forKey: .lightWrapStrength) ?? 0.25
         self.lightWrapRadius = try container.decodeIfPresent(Double.self, forKey: .lightWrapRadius) ?? 10.0
-        self.edgeDecontaminateEnabled = try container.decodeIfPresent(Bool.self, forKey: .edgeDecontaminateEnabled) ?? false
+        self.edgeDecontaminateEnabled = try container.decodeIfPresent(Bool.self, forKey: .edgeDecontaminateEnabled) ?? true
         self.edgeDecontaminateStrength = try container.decodeIfPresent(Double.self, forKey: .edgeDecontaminateStrength) ?? 0.5
-        self.temporalStabilityEnabled = try container.decodeIfPresent(Bool.self, forKey: .temporalStabilityEnabled) ?? false
+        self.temporalStabilityEnabled = try container.decodeIfPresent(Bool.self, forKey: .temporalStabilityEnabled) ?? true
         self.temporalStabilityStrength = try container.decodeIfPresent(Double.self, forKey: .temporalStabilityStrength) ?? 0.5
         self.outputMode = try container.decodeIfPresent(OutputMode.self, forKey: .outputMode) ?? .processed
         self.upscaleMethod = try container.decodeIfPresent(UpscaleMethod.self, forKey: .upscaleMethod) ?? .lanczos
