@@ -42,10 +42,16 @@ public enum HintMode: Int, Sendable, CaseIterable, Codable {
     /// segments by subject saliency rather than by green-channel
     /// dominance.
     case appleVision = 1
-    /// User-placed hint points only. The pipeline rasterises the
-    /// hint set into the 4th channel without an upstream prior, and
-    /// fails the render if the user hasn't placed any points — the
-    /// network can't infer a matte from a black hint channel alone.
+    /// Same upstream chroma prior as `.automatic`, but the user's
+    /// hint dots are required — the renderer fails the analysis if
+    /// the hint set is empty. Initial design ran the inference on
+    /// a zero base + dots only, but the MLX network was trained on
+    /// a soft chroma-derived gradient or a Vision-style binary
+    /// mask; sparse dots on black sit outside that distribution
+    /// and produce nonsense mattes. Falling back to the chroma
+    /// prior with the user's dots overlaid gives the network input
+    /// it understands while keeping the "you have to place hints"
+    /// semantics this mode is named for.
     case manual = 2
 
     public var displayName: String {

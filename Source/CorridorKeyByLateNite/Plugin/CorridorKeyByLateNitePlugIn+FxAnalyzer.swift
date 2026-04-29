@@ -54,6 +54,16 @@ final class AnalysisSessionState: @unchecked Sendable {
     var temporalStabilityEnabled: Bool = false
     var temporalStabilityStrength: Double = 0.5
 
+    /// Cached hint configuration captured at setup time so the per-frame
+    /// analyse path runs with the user's actual settings, not a default-
+    /// constructed `PluginStateData`. Earlier builds dropped these onto
+    /// the floor — the analyser always ran with `hintMode = .appleVision`
+    /// and an empty hint set, which made the cached matte diverge from
+    /// the Standalone Editor's output the moment the user picked a
+    /// different mode or placed any subject hints.
+    var hintModeRaw: Int = HintMode.appleVision.rawValue
+    var hintPointSet: HintPointSet = HintPointSet()
+
     /// Snapshot for lock-free packing into an `AnalysisData` value. Callers are
     /// expected to already hold the lock; the copy isolates the dictionary so
     /// downstream serialisation can happen outside the critical section.
@@ -89,6 +99,8 @@ final class AnalysisSessionState: @unchecked Sendable {
         previousTemporalFrameIndex = nil
         temporalStabilityEnabled = false
         temporalStabilityStrength = 0.5
+        hintModeRaw = HintMode.appleVision.rawValue
+        hintPointSet = HintPointSet()
     }
 }
 
@@ -227,6 +239,26 @@ extension CorridorKeyToolboxPlugIn {
             return value
         }()
 
+        // Snapshot hint configuration too. The per-frame analyser
+        // needs these to match what the Standalone Editor would
+        // produce for the same source — without this the FxPlug
+        // analyse always ran with `.appleVision` + empty hints and
+        // ignored whatever the user picked in the inspector / OSC.
+        let hintModeValue: HintMode = {
+            var raw: Int32 = Int32(HintMode.appleVision.rawValue)
+            retrieval.getIntValue(&raw, fromParameter: ParameterIdentifier.hintMode, at: analysisRange.start)
+            return HintMode(rawValue: Int(raw)) ?? .appleVision
+        }()
+        let hintPoints: HintPointSet = {
+            var raw: (any NSCopying & NSObjectProtocol & NSSecureCoding)?
+            retrieval.getCustomParameterValue(
+                &raw,
+                fromParameter: ParameterIdentifier.subjectPoints,
+                at: analysisRange.start
+            )
+            return HintPointSet.fromParameterDictionary(raw as? NSDictionary)
+        }()
+
         let frameCount = Self.frameCount(in: analysisRange, frameDuration: frameDuration)
         let session = analysisSession
         session.lock.lock()
@@ -241,10 +273,12 @@ extension CorridorKeyToolboxPlugIn {
         session.matteHeight = inferenceResolution
         session.temporalStabilityEnabled = temporalEnabled
         session.temporalStabilityStrength = temporalStrength
+        session.hintModeRaw = hintModeValue.rawValue
+        session.hintPointSet = hintPoints
         session.lock.unlock()
 
         PluginLog.notice(
-            "Analyse setup: \(frameCount) frame(s) at \(inferenceResolution)px, screen=\(screenColor.displayName)."
+            "Analyse setup: \(frameCount) frame(s) at \(inferenceResolution)px, screen=\(screenColor.displayName), hint=\(hintModeValue.displayName), userHints=\(hintPoints.points.count)."
         )
     }
 
@@ -263,6 +297,8 @@ extension CorridorKeyToolboxPlugIn {
         let storedInferenceResolution = session.inferenceResolution
         let temporalEnabled = session.temporalStabilityEnabled
         let temporalStrength = session.temporalStabilityStrength
+        let hintModeRaw = session.hintModeRaw
+        let hintPointSet = session.hintPointSet
         let cachedPreviousAlpha = session.previousTemporalAlpha
         let cachedPreviousSource = session.previousTemporalSource
         let cachedPreviousFrameIndex = session.previousTemporalFrameIndex
@@ -317,10 +353,19 @@ extension CorridorKeyToolboxPlugIn {
             )
         }
 
+        // Build the analyse-state with the snapshotted user values. The
+        // hint mode + hint points are critical here: skipping them would
+        // make the cached matte differ from the Standalone Editor's
+        // output for the same source. Other parameters (despill, light
+        // wrap, etc.) only kick in at *render* time when the cached
+        // matte is being composited, so they don't need to thread
+        // through the analyse path.
         let analyseState = PluginStateData(
             screenColor: ScreenColor(rawValue: screenColorRaw) ?? .green,
             qualityMode: QualityMode.allCases.first(where: { $0.resolvedInferenceResolution(forLongEdge: 1920) == storedInferenceResolution })
-                ?? .automatic
+                ?? .automatic,
+            hintMode: HintMode(rawValue: hintModeRaw) ?? .appleVision,
+            hintPointSet: hintPointSet
         )
 
         let workingGamut: WorkingColorGamut

@@ -640,14 +640,11 @@ final class RenderPipeline: @unchecked Sendable {
                 commandBuffer: commandBuffer
             )
             mask.retainOnCompletion(of: commandBuffer)
-        } else if inputs.state.hintMode == .manual {
-            hintPooled = try RenderStages.generateZeroHint(
-                width: rotatedSource.width,
-                height: rotatedSource.height,
-                entry: context.entry,
-                commandBuffer: commandBuffer
-            )
         } else {
+            // Manual and Automatic share the chroma prior — see the
+            // matching branch in `runPreInference` for why a pure
+            // zero-base hint produces nonsense mattes. Manual mode's
+            // contract is enforced upstream by the empty-hint guard.
             hintPooled = try RenderStages.generateGreenHint(
                 source: rotatedSource,
                 entry: context.entry,
@@ -865,18 +862,14 @@ final class RenderPipeline: @unchecked Sendable {
                 commandBuffer: preCommandBuffer
             )
             mask.retainOnCompletion(of: preCommandBuffer)
-        } else if hintMode == .manual {
-            // Manual mode skips both the chroma and Vision priors —
-            // the only non-zero pixels in the hint channel come from
-            // the user's dots, which the next stage rasterises onto
-            // this zero base.
-            hintTexturePooled = try RenderStages.generateZeroHint(
-                width: rotatedSource.width,
-                height: rotatedSource.height,
-                entry: entry,
-                commandBuffer: preCommandBuffer
-            )
         } else {
+            // Manual and Automatic both use the chroma-derived prior
+            // here — the network was trained on that distribution,
+            // not on sparse user dots in isolation. The empty-hint
+            // guard in `renderInternal` / the analyser already
+            // refuses to run Manual mode without at least one user
+            // dot, so the user's clicks still gate progress; they
+            // just augment the chroma prior on top of feeding it.
             hintTexturePooled = try RenderStages.generateGreenHint(
                 source: rotatedSource,
                 entry: entry,

@@ -622,8 +622,22 @@ fragment float4 corridorKeyDrawOSCFragment(
         float ringAlpha = (1.0 - smoothstep(outerRadius - outerEdge, outerRadius + outerEdge, distance))
                          * smoothstep(innerRadius - outerEdge, innerRadius + outerEdge, distance);
 
-        float3 fillColour = (p.kind == 0) ? float3(0.18, 0.78, 0.30) : float3(0.86, 0.21, 0.21);
+        // kind = 0 → foreground hint (green)
+        // kind = 1 → background hint (red)
+        // kind = 2 → subject marker (yellow ring + dark interior).
+        //          Lets the FxPlug OSC distinguish the draggable
+        //          subject anchor from click-to-place hint points
+        //          at a glance.
+        float3 fillColour;
         float3 ringColour = float3(1.0);
+        if (p.kind == 2) {
+            fillColour = float3(0.10, 0.12, 0.18);
+            ringColour = float3(1.0, 0.85, 0.20);
+        } else if (p.kind == 1) {
+            fillColour = float3(0.86, 0.21, 0.21);
+        } else {
+            fillColour = float3(0.18, 0.78, 0.30);
+        }
 
         // If this point is the active hit, brighten the ring so the
         // user can see which dot they're about to interact with.
@@ -717,21 +731,6 @@ kernel void corridorKeyGreenHintKernel(
     float greenBias = rgba.g - max(rgba.r, rgba.b);
     float matte = 1.0 - saturate(greenBias * 2.0);
     destination.write(float4(matte, 0.0, 0.0, 1.0), gid);
-}
-
-/// Writes 0.0 to every texel of an `r16Float` hint texture. The
-/// pre-inference path uses this for Manual Hint mode so the
-/// upstream chroma / Vision priors are skipped — the only
-/// non-zero pixels in the hint channel come from
-/// `corridorKeyApplyHintPointsKernel` rasterising the user's
-/// dots on top.
-kernel void corridorKeyClearHintKernel(
-    texture2d<float, access::write> destination [[texture(CKTextureIndexOutput)]],
-    uint2 gid [[thread_position_in_grid]]
-) {
-    uint2 dims = uint2(destination.get_width(), destination.get_height());
-    if (gid.x >= dims.x || gid.y >= dims.y) { return; }
-    destination.write(float4(0.0, 0.0, 0.0, 1.0), gid);
 }
 
 // MARK: - Source passthrough blending
