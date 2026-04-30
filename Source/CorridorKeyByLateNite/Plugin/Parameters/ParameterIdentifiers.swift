@@ -13,7 +13,9 @@ import Foundation
 enum ParameterIdentifier {
     /// Custom-UI parameter that hosts the inspector header (app icon,
     /// version, Analyse/Reset buttons, analysis status). Drawn as a SwiftUI
-    /// `NSHostingView` returned from `createViewForParameterID`.
+    /// `NSHostingView` returned from `createViewForParameterID`. The Motion
+    /// Template publishes this parameter, so it also owns the nested
+    /// persistence dictionary for analysis data and subject points.
     static let headerSummary: UInt32 = 50
 
     // Subgroups
@@ -84,18 +86,12 @@ enum ParameterIdentifier {
     /// smearing real motion.
     static let temporalStabilityEnabled: UInt32 = 8006
     static let temporalStabilityStrength: UInt32 = 8007
+}
 
-    /// Hidden custom parameter that persists the per-frame MLX mattes inside
-    /// the Final Cut Pro Library so editors can move projects between
-    /// machines without losing the analysed cache.
-    static let analysisData: UInt32 = 7003
-
-    /// Hidden custom parameter that persists the user-placed foreground /
-    /// background hint dots from the on-screen control. Stored alongside
-    /// the analysis data inside the FCP Library so the points travel
-    /// with the project. The OSC reads/writes this; the renderer reads
-    /// it during pre-inference to overlay the dots on the upstream hint.
-    static let subjectPoints: UInt32 = 7004
+enum HeaderStorageKey {
+    static let schemaVersion = "schemaVersion"
+    static let analysisData = "analysisData"
+    static let subjectPoints = "subjectPoints"
 }
 
 /// Convenience wrapper that makes the raw `kFxParameterFlag_*` constants feel at

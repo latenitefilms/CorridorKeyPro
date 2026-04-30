@@ -30,6 +30,21 @@ struct HintPointSetTests {
         #expect(decoded.points[1].radiusNormalized == 0.04)
     }
 
+    @Test("Dictionary decode accepts NSString keys and NSData values")
+    func nsDictionaryRoundTrip() throws {
+        let original = HintPointSet(points: [
+            HintPoint(x: 0.45, y: 0.55, kind: .foreground, radiusNormalized: 0.03)
+        ])
+        let dictionary = NSMutableDictionary()
+        dictionary[NSString(string: "blob")] = try original.encodedForHost() as NSData
+
+        let decoded = HintPointSet.fromParameterDictionary(dictionary)
+
+        #expect(decoded.points.count == 1)
+        #expect(decoded.points[0].x == 0.45)
+        #expect(decoded.points[0].kind == .foreground)
+    }
+
     @Test("Empty dictionary decodes to empty set")
     func emptyDictionary() {
         let decoded = HintPointSet.fromParameterDictionary(NSDictionary())

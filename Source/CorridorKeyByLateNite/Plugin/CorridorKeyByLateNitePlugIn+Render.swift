@@ -47,7 +47,8 @@ extension CorridorKeyToolboxPlugIn {
 
         let startTime = CACurrentMediaTime()
         do {
-            _ = try renderPipeline.render(request)
+            let report = try renderPipeline.render(request)
+            lastRenderReport.set(report)
         } catch {
             PluginLog.error("Render failed at \(CMTimeGetSeconds(renderTime))s: \(error.localizedDescription)")
             throw error

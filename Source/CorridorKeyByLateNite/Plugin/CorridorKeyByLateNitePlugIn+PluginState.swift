@@ -11,6 +11,56 @@
 import Foundation
 import CoreMedia
 
+enum HeaderCustomParameterStorage {
+    static func dictionaryValue(
+        for key: String,
+        using retrieval: any FxParameterRetrievalAPI_v6
+    ) -> NSDictionary? {
+        let storage = storageDictionary(using: retrieval)
+        if let dictionary = storage[NSString(string: key)] as? NSDictionary {
+            return dictionary
+        }
+        return storage[key] as? NSDictionary
+    }
+
+    @discardableResult
+    static func setDictionary(
+        _ dictionary: NSDictionary,
+        for key: String,
+        using apiManager: any PROAPIAccessing
+    ) -> Bool {
+        guard let settingAPI = apiManager.api(for: (any FxParameterSettingAPI_v5).self) as? any FxParameterSettingAPI_v5 else {
+            return false
+        }
+
+        let storage = NSMutableDictionary()
+        if let retrieval = apiManager.api(for: (any FxParameterRetrievalAPI_v6).self) as? any FxParameterRetrievalAPI_v6 {
+            for (existingKey, existingValue) in storageDictionary(using: retrieval) {
+                storage[existingKey] = existingValue
+            }
+        }
+        storage[NSString(string: HeaderStorageKey.schemaVersion)] = NSNumber(value: 1)
+        storage[NSString(string: key)] = dictionary
+
+        let value = storage.copy() as? NSDictionary ?? NSDictionary()
+        return settingAPI.setCustomParameterValue(
+            value,
+            toParameter: ParameterIdentifier.headerSummary,
+            at: CMTime.zero
+        )
+    }
+
+    private static func storageDictionary(using retrieval: any FxParameterRetrievalAPI_v6) -> NSDictionary {
+        var rawValue: (any NSCopying & NSObjectProtocol & NSSecureCoding)?
+        retrieval.getCustomParameterValue(
+            &rawValue,
+            fromParameter: ParameterIdentifier.headerSummary,
+            at: CMTime.zero
+        )
+        return rawValue as? NSDictionary ?? NSDictionary()
+    }
+}
+
 extension CorridorKeyToolboxPlugIn {
 
     @objc(pluginState:atTime:quality:error:)
@@ -233,8 +283,8 @@ extension CorridorKeyToolboxPlugIn {
             state.cachedMatteInferenceResolution = cachedMatte.inferenceResolution
         }
 
-        // Load the user's OSC-placed hint dots. Stored in a hidden custom
-        // parameter so they round-trip through the FCP Library.
+        // Load the user's OSC-placed hint dots from the published header
+        // storage dictionary so they round-trip through the `.moef` wrapper.
         state.hintPointSet = loadHintPointSet(using: retrieval)
 
         let nsData = try state.encodedForHost()
@@ -307,19 +357,16 @@ extension CorridorKeyToolboxPlugIn {
         return (x, y)
     }
 
-    /// Decodes the hidden Subject Points custom parameter into a
-    /// `HintPointSet`. Returns an empty set when the parameter has
-    /// never been written (the typical case until the user clicks the
-    /// canvas with the OSC active).
-    fileprivate func loadHintPointSet(
+    /// Decodes the Subject Points payload stored inside the published header
+    /// custom parameter. Returns an empty set when it has never been written
+    /// (the typical case until the user clicks the canvas with the OSC active).
+    func loadHintPointSet(
         using retrieval: any FxParameterRetrievalAPI_v6
     ) -> HintPointSet {
-        var rawValue: (any NSCopying & NSObjectProtocol & NSSecureCoding)?
-        retrieval.getCustomParameterValue(
-            &rawValue,
-            fromParameter: ParameterIdentifier.subjectPoints,
-            at: CMTime.zero
+        let dictionary = HeaderCustomParameterStorage.dictionaryValue(
+            for: HeaderStorageKey.subjectPoints,
+            using: retrieval
         )
-        return HintPointSet.fromParameterDictionary(rawValue as? NSDictionary)
+        return HintPointSet.fromParameterDictionary(dictionary)
     }
 }

@@ -28,22 +28,22 @@ struct CorridorKeyAnalysisSnapshot: Equatable, Sendable {
     /// per-frame wall-time tracker.
     let analysisETASeconds: Double?
 
-    /// Last observed render-frame wall time, in milliseconds. The
-    /// inspector surfaces this in a footer line so users can tune the
-    /// Quality dropdown without guessing — they see exactly how
-    /// expensive the current rung is on their hardware.
+    /// Last observed render-frame wall time, in milliseconds. Retained for
+    /// diagnostics even though the visible header now mirrors the Standalone
+    /// Editor's smaller field set.
     let lastRenderMilliseconds: Double?
 
-    /// `true` when the user has placed at least one foreground or
-    /// background hint dot via the on-screen control. The inspector
-    /// header surfaces this so the user knows their dots are
-    /// affecting the analysis.
+    /// Last render backend reported by the render pipeline, matching the
+    /// Standalone Editor's Backend field.
+    let renderBackendDescription: String
+
+    /// Diagnostic count for foreground / background hint dots. Kept
+    /// defaulted so snapshot tests can build focused instances without
+    /// supplying every optional field.
     let hintPointCount: Int
 
-    /// Default-valued init so the legacy call sites (snapshot logic tests)
-    /// keep compiling. `warmup` defaults to `.cold` and `analysisETASeconds`
-    /// to `nil`, which matches the pre-v1.0 behaviour before this file
-    /// gained these fields.
+    /// Default-valued init so focused snapshot logic tests only need to
+    /// provide fields relevant to the behaviour under test.
     init(
         state: State,
         analyzedFrameCount: Int,
@@ -52,6 +52,7 @@ struct CorridorKeyAnalysisSnapshot: Equatable, Sendable {
         warmup: WarmupStatus = .cold,
         analysisETASeconds: Double? = nil,
         lastRenderMilliseconds: Double? = nil,
+        renderBackendDescription: String = "—",
         hintPointCount: Int = 0
     ) {
         self.state = state
@@ -61,6 +62,7 @@ struct CorridorKeyAnalysisSnapshot: Equatable, Sendable {
         self.warmup = warmup
         self.analysisETASeconds = analysisETASeconds
         self.lastRenderMilliseconds = lastRenderMilliseconds
+        self.renderBackendDescription = renderBackendDescription
         self.hintPointCount = hintPointCount
     }
 
@@ -72,6 +74,7 @@ struct CorridorKeyAnalysisSnapshot: Equatable, Sendable {
         warmup: .cold,
         analysisETASeconds: nil,
         lastRenderMilliseconds: nil,
+        renderBackendDescription: "—",
         hintPointCount: 0
     )
 

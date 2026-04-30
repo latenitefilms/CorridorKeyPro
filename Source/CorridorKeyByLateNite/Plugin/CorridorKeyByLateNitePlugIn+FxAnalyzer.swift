@@ -108,8 +108,8 @@ final class AnalysisSessionState: @unchecked Sendable {
 ///
 /// Final Cut Pro may render with an older encoded `pluginState` immediately
 /// after a seek or custom-parameter write. Keeping the same-process snapshot
-/// lets the render callback recover the current frame's matte without waiting
-/// for the hidden custom parameter to round-trip through the host.
+/// lets the render callback recover the current frame's matte while the host
+/// propagates the published header-storage parameter.
 final class AnalysisSnapshotStore: @unchecked Sendable {
     private let lock = NSLock()
     private var snapshot: AnalysisData?
@@ -191,15 +191,13 @@ extension CorridorKeyToolboxPlugIn {
         actionAPI.startAction(self)
         defer { actionAPI.endAction(self) }
 
-        guard let setAPI = apiManager.api(for: (any FxParameterSettingAPI_v5).self) as? any FxParameterSettingAPI_v5 else {
-            PluginLog.error("Reset Analysis: FxParameterSettingAPI_v5 is unavailable.")
-            return
-        }
-        setAPI.setCustomParameterValue(
+        if !HeaderCustomParameterStorage.setDictionary(
             NSDictionary(),
-            toParameter: ParameterIdentifier.analysisData,
-            at: CMTime.zero
-        )
+            for: HeaderStorageKey.analysisData,
+            using: apiManager
+        ) {
+            PluginLog.error("Reset Analysis: header custom parameter write failed.")
+        }
         PluginLog.notice("Analysis cache cleared.")
     }
 
@@ -289,15 +287,7 @@ extension CorridorKeyToolboxPlugIn {
             retrieval.getIntValue(&raw, fromParameter: ParameterIdentifier.hintMode, at: analysisRange.start)
             return HintMode(rawValue: Int(raw)) ?? .appleVision
         }()
-        let hintPoints: HintPointSet = {
-            var raw: (any NSCopying & NSObjectProtocol & NSSecureCoding)?
-            retrieval.getCustomParameterValue(
-                &raw,
-                fromParameter: ParameterIdentifier.subjectPoints,
-                at: analysisRange.start
-            )
-            return HintPointSet.fromParameterDictionary(raw as? NSDictionary)
-        }()
+        let hintPoints = loadHintPointSet(using: retrieval)
 
         let frameCount = Self.frameCount(in: analysisRange, frameDuration: frameDuration)
         let session = analysisSession
@@ -568,35 +558,35 @@ extension CorridorKeyToolboxPlugIn {
 
     // MARK: - Persistence + lookup helpers
 
-    /// Writes the current in-memory cache back to the hidden custom
-    /// parameter so Final Cut Pro picks it up on the next render request.
+    /// Writes the current in-memory cache into the published header custom
+    /// parameter so Final Cut Pro's Motion Template wrapper persists it on
+    /// the same channel as the inspector header.
     private func persist(snapshot: AnalysisData) {
         analysisSnapshotStore.store(snapshot)
 
-        guard let setAPI = apiManager.api(for: (any FxParameterSettingAPI_v5).self) as? any FxParameterSettingAPI_v5 else {
-            PluginLog.error("Persist analysis: FxParameterSettingAPI_v5 is unavailable.")
+        if HeaderCustomParameterStorage.setDictionary(
+            snapshot.asParameterDictionary(),
+            for: HeaderStorageKey.analysisData,
+            using: apiManager
+        ) {
             return
         }
-        setAPI.setCustomParameterValue(
-            snapshot.asParameterDictionary(),
-            toParameter: ParameterIdentifier.analysisData,
-            at: CMTime.zero
-        )
+
+        PluginLog.error("Persist analysis: header custom parameter write failed.")
     }
 
     /// Loads the persisted cache for a render call. Used by `pluginState` to
     /// surface the current frame's compressed matte into the render blob.
     func loadAnalysisData(using retrieval: any FxParameterRetrievalAPI_v6) -> AnalysisData? {
-        var rawValue: (any NSCopying & NSObjectProtocol & NSSecureCoding)?
-        retrieval.getCustomParameterValue(
-            &rawValue,
-            fromParameter: ParameterIdentifier.analysisData,
-            at: CMTime.zero
+        let headerDictionary = HeaderCustomParameterStorage.dictionaryValue(
+            for: HeaderStorageKey.analysisData,
+            using: retrieval
         )
-        if let analysis = AnalysisData.fromParameterDictionary(rawValue as? NSDictionary) {
+        if let analysis = AnalysisData.fromParameterDictionary(headerDictionary) {
             analysisSnapshotStore.store(analysis)
             return analysis
         }
+
         return analysisSnapshotStore.currentSnapshot()
     }
 

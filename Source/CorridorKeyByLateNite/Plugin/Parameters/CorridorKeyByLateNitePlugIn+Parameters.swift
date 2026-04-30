@@ -29,7 +29,6 @@ extension CorridorKeyToolboxPlugIn {
         }
 
         try addHeaderParameter(create: create)
-        try addHiddenAnalysisParameter(create: create)
         try addSettingsGroup(create: create)
         try addInteriorDetailGroup(create: create)
         try addMatteGroup(create: create)
@@ -41,17 +40,16 @@ extension CorridorKeyToolboxPlugIn {
 
     // MARK: - Custom parameter serialisation
 
-    /// Tells FxPlug which Foundation classes may appear inside our hidden
+    /// Tells FxPlug which Foundation classes may appear inside our header
     /// custom parameter so the host can safely decode it through
     /// `NSSecureCoding`. The analysis dictionary is a tree of Foundation
     /// dictionary / string / number / data nodes. Mutable variants are
-    /// whitelisted only for older values that may have been archived before
-    /// we normalised the writer to immutable dictionaries.
+    /// whitelisted because the host may hand mutable Foundation containers
+    /// back even when we write immutable values.
     @objc(classesForCustomParameterID:)
     func classes(forCustomParameterID parameterID: UInt32) -> Set<AnyHashable> {
         switch parameterID {
-        case ParameterIdentifier.analysisData,
-             ParameterIdentifier.subjectPoints:
+        case ParameterIdentifier.headerSummary:
             let classes: [AnyClass] = [
                 NSDictionary.self,
                 NSMutableDictionary.self,
@@ -77,25 +75,6 @@ extension CorridorKeyToolboxPlugIn {
             parameterID: ParameterIdentifier.headerSummary,
             defaultValue: NSDictionary(),
             parameterFlags: CorridorKeyParameterFlags.headerCustomUI.fxFlags
-        )
-    }
-
-    /// Hidden, non-animatable custom parameter that persists the per-frame
-    /// MLX mattes inside the Final Cut Pro Library. Never surfaced to the
-    /// inspector — only touched by the analyser and by `pluginState`.
-    private func addHiddenAnalysisParameter(create: any FxParameterCreationAPI_v5) throws {
-        let hiddenFlags: CorridorKeyParameterFlags = [.default, .hidden, .notAnimatable, .curveEditorHidden]
-        create.addCustomParameter(
-            withName: "Analysis Data",
-            parameterID: ParameterIdentifier.analysisData,
-            defaultValue: NSDictionary(),
-            parameterFlags: hiddenFlags.fxFlags
-        )
-        create.addCustomParameter(
-            withName: "Subject Points",
-            parameterID: ParameterIdentifier.subjectPoints,
-            defaultValue: HintPointSet().asParameterDictionary(),
-            parameterFlags: hiddenFlags.fxFlags
         )
     }
 

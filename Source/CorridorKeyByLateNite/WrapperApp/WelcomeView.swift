@@ -37,45 +37,47 @@ struct WelcomeView: View {
                 .antialiased(true)
                 .scaledToFit()
                 .frame(width: 96, height: 96)
-                .cornerRadius(20)
+                .clipShape(.rect(cornerRadius: 20))
                 .shadow(radius: 2, y: 1)
 
             Text("CorridorKey by LateNite")
                 .font(.largeTitle)
                 .bold()
 
-            Text("Use the standalone editor to key any clip — or jump straight to \(Text("Final Cut Pro").bold()) and find CorridorKey by LateNite in the Effects browser.")
+            Text("Use the standalone editor to key any clip — or jump straight to \(Text("Final Cut Pro").bold()) and find CorridorKey by LateNite in the \(Text("Effects").bold()) Browser.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 40)
 
             InstallationStatusLabel(state: installationState)
 
-            VStack(spacing: 10) {
-                Button("Open Standalone Editor", systemImage: "wand.and.stars") {
-                    openWindow(id: EditorWindow.id)
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .frame(maxWidth: 280)
+            VStack(spacing: 14) {
+                HStack(spacing: 14) {
+                    Button("Open Standalone Editor", systemImage: "wand.and.stars") {
+                        openWindow(id: EditorWindow.id)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
 
-                HStack(spacing: 10) {
                     Button("Open Final Cut Pro", systemImage: "play.rectangle") {
                         openFinalCutPro()
                     }
                     .controlSize(.large)
+                }
 
+                HStack(spacing: 14) {
                     Button("User Guide", systemImage: "book") {
                         openUserGuide()
                     }
                     .controlSize(.large)
 
-                    Button("Reveal Log File", systemImage: "doc.text.magnifyingglass") {
+                    Button("Reveal Log Files", systemImage: "doc.text.magnifyingglass") {
                         revealRendererLogs()
                     }
                     .controlSize(.large)
                 }
             }
+            .padding(.top, 4)
             Spacer(minLength: 4)
         }
         .padding()
@@ -104,7 +106,6 @@ struct WelcomeView: View {
         for bundleIdentifier in Self.finalCutBundleIdentifiers {
             if let finalCutURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier) {
                 NSWorkspace.shared.open(finalCutURL)
-                NSApplication.shared.terminate(nil)
                 return
             }
         }

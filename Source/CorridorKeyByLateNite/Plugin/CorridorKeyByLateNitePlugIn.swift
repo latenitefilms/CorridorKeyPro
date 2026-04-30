@@ -32,6 +32,10 @@ final class CorridorKeyToolboxPlugIn: NSObject, FxTileableEffect, FxAnalyzer {
     /// for internal performance tracing.
     let lastFrameMilliseconds = AtomicDouble(0)
 
+    /// Last render backend used by the tile renderer. The inspector header
+    /// reads this for the same Backend row the Standalone Editor exposes.
+    let lastRenderReport = AtomicRenderReport()
+
     /// Per-instance analysis session. Holds the in-flight matte cache while a
     /// forward-analysis pass is running; dropped back to empty once cleanup
     /// has flushed the final result to the Library. Owned by the plug-in
@@ -108,6 +112,26 @@ final class AtomicDouble: @unchecked Sendable {
 
     func read() -> Double {
         lock.lock(); defer { lock.unlock() }
+        return value
+    }
+}
+
+/// Thread-safe one-value store for the last render report published by the
+/// render callback. Kept separate from `AtomicDouble` so the report remains a
+/// value type and the FxPlug bridge can read it without touching Metal state.
+final class AtomicRenderReport: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value: RenderReport?
+
+    func set(_ newValue: RenderReport) {
+        lock.lock()
+        value = newValue
+        lock.unlock()
+    }
+
+    func read() -> RenderReport? {
+        lock.lock()
+        defer { lock.unlock() }
         return value
     }
 }

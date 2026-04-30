@@ -6,9 +6,9 @@
 //  the on-screen control writes into a custom parameter and the
 //  renderer rasterises into the MLX bridge's 4th input channel.
 //
-//  The set is stored inside the same FCP Library as the Analysis Data
-//  blob, which is why it round-trips through `NSDictionary` (FxPlug
-//  custom-parameter contract).
+//  The set is stored inside the same published header custom parameter as
+//  the Analysis Data blob, which is why it round-trips through `NSDictionary`
+//  (FxPlug custom-parameter contract).
 //
 
 import Foundation
@@ -41,10 +41,11 @@ public struct HintPoint: Hashable, Sendable, Codable {
 }
 
 /// Serializable set of hint points the OSC writes into the FxPlug
-/// "Subject Points" custom parameter and the renderer reads back at
-/// analysis time. Codable so unit tests can round-trip without
-/// FxPlug.
+/// header-storage payload and the renderer reads back at analysis time.
+/// Codable so unit tests can round-trip without FxPlug.
 public struct HintPointSet: Hashable, Sendable, Codable {
+    private static let blobKey = "blob"
+
     public var points: [HintPoint]
 
     public init(points: [HintPoint] = []) {
@@ -80,13 +81,23 @@ public struct HintPointSet: Hashable, Sendable, Codable {
     public func asParameterDictionary() -> NSDictionary {
         let dict = NSMutableDictionary()
         if let blob = try? encodedForHost() {
-            dict["blob"] = blob as NSData
+            dict[NSString(string: Self.blobKey)] = blob as NSData
         }
         return dict.copy() as? NSDictionary ?? NSDictionary()
     }
 
     public static func fromParameterDictionary(_ dictionary: NSDictionary?) -> HintPointSet {
-        guard let dictionary, let blob = dictionary["blob"] as? Data else {
+        guard let dictionary else {
+            return HintPointSet()
+        }
+        let nsBlobKey = NSString(string: Self.blobKey)
+        if let blob = dictionary[nsBlobKey] as? Data {
+            return decoded(from: blob)
+        }
+        if let blob = dictionary[nsBlobKey] as? NSData {
+            return decoded(from: Data(referencing: blob))
+        }
+        guard let blob = dictionary[Self.blobKey] as? Data else {
             return HintPointSet()
         }
         return decoded(from: blob)

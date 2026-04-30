@@ -19,9 +19,9 @@
 //      foreground / background hints). Click in empty canvas space
 //      to drop a foreground hint, ⇧-click for background, ⌥-click
 //      to erase the nearest hint within tolerance. The hint set
-//      flows into the same `Subject Points` custom parameter the
-//      Standalone Editor's OSC writes to, so a clip's hints survive
-//      a round-trip between the two surfaces.
+//      flows into the same header-storage payload the Standalone
+//      Editor's OSC writes to, so a clip's hints survive a round-trip
+//      between the two surfaces.
 //
 //  Drawing is a render pass into the OSC destination texture FCP
 //  supplies (FxPlug's destination is render-target-only so compute
@@ -526,29 +526,27 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         setter.setXValue(x, yValue: y, toParameter: ParameterIdentifier.subjectPosition, at: time)
     }
 
-    private func currentHintSet(at time: CMTime) -> HintPointSet {
+    private func currentHintSet(at _: CMTime) -> HintPointSet {
         guard let retrieval = apiManager.api(for: (any FxParameterRetrievalAPI_v6).self) as? any FxParameterRetrievalAPI_v6 else {
             return HintPointSet()
         }
-        var raw: (any NSCopying & NSObjectProtocol & NSSecureCoding)?
-        retrieval.getCustomParameterValue(
-            &raw,
-            fromParameter: ParameterIdentifier.subjectPoints,
-            at: time
+        let dictionary = HeaderCustomParameterStorage.dictionaryValue(
+            for: HeaderStorageKey.subjectPoints,
+            using: retrieval
         )
-        return HintPointSet.fromParameterDictionary(raw as? NSDictionary)
+        return HintPointSet.fromParameterDictionary(dictionary)
     }
 
-    /// Writes the updated hint set back to the `Subject Points`
-    /// custom parameter. Same caveat as `writeSubjectPosition` —
+    /// Writes the updated hint set back into the published header custom
+    /// parameter. Same caveat as `writeSubjectPosition` —
     /// always invoked from a host mouse callback, so we must not
     /// re-open an action scope.
-    private func writeHintSet(_ hints: HintPointSet, at time: CMTime) {
-        guard let setter = apiManager.api(for: (any FxParameterSettingAPI_v5).self) as? any FxParameterSettingAPI_v5 else {
-            return
-        }
-        let dict = hints.asParameterDictionary()
-        setter.setCustomParameterValue(dict, toParameter: ParameterIdentifier.subjectPoints, at: time)
+    private func writeHintSet(_ hints: HintPointSet, at _: CMTime) {
+        HeaderCustomParameterStorage.setDictionary(
+            hints.asParameterDictionary(),
+            for: HeaderStorageKey.subjectPoints,
+            using: apiManager
+        )
     }
 
     // MARK: - Coordinate conversion

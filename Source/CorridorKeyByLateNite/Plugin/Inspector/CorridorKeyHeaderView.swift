@@ -11,8 +11,8 @@ import SwiftUI
 import AppKit
 
 /// Inspector header the FxPlug custom-UI parameter hosts. Shows the app icon
-/// / version, exposes Analyse / Reset actions, and surfaces the current
-/// warm-up + analysis status with a live progress line and ETA.
+/// / version, exposes Analyse / Reset actions, and surfaces the same
+/// Analysis fields as the Standalone Editor.
 @MainActor
 struct CorridorKeyHeaderView: View {
 
@@ -57,13 +57,13 @@ struct CorridorKeyHeaderView: View {
 
                 analyseControls
 
-                warmupBadge
+                analysisProgressLine
 
-                statusLine
+                neuralModelStatusRow
 
-                hintPointsBadge
+                backendStatusRow
 
-                renderStatsFooter
+                cachedMattesStatusRow
             }
         }
         .padding(.horizontal, 10)
@@ -86,14 +86,14 @@ struct CorridorKeyHeaderView: View {
     private var analyseControls: some View {
         HStack(spacing: 8) {
             Button(action: bridge.triggerAnalysis) {
-                Label("Analyse Clip", systemImage: "waveform.path.ecg.magnifyingglass")
+                Label("Analyse Clip", systemImage: "wand.and.stars")
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.small)
             .disabled(isAnalysisInFlight)
 
             Button(action: bridge.resetAnalysis) {
-                Label("Reset", systemImage: "trash")
+                Label("Reset Analysis", systemImage: "trash")
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
@@ -110,82 +110,14 @@ struct CorridorKeyHeaderView: View {
     }
 
     @ViewBuilder
-    private var warmupBadge: some View {
-        switch bridge.snapshot.warmup {
-        case .cold, .ready:
-            EmptyView()
-        case .warming(let resolution):
-            let resolutionText = resolution > 0 ? "\(resolution)px" : "neural model"
-            statusBadge(
-                systemImage: "hourglass",
-                tint: .blue,
-                text: "Loading \(resolutionText) — first play may stutter (about 2–5 seconds)."
-            )
-        case .failed(let message):
-            statusBadge(
-                systemImage: "exclamationmark.triangle.fill",
-                tint: .red,
-                text: "Neural model unavailable: \(message)"
-            )
-        }
-    }
-
-    @ViewBuilder
-    private var renderStatsFooter: some View {
-        if let milliseconds = bridge.snapshot.lastRenderMilliseconds, milliseconds > 0 {
-            // Format with one decimal place using `Double.formatted(_:)`
-            // because plain `String` interpolation doesn't accept the
-            // `\(value, format:)` shorthand — that's a `LocalizedStringKey`
-            // / `Text` feature.
-            let formatted = milliseconds.formatted(.number.precision(.fractionLength(1)))
-            statusBadge(
-                systemImage: "speedometer",
-                tint: .secondary,
-                text: "Last frame: \(formatted) ms"
-            )
-        } else {
-            EmptyView()
-        }
-    }
-
-    @ViewBuilder
-    private var hintPointsBadge: some View {
-        if bridge.snapshot.hintPointCount > 0 {
-            statusBadge(
-                systemImage: "circle.dotted",
-                tint: .blue,
-                text: "\(bridge.snapshot.hintPointCount) subject point\(bridge.snapshot.hintPointCount == 1 ? "" : "s") guiding the keyer."
-            )
-        } else {
-            EmptyView()
-        }
-    }
-
-    @ViewBuilder
-    private var statusLine: some View {
+    private var analysisProgressLine: some View {
         switch bridge.snapshot.state {
         case .notAnalysed:
-            let analysed = bridge.snapshot.analyzedFrameCount
-            let total = bridge.snapshot.totalFrameCount
-            if total > 0 && analysed >= total {
-                statusBadge(
-                    systemImage: "checkmark.seal.fill",
-                    tint: .green,
-                    text: "Cached \(analysed) frames at \(bridge.snapshot.inferenceResolution)px."
-                )
-            } else if total > 0 {
-                statusBadge(
-                    systemImage: "exclamationmark.triangle.fill",
-                    tint: .orange,
-                    text: "Cached \(analysed) of \(total) frames at \(bridge.snapshot.inferenceResolution)px."
-                )
-            } else {
-                statusBadge(
-                    systemImage: "exclamationmark.triangle.fill",
-                    tint: .orange,
-                    text: "Not analysed yet. Click Analyse Clip for real-time playback."
-                )
-            }
+            statusBadge(
+                systemImage: "info.circle",
+                tint: .secondary,
+                text: "Press Analyse Clip to build the matte cache."
+            )
         case .requested:
             statusBadge(
                 systemImage: "clock.fill",
@@ -197,7 +129,7 @@ struct CorridorKeyHeaderView: View {
                 ProgressView(value: bridge.snapshot.progress)
                     .progressViewStyle(.linear)
                 statusBadge(
-                    systemImage: "waveform.path.ecg.magnifyingglass",
+                    systemImage: "wand.and.stars",
                     tint: .secondary,
                     text: runningStatusText
                 )
@@ -206,15 +138,39 @@ struct CorridorKeyHeaderView: View {
             statusBadge(
                 systemImage: "checkmark.seal.fill",
                 tint: .green,
-                text: "Analysed \(bridge.snapshot.analyzedFrameCount) frames at \(bridge.snapshot.inferenceResolution)px."
+                text: "Analysed \(bridge.snapshot.analyzedFrameCount) \(bridge.snapshot.analyzedFrameCount == 1 ? "frame" : "frames")."
             )
         case .interrupted:
             statusBadge(
                 systemImage: "exclamationmark.octagon.fill",
                 tint: .orange,
-                text: "Analysis interrupted — click Analyse Clip to resume."
+                text: "Analysis interrupted."
             )
         }
+    }
+
+    private var neuralModelStatusRow: some View {
+        statusBadge(
+            systemImage: warmupIconName,
+            tint: warmupColor,
+            text: warmupLabel
+        )
+    }
+
+    private var backendStatusRow: some View {
+        statusBadge(
+            systemImage: "info.circle",
+            tint: .secondary,
+            text: "Backend: \(bridge.snapshot.renderBackendDescription)"
+        )
+    }
+
+    private var cachedMattesStatusRow: some View {
+        statusBadge(
+            systemImage: "square.stack.3d.up",
+            tint: .secondary,
+            text: "Cached mattes: \(bridge.snapshot.analyzedFrameCount) / \(bridge.snapshot.totalFrameCount)"
+        )
     }
 
     private func statusBadge(
@@ -238,35 +194,36 @@ struct CorridorKeyHeaderView: View {
 
     private var runningStatusText: String {
         let snapshot = bridge.snapshot
-        let base: String
         if snapshot.totalFrameCount > 0 {
-            base = "\(snapshot.analyzedFrameCount)/\(snapshot.totalFrameCount) frames at \(snapshot.inferenceResolution)px"
-        } else {
-            base = "Analysing at \(snapshot.inferenceResolution)px"
+            return "Analysing frame \(snapshot.analyzedFrameCount) of \(snapshot.totalFrameCount)…"
         }
-        if let eta = snapshot.analysisETASeconds, eta > 0 {
-            return "\(base) — \(formatETA(seconds: eta)) remaining"
-        }
-        return base + "…"
+        return "Analysing…"
     }
 
-    /// Formats seconds as a compact "mm:ss" / "h:mm:ss" string for the
-    /// inspector ETA badge. Returns `"<1s"` for sub-second estimates so the
-    /// badge doesn't dance across "0s" / "1s" every refresh.
-    private func formatETA(seconds: Double) -> String {
-        if seconds < 1 { return "<1s" }
-        let totalSeconds = Int(seconds.rounded())
-        let minutes = totalSeconds / 60
-        let remainderSeconds = totalSeconds % 60
-        if minutes >= 60 {
-            let hours = minutes / 60
-            let remainderMinutes = minutes % 60
-            return "\(hours)h \(remainderMinutes)m"
+    private var warmupIconName: String {
+        switch bridge.snapshot.warmup {
+        case .cold: return "moon.zzz"
+        case .warming: return "clock"
+        case .ready: return "checkmark.circle.fill"
+        case .failed: return "exclamationmark.triangle.fill"
         }
-        if minutes > 0 {
-            return "\(minutes)m \(remainderSeconds)s"
-        }
-        return "\(remainderSeconds)s"
     }
 
+    private var warmupColor: Color {
+        switch bridge.snapshot.warmup {
+        case .cold: return .secondary
+        case .warming: return .orange
+        case .ready: return .green
+        case .failed: return .red
+        }
+    }
+
+    private var warmupLabel: String {
+        switch bridge.snapshot.warmup {
+        case .cold: return "Neural Model: Cold"
+        case .warming(let resolution): return "Neural Model: Loading (\(resolution)px)…"
+        case .ready(let resolution): return "Neural Model: Ready (\(resolution)px)"
+        case .failed(let message): return "Neural Model Failed: \(message)"
+        }
+    }
 }
