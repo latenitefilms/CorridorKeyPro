@@ -1,5 +1,21 @@
 # Release Notes
 
+### 1.0.0 (Build 7)
+
+**🎉 Released:**
+- 30th April 2026
+
+**🔨 Improvements:**
+- Added the ability to load custom background colours and custom images into the Standalone Editor.
+- Cleaned up the launch screen on the Standalone Editor.
+- Opening Final Cut Pro from the Standalone Editor no longer quits the Standalone Editor.
+- **Spill Method** now defaults to **Ultra (Chroma Project)**.
+- Cleaned up the header section in the Final Cut Pro Effects Inspector to better match the Standalone Editor.
+- Improvements to the on-screen controls in Final Cut Pro.
+- Improvements to how we handle the colour space in Final Cut Pro, which improves the Apple Vision Framework Hint pipeline.
+
+---
+
 ### 1.0.0 (Build 6)
 
 **🎉 Released:**
