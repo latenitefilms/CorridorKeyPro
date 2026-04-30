@@ -44,7 +44,7 @@ struct WelcomeView: View {
                 .font(.largeTitle)
                 .bold()
 
-            Text("Use the standalone editor to key any clip — or jump straight to \(Text("Final Cut Pro").bold()) and find CorridorKey by LateNite in the \(Text("Effects").bold()) Browser.")
+            Text("Use the \(Text("Standalone Editor").bold()) to key any clip — or jump straight to\n\(Text("Final Cut Pro").bold()) and find \(Text("CorridorKey by LateNite").bold()) in the \(Text("Effects").bold()) Browser.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 40)
@@ -56,7 +56,6 @@ struct WelcomeView: View {
                     Button("Open Standalone Editor", systemImage: "wand.and.stars") {
                         openWindow(id: EditorWindow.id)
                     }
-                    .buttonStyle(.borderedProminent)
                     .controlSize(.large)
 
                     Button("Open Final Cut Pro", systemImage: "play.rectangle") {
