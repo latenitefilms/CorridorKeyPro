@@ -136,30 +136,42 @@ private struct AnalysisProgressLabel: View {
     let totalFrames: Int
 
     var body: some View {
-        switch status {
-        case .idle:
-            Text("Press Analyse Clip to build the matte cache.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-        case .running(let processed, let total):
-            VStack(alignment: .leading, spacing: 4) {
-                ProgressView(value: Double(processed), total: Double(max(total, 1)))
+        VStack(alignment: .leading, spacing: 4) {
+            ProgressView(value: progressValue)
+
+            switch status {
+            case .idle:
+                Text("Press Analyse Clip to build the matte cache.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            case .running(let processed, let total):
                 Text("Analysing frame \(processed) of \(total)…")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            case .completed(let elapsed, let frames):
+                Text("Analysed \(frames) \(frames == 1 ? "frame" : "frames") in \(AnalysisDurationFormatter.format(seconds: elapsed)).")
+                    .font(.callout)
+                    .foregroundStyle(.green)
+            case .failed(let message):
+                Text("Analysis failed: \(message)")
+                    .font(.callout)
+                    .foregroundStyle(.red)
+            case .cancelled:
+                Text("Analysis cancelled.")
+                    .font(.callout)
+                    .foregroundStyle(.orange)
             }
-        case .completed(let elapsed, let frames):
-            Text("Analysed \(frames) \(frames == 1 ? "frame" : "frames") in \(AnalysisDurationFormatter.format(seconds: elapsed)).")
-                .font(.callout)
-                .foregroundStyle(.green)
-        case .failed(let message):
-            Text("Analysis failed: \(message)")
-                .font(.callout)
-                .foregroundStyle(.red)
-        case .cancelled:
-            Text("Analysis cancelled.")
-                .font(.callout)
-                .foregroundStyle(.orange)
+        }
+    }
+
+    private var progressValue: Double {
+        switch status {
+        case .idle, .failed, .cancelled:
+            return 0
+        case .running(let processed, let total):
+            return Double(processed) / Double(max(total, 1))
+        case .completed:
+            return 1
         }
     }
 }

@@ -111,41 +111,42 @@ struct CorridorKeyHeaderView: View {
 
     @ViewBuilder
     private var analysisProgressLine: some View {
-        switch bridge.snapshot.state {
-        case .notAnalysed:
-            statusBadge(
-                systemImage: "info.circle",
-                tint: .secondary,
-                text: "Press Analyse Clip to build the matte cache."
-            )
-        case .requested:
-            statusBadge(
-                systemImage: "clock.fill",
-                tint: .secondary,
-                text: "Analysis queued…"
-            )
-        case .running:
-            VStack(alignment: .leading, spacing: 4) {
-                ProgressView(value: bridge.snapshot.progress)
-                    .progressViewStyle(.linear)
+        VStack(alignment: .leading, spacing: 4) {
+            ProgressView(value: analysisProgressValue)
+                .progressViewStyle(.linear)
+
+            switch bridge.snapshot.state {
+            case .notAnalysed:
+                statusBadge(
+                    systemImage: "info.circle",
+                    tint: .secondary,
+                    text: "Press Analyse Clip to build the matte cache."
+                )
+            case .requested:
+                statusBadge(
+                    systemImage: "clock.fill",
+                    tint: .secondary,
+                    text: "Analysis queued…"
+                )
+            case .running:
                 statusBadge(
                     systemImage: "wand.and.stars",
                     tint: .secondary,
                     text: runningStatusText
                 )
+            case .completed:
+                statusBadge(
+                    systemImage: "checkmark.seal.fill",
+                    tint: .green,
+                    text: "Analysed \(bridge.snapshot.analyzedFrameCount) \(bridge.snapshot.analyzedFrameCount == 1 ? "frame" : "frames")."
+                )
+            case .interrupted:
+                statusBadge(
+                    systemImage: "exclamationmark.octagon.fill",
+                    tint: .orange,
+                    text: "Analysis interrupted."
+                )
             }
-        case .completed:
-            statusBadge(
-                systemImage: "checkmark.seal.fill",
-                tint: .green,
-                text: "Analysed \(bridge.snapshot.analyzedFrameCount) \(bridge.snapshot.analyzedFrameCount == 1 ? "frame" : "frames")."
-            )
-        case .interrupted:
-            statusBadge(
-                systemImage: "exclamationmark.octagon.fill",
-                tint: .orange,
-                text: "Analysis interrupted."
-            )
         }
     }
 
@@ -191,6 +192,15 @@ struct CorridorKeyHeaderView: View {
     // MARK: - Helpers
 
     private var isAnalysisInFlight: Bool { bridge.snapshot.isWorking }
+
+    private var analysisProgressValue: Double {
+        switch bridge.snapshot.state {
+        case .completed:
+            return 1
+        case .notAnalysed, .requested, .running, .interrupted:
+            return bridge.snapshot.progress
+        }
+    }
 
     private var runningStatusText: String {
         let snapshot = bridge.snapshot
