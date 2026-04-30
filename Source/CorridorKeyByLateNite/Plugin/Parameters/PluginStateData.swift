@@ -116,7 +116,7 @@ struct PluginStateData: Codable, Sendable {
         //   * temporalStabilityEnabled — dampens edge-band flicker
         //     between frames.
         hintMode: HintMode = .appleVision,
-        showSubjectMarker: Bool = true,
+        showSubjectMarker: Bool = false,
         subjectPositionX: Double = 0.5,
         subjectPositionY: Double = 0.5,
         // Source Passthrough is off by default in v1.0 because the
@@ -245,7 +245,7 @@ struct PluginStateData: Codable, Sendable {
         self.screenColor = try container.decodeIfPresent(ScreenColor.self, forKey: .screenColor) ?? .green
         self.qualityMode = try container.decodeIfPresent(QualityMode.self, forKey: .qualityMode) ?? .automatic
         self.hintMode = try container.decodeIfPresent(HintMode.self, forKey: .hintMode) ?? .appleVision
-        self.showSubjectMarker = try container.decodeIfPresent(Bool.self, forKey: .showSubjectMarker) ?? true
+        self.showSubjectMarker = try container.decodeIfPresent(Bool.self, forKey: .showSubjectMarker) ?? false
         self.subjectPositionX = try container.decodeIfPresent(Double.self, forKey: .subjectPositionX) ?? 0.5
         self.subjectPositionY = try container.decodeIfPresent(Double.self, forKey: .subjectPositionY) ?? 0.5
         // Decoder fallbacks must match the v1.0 product defaults (the

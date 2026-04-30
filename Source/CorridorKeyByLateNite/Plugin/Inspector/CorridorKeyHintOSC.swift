@@ -9,7 +9,7 @@
 //  Two-tier interaction model — modelled on Metaburner's hit-test +
 //  drag pattern:
 //
-//    * Subject marker (one yellow-ringed point at the saved Subject
+//    * Subject marker (one foreground-icon badge at the saved Subject
 //      Position). Click on it → drag it. The drag updates the
 //      `Subject Position` Point parameter so the inspector's X / Y
 //      sliders mirror the marker's location and vice-versa. Hidden
@@ -26,12 +26,13 @@
 //  Drawing is a render pass into the OSC destination texture FCP
 //  supplies (FxPlug's destination is render-target-only so compute
 //  writes silently produce nothing). The shared
-//  `corridorKeyDrawOSCFragment` shader handles the three marker
-//  styles via its `kind` field — 0 = foreground hint (dark disc
+//  `corridorKeyDrawOSCFragment` shader handles the marker styles
+//  via its `kind` field — 0 = foreground hint (dark disc
 //  with a white person silhouette inside, mirroring the editor's
 //  `person.fill` icon), 1 = background hint (rounded swatch in the
 //  current screen colour, mirroring the editor's screen-colour
-//  rectangle), 2 = subject marker (yellow ring + dark fill).
+//  rectangle). The subject marker uses the same foreground icon so
+//  the Standalone Editor and FxPlug use one visual language.
 //
 
 import Foundation
@@ -58,9 +59,13 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
     /// in object-normalised units. Matches the Standalone Editor.
     private static let eraseTolerance: Double = 0.05
     /// Hit radius for the subject marker, in object-normalised
-    /// units. Matches the visual ring's outer edge so the marker
-    /// is grabbable by clicking anywhere on or just outside it.
+    /// units. Kept independent from the pixel-sized visual badge so
+    /// drag affordance remains stable across viewer zoom levels.
     private static let subjectMarkerHitRadius: Double = 0.04
+    /// Visible marker radius in OSC pixels. The fragment shader
+    /// measures marker geometry in pixel space so badges remain
+    /// circular regardless of the Final Cut Pro viewer aspect ratio.
+    private static let markerVisualRadiusPixels: Float32 = 22.5
 
     /// Drag state. We record both the pointer's object-space position
     /// at click-down and the Subject Position at the same moment, then
@@ -107,15 +112,14 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         destinationImage: FxImageTile,
         at time: CMTime
     ) {
-        guard subjectMarkerVisible(at: time) else { return }
+        let showSubjectMarker = subjectMarkerVisible(at: time)
         let hints = currentHintSet(at: time)
         let subjectAnchor = subjectPosition(at: time)
         let screen = currentScreenColor(at: time)
 
-        // Always draw at least the subject marker when the OSC is
-        // enabled — without a visible affordance Final Cut Pro
-        // stops routing canvas mouse events to the OSC, which is
-        // how the marker-drag regression slipped in.
+        // Keep the subject marker as the first packed slot even when
+        // hidden so active-part ids stay stable: part 1 is always
+        // the subject marker, and hint ids always begin at part 2.
         //
         // Markers are stored in OBJECT space (0…1 normalised within
         // the source frame). The OSC destination tile is sized to
@@ -131,7 +135,7 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         // away from the mouse the further you move from centre"
         // behaviour the FxPlug regressed on.
         var packed: [PackedPoint] = []
-        let appendPacked: (Double, Double, Double, Int32) -> Void = { px, py, radius, kind in
+        let appendPacked: (Double, Double, Float32, Int32) -> Void = { px, py, radiusPixels, kind in
             let mapped = self.objectToCanvasUV(
                 objectX: px,
                 objectY: py,
@@ -142,14 +146,24 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
                 PackedPoint(
                     x: Float(mapped.canvasU),
                     y: Float(mapped.canvasV),
-                    radius: Float(radius * mapped.objectScaleU),
+                    radius: radiusPixels,
                     kind: kind
                 )
             )
         }
-        appendPacked(subjectAnchor.x, subjectAnchor.y, Self.subjectMarkerHitRadius * 1.6, 2)
+        appendPacked(
+            subjectAnchor.x,
+            subjectAnchor.y,
+            Self.markerVisualRadiusPixels,
+            showSubjectMarker ? Int32(HintPointKind.foreground.rawValue) : -1
+        )
         for hint in hints.points {
-            appendPacked(hint.x, hint.y, hint.radiusNormalized, Int32(hint.kind.rawValue))
+            appendPacked(
+                hint.x,
+                hint.y,
+                Self.markerVisualRadiusPixels,
+                Int32(hint.kind.rawValue)
+            )
         }
         do {
             try renderMarkers(
@@ -164,9 +178,7 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
     }
 
     /// Maps a marker's OBJECT-space position (0…1 in the source
-    /// frame) to a canvas-uv suitable for the OSC fragment shader,
-    /// and returns a single object→canvas scale so callers can
-    /// resize per-marker radii into the same canvas-uv space.
+    /// frame) to a canvas-uv suitable for the OSC fragment shader.
     /// Falls back to identity when the OSC API isn't available so
     /// the OSC stays drawable in degraded environments.
     private func objectToCanvasUV(
@@ -174,11 +186,11 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         objectY: Double,
         tileWidth: Double,
         tileHeight: Double
-    ) -> (canvasU: Double, canvasV: Double, objectScaleU: Double) {
+    ) -> (canvasU: Double, canvasV: Double) {
         guard tileWidth > 0, tileHeight > 0,
               let oscAPI = apiManager.api(for: (any FxOnScreenControlAPI_v4).self) as? any FxOnScreenControlAPI_v4
         else {
-            return (objectX, objectY, 1)
+            return (objectX, objectY)
         }
         var canvasX: Double = 0
         var canvasY: Double = 0
@@ -189,31 +201,6 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
             toSpace: FxDrawingCoordinates(kFxDrawingCoordinates_CANVAS),
             toX: &canvasX,
             toY: &canvasY
-        )
-        // Probe (0,0) and (1,0) so we recover the canvas-uv width
-        // per object-uv unit — the per-marker radius scale. Two
-        // extra convertPoint calls per draw, each a couple of
-        // matrix multiplications inside FCP, are noise next to the
-        // GPU pass we're about to issue.
-        var canvasOriginX: Double = 0
-        var canvasOriginY: Double = 0
-        oscAPI.convertPoint(
-            fromSpace: FxDrawingCoordinates(kFxDrawingCoordinates_OBJECT),
-            fromX: 0,
-            fromY: 0,
-            toSpace: FxDrawingCoordinates(kFxDrawingCoordinates_CANVAS),
-            toX: &canvasOriginX,
-            toY: &canvasOriginY
-        )
-        var canvasUnitX: Double = 0
-        var canvasUnitY: Double = 0
-        oscAPI.convertPoint(
-            fromSpace: FxDrawingCoordinates(kFxDrawingCoordinates_OBJECT),
-            fromX: 1,
-            fromY: 0,
-            toSpace: FxDrawingCoordinates(kFxDrawingCoordinates_CANVAS),
-            toX: &canvasUnitX,
-            toY: &canvasUnitY
         )
         // Empirically, FxPlug's CANVAS/OBJECT spaces share the same
         // Y-down convention as Metal texture coordinates — even
@@ -231,9 +218,7 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         // to the mouse on Y-axis drags.
         let canvasU = canvasX / tileWidth
         let canvasV = canvasY / tileHeight
-        let objectWidthCanvas = abs(canvasUnitX - canvasOriginX)
-        let scaleU = objectWidthCanvas / tileWidth
-        return (canvasU, canvasV, scaleU)
+        return (canvasU, canvasV)
     }
 
     @objc(hitTestOSCAtMousePositionX:mousePositionY:activePart:atTime:)
@@ -243,21 +228,19 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         activePart: UnsafeMutablePointer<Int>,
         at time: CMTime
     ) {
-        guard subjectMarkerVisible(at: time) else {
-            activePart.pointee = 0
-            return
-        }
         let object = objectPosition(forCanvasX: x, canvasY: y)
 
         // Subject marker takes priority over hint points so the
         // user can always grab it for a drag, even if a hint sits
         // close to where it's currently parked.
-        let subjectAnchor = subjectPosition(at: time)
-        let dxSubject = subjectAnchor.x - object.x
-        let dySubject = subjectAnchor.y - object.y
-        if dxSubject * dxSubject + dySubject * dySubject <= Self.subjectMarkerHitRadius * Self.subjectMarkerHitRadius {
-            activePart.pointee = HitPart.subjectMarker.rawValue
-            return
+        if subjectMarkerVisible(at: time) {
+            let subjectAnchor = subjectPosition(at: time)
+            let dxSubject = subjectAnchor.x - object.x
+            let dySubject = subjectAnchor.y - object.y
+            if dxSubject * dxSubject + dySubject * dySubject <= Self.subjectMarkerHitRadius * Self.subjectMarkerHitRadius {
+                activePart.pointee = HitPart.subjectMarker.rawValue
+                return
+            }
         }
 
         let hints = currentHintSet(at: time)
@@ -289,11 +272,7 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         forceUpdate: UnsafeMutablePointer<ObjCBool>,
         at time: CMTime
     ) {
-        guard subjectMarkerVisible(at: time) else {
-            forceUpdate.pointee = ObjCBool(false)
-            return
-        }
-        if activePart == HitPart.subjectMarker.rawValue {
+        if activePart == HitPart.subjectMarker.rawValue, subjectMarkerVisible(at: time) {
             // Begin a drag on the subject marker. We don't write
             // anything yet — the actual position update happens in
             // `mouseDragged` so single-click without movement is a
@@ -479,9 +458,9 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
 
     private func subjectMarkerVisible(at time: CMTime) -> Bool {
         guard let retrieval = apiManager.api(for: (any FxParameterRetrievalAPI_v6).self) as? any FxParameterRetrievalAPI_v6 else {
-            return true
+            return false
         }
-        var raw = ObjCBool(true)
+        var raw = ObjCBool(false)
         retrieval.getBoolValue(&raw, fromParameter: ParameterIdentifier.showSubjectMarker, at: time)
         return raw.boolValue
     }
@@ -573,11 +552,13 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
     // MARK: - Drawing
 
     /// Wire-format point sent to the OSC fragment shader.
-    /// `kind = 0` → foreground hint (dark disc with white person
+    /// `kind = -1` → hidden subject-marker slot used to keep
+    /// active-part indexing stable when `Show Subject Marker` is
+    /// disabled, `0` → foreground hint (dark disc with white person
     /// silhouette and white outline ring), `1` → background hint
     /// (rounded screen-colour swatch with black border, matching the
-    /// Standalone Editor's icon-style markers), `2` → subject marker
-    /// (yellow ring + dark fill).
+    /// Standalone Editor's icon-style markers). `radius` is the
+    /// marker's visible outer radius in OSC pixels.
     private struct PackedPoint {
         var x: Float32
         var y: Float32
@@ -671,6 +652,11 @@ class CorridorKeyHintOSC: NSObject, FxOnScreenControl_v4 {
         // reads it as `float3` (also 16-byte aligned), so the layout
         // matches once we hand over the in-memory representation.
         encoder.setFragmentBytes(&screenColourLinear, length: MemoryLayout<SIMD3<Float>>.stride, index: 3)
+        encoder.setFragmentBytes(
+            &viewportSize,
+            length: MemoryLayout<SIMD2<UInt32>>.size,
+            index: 4
+        )
 
         encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
         encoder.endEncoding()

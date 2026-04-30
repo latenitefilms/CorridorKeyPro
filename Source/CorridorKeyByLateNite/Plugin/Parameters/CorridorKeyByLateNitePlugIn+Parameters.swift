@@ -144,12 +144,13 @@ extension CorridorKeyToolboxPlugIn {
         // both a clear OSC affordance (the user can see where the
         // marker is and drag it) and a stable Point parameter that
         // FCP wires the OSC to natively. Defaults to centre (0.5,
-        // 0.5) in object-normalised coords. The Show toggle hides
-        // the marker for users who don't want it visible.
+        // 0.5) in object-normalised coords. Hidden by default so
+        // the marker only appears when the user explicitly asks for
+        // the draggable on-canvas affordance.
         create.addToggleButton(
             withName: "Show Subject Marker",
             parameterID: ParameterIdentifier.showSubjectMarker,
-            defaultValue: true,
+            defaultValue: false,
             parameterFlags: CorridorKeyParameterFlags.nonAnimatableChoice.fxFlags
         )
         create.addPointParameter(
