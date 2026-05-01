@@ -108,6 +108,54 @@ enum PreviewBackdrop: Hashable, Sendable, CaseIterable, Identifiable {
         case .customImage: return "photo"
         }
     }
+
+    /// Concrete swatch RGB used when the picker shows a coloured chip
+    /// for this case. `nil` means "draw the SF Symbol instead" — the
+    /// checkerboard, custom colour, and custom image cases all use
+    /// `systemImage` rendering because they don't represent a single
+    /// fixed colour. Stored as `BackdropColor` (linear RGB triplet)
+    /// so it's both Sendable and the SwiftUI `Color` round-trip is
+    /// shared with the custom-colour swatch.
+    var swatchColor: BackdropColor? {
+        switch self {
+        case .white: return BackdropColor(red: 1.0, green: 1.0, blue: 1.0)
+        case .black: return BackdropColor(red: 0.0, green: 0.0, blue: 0.0)
+        case .yellow: return BackdropColor(red: 1.0, green: 0.92, blue: 0.0)
+        case .red: return BackdropColor(red: 1.0, green: 0.20, blue: 0.20)
+        default: return nil
+        }
+    }
+
+    /// Stable string identifier used by `BackdropPreferences` so older
+    /// saves stay valid when a future build inserts or reorders cases.
+    /// Reordering the `enum` declaration would otherwise silently shift
+    /// every saved selection (a user who picked Yellow would be
+    /// promoted to Red on the next launch); a string lookup avoids
+    /// that class of bug entirely.
+    var persistenceIdentifier: String {
+        switch self {
+        case .checkerboard: return "checkerboard"
+        case .white: return "white"
+        case .black: return "black"
+        case .yellow: return "yellow"
+        case .red: return "red"
+        case .customColor: return "customColor"
+        case .customImage: return "customImage"
+        }
+    }
+
+    init?(persistenceIdentifier: String) {
+        switch persistenceIdentifier {
+        case "checkerboard": self = .checkerboard
+        case "white": self = .white
+        case "black": self = .black
+        case "yellow": self = .yellow
+        case "red": self = .red
+        case "customColor": self = .customColor
+        case "customImage": self = .customImage
+        default: return nil
+        }
+    }
 }
 
 /// Linear RGB triplet a custom backdrop is rendered with. Stored on
@@ -242,8 +290,17 @@ final class EditorViewModel {
     }
     /// Backdrop drawn behind the keyed preview image. Defaults to
     /// the transparency-aware checkerboard pattern; right-clicking
-    /// the preview surfaces the picker.
-    var previewBackdrop: PreviewBackdrop = .checkerboard
+    /// the preview surfaces the picker. Persisted across editor
+    /// sessions via `BackdropPreferences` so the user's pick (Yellow,
+    /// Custom Colour, etc.) survives a quit-and-relaunch — losing the
+    /// backdrop on every launch was a recurring papercut. Initial
+    /// value is restored in `init`.
+    var previewBackdrop: PreviewBackdrop = .checkerboard {
+        didSet {
+            guard previewBackdrop != oldValue else { return }
+            BackdropPreferences.saveSelected(previewBackdrop)
+        }
+    }
     /// Colour rendered behind the keyed image when `previewBackdrop`
     /// is `.customColor`. Persisted to UserDefaults so the user's
     /// last pick survives a launch.
@@ -323,16 +380,32 @@ final class EditorViewModel {
     init(renderEngine: StandaloneRenderEngine) {
         self.renderEngine = renderEngine
         self.customBackdropColor = BackdropPreferences.loadCustomColor() ?? .default
+        // Restore the user's last backdrop pick. `.customImage` is
+        // deferred until the texture loads — switching to it before
+        // the texture is available would flash the user with a blank
+        // preview surface for the few hundred milliseconds of decode
+        // latency. Solid colours and the checkerboard apply
+        // immediately because they have no async dependency. Any
+        // assignment via `=` skips the property's `didSet`, so this
+        // restoration doesn't write the value straight back to
+        // UserDefaults — the on-disk record stays exactly as the user
+        // left it.
+        if let savedSelection = BackdropPreferences.loadSelected(),
+           savedSelection != .customImage {
+            self.previewBackdrop = savedSelection
+        }
         EditorWorkRegistry.shared.register(self)
         // Restore the user's last imported image asynchronously so
         // the editor window appears immediately. If the bookmark is
         // stale (file moved / deleted) we silently fall back to
         // checkerboard rather than surfacing an error on launch.
         if let bookmarkData = BackdropPreferences.loadImageBookmark() {
+            let restoreToImageBackdrop = BackdropPreferences.loadSelected() == .customImage
             Task { [weak self, device = renderEngine.device] in
                 await Self.restoreCustomBackdropImage(
                     bookmarkData: bookmarkData,
                     device: device,
+                    activateImageBackdrop: restoreToImageBackdrop,
                     into: self
                 )
             }
@@ -396,6 +469,7 @@ final class EditorViewModel {
     private static func restoreCustomBackdropImage(
         bookmarkData: Data,
         device: any MTLDevice,
+        activateImageBackdrop: Bool,
         into viewModel: EditorViewModel?
     ) async {
         var isStale = false
@@ -430,6 +504,15 @@ final class EditorViewModel {
         guard let viewModel else { return }
         viewModel.customBackdropTexture = texture
         viewModel.customBackdropImageName = url.lastPathComponent
+        // Only switch the active backdrop to `.customImage` when the
+        // user's last saved selection was `.customImage`. Restoring
+        // the texture without flipping the picker means the user's
+        // last colour pick wins on launch, while the texture is
+        // ready the moment they pick Custom Image from the menu.
+        if activateImageBackdrop {
+            viewModel.previewBackdrop = .customImage
+            viewModel.renderPreview(at: viewModel.playheadTime)
+        }
         if isStale {
             if let refreshed = try? url.bookmarkData(
                 options: .withSecurityScope,
@@ -1312,6 +1395,7 @@ private struct WeakEditorViewModel {
 enum BackdropPreferences {
     static let customColorKey = "CorridorKey.PreviewBackdrop.CustomColor"
     static let imageBookmarkKey = "CorridorKey.PreviewBackdrop.ImageBookmark"
+    static let selectedKey = "CorridorKey.PreviewBackdrop.Selected"
 
     static func loadCustomColor() -> BackdropColor? {
         guard let data = UserDefaults.standard.data(forKey: customColorKey) else {
@@ -1335,5 +1419,21 @@ enum BackdropPreferences {
 
     static func clearImageBookmark() {
         UserDefaults.standard.removeObject(forKey: imageBookmarkKey)
+    }
+
+    /// Returns the user's last-picked backdrop, or `nil` for first
+    /// launch / unrecognised legacy values. The view model maps `nil`
+    /// to its declared default (the checkerboard) — keeping the
+    /// fallback colocated with the view model means changing the
+    /// factory default lives in one place, not two.
+    static func loadSelected() -> PreviewBackdrop? {
+        guard let raw = UserDefaults.standard.string(forKey: selectedKey) else {
+            return nil
+        }
+        return PreviewBackdrop(persistenceIdentifier: raw)
+    }
+
+    static func saveSelected(_ backdrop: PreviewBackdrop) {
+        UserDefaults.standard.set(backdrop.persistenceIdentifier, forKey: selectedKey)
     }
 }

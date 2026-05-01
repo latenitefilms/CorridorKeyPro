@@ -241,6 +241,57 @@ extension OnScreenControlTool {
     }
 }
 
+/// One row of the Player Background picker. The solid-colour cases
+/// (white / black / yellow / red) draw a coloured circle so the
+/// reader can see the actual colour at a glance — the previous
+/// `Label(systemImage: "rectangle.fill")` rendered all four cases
+/// as the same default-tinted glyph, which made the picker useless
+/// for telling them apart. Custom Colour mirrors the user's current
+/// `customBackdropColor` so picking it from the menu shows what
+/// you'll actually get without opening the colour wheel first.
+private struct PreviewBackdropPickerRow: View {
+    let backdrop: PreviewBackdrop
+    let customColor: BackdropColor
+
+    var body: some View {
+        Label {
+            Text(backdrop.displayName)
+        } icon: {
+            iconView
+        }
+    }
+
+    @ViewBuilder
+    private var iconView: some View {
+        switch backdrop {
+        case .white, .black, .yellow, .red:
+            ColourSwatch(color: backdrop.swatchColor!.swiftUIColor)
+        case .customColor:
+            ColourSwatch(color: customColor.swiftUIColor)
+        case .checkerboard, .customImage:
+            Image(systemName: backdrop.systemImage)
+        }
+    }
+}
+
+/// Small rounded swatch with a thin secondary border. The border is
+/// what keeps the white case visible against the popover's light
+/// material — without it, the white circle would dissolve into the
+/// background.
+private struct ColourSwatch: View {
+    let color: Color
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 3, style: .continuous)
+            .fill(color)
+            .overlay(
+                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                    .stroke(Color.secondary.opacity(0.4), lineWidth: 0.5)
+            )
+            .frame(width: 14, height: 14)
+    }
+}
+
 /// Bridges between `BackdropColor` (the Codable / Sendable value
 /// type stored on the view model) and SwiftUI's `Color` (which the
 /// `ColorPicker` natively binds to). Lives at file scope here so
@@ -320,8 +371,11 @@ private struct BackdropPopoverContent: View {
 
             Picker("Preset", selection: $viewModel.previewBackdrop) {
                 ForEach(PreviewBackdrop.allCases) { option in
-                    Label(option.displayName, systemImage: option.systemImage)
-                        .tag(option)
+                    PreviewBackdropPickerRow(
+                        backdrop: option,
+                        customColor: viewModel.customBackdropColor
+                    )
+                    .tag(option)
                 }
             }
             .pickerStyle(.inline)
