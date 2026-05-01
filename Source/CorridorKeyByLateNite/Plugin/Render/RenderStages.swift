@@ -501,6 +501,60 @@ enum RenderStages {
         return output
     }
 
+    // MARK: - Spill-driven alpha attenuation
+
+    /// Reduces matte alpha proportional to how strongly each pixel's
+    /// chroma points along the screen-colour direction × `strength`.
+    /// Returns `nil` when `strength == 0` so the caller continues with
+    /// the original matte (matches the v1.0.0 Build 9 and earlier
+    /// behaviour for projects that ship with despill turned off).
+    ///
+    /// The original CorridorKey reference (`process_frame`) bakes
+    /// alpha attenuation into despill implicitly by premultiplying
+    /// the despilled foreground at output time. We split the two
+    /// because the FxPlug compose path returns a straight-RGB
+    /// foreground that FCP composites itself; doing the alpha cut
+    /// here lets us keep that straight-RGB convention while still
+    /// behaving like the reference at the user's eye.
+    static func attenuateMatteBySpill(
+        matte: any MTLTexture,
+        foreground: any MTLTexture,
+        screenColor: SIMD3<Float>,
+        strength: Float,
+        entry: MetalDeviceCacheEntry,
+        commandBuffer: any MTLCommandBuffer
+    ) throws -> PooledTexture? {
+        guard strength > 0 else { return nil }
+        guard let output = entry.texturePool.acquire(
+            width: matte.width,
+            height: matte.height,
+            pixelFormat: matte.pixelFormat
+        ) else { throw MetalDeviceCacheError.textureAllocationFailed }
+        guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
+            output.returnManually()
+            throw MetalDeviceCacheError.commandEncoderCreationFailed
+        }
+        encoder.label = "CorridorKey by LateNite Spill Alpha Attenuation"
+        encoder.setComputePipelineState(entry.computePipelines.spillAlphaAttenuation)
+        encoder.setTexture(foreground, index: Int(CKTextureIndexForeground.rawValue))
+        encoder.setTexture(matte, index: Int(CKTextureIndexMatte.rawValue))
+        encoder.setTexture(output.texture, index: Int(CKTextureIndexOutput.rawValue))
+        var params = CKSpillAlphaParams(strength: strength, screenColor: screenColor)
+        encoder.setBytes(
+            &params,
+            length: MemoryLayout<CKSpillAlphaParams>.size,
+            index: Int(CKBufferIndexSpillAlphaParams.rawValue)
+        )
+        dispatch(
+            encoder: encoder,
+            pipeline: entry.computePipelines.spillAlphaAttenuation,
+            width: output.texture.width,
+            height: output.texture.height
+        )
+        encoder.endEncoding()
+        return output
+    }
+
     // MARK: - Alpha levels + gamma
 
     static func applyAlphaLevelsGamma(

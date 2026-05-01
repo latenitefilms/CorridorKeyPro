@@ -49,7 +49,8 @@ typedef enum CorridorKeyBufferIndex {
     CKBufferIndexCCLabelParams = 10,
     CKBufferIndexCCLabelCounts = 11,
     CKBufferIndexTemporalBlendParams = 12,
-    CKBufferIndexChromaHintParams = 13
+    CKBufferIndexChromaHintParams = 13,
+    CKBufferIndexSpillAlphaParams = 14
 } CorridorKeyBufferIndex;
 
 // Mirrors the Swift `SpillMethod` enum.
@@ -160,6 +161,24 @@ typedef struct CKEdgeDecontaminateParams {
 typedef struct CKChromaHintParams {
     vector_float3 screenColor;
 } CKChromaHintParams;
+
+// Spill-driven alpha attenuation parameters. The matte refinement stage
+// produces clean alpha for regions the network is confident about, but
+// model errors leave faint matte values in the screen background — and
+// the colour despill turns those errors into a coloured halo (blue
+// artefacts at strength 0, yellow / greenish artefacts at strength 1)
+// because the despilled foreground colour ends up multiplied by a
+// non-zero alpha at compose time. This stage reads the foreground's
+// chroma projection onto the screen direction and pulls alpha toward
+// zero proportional to that projection × `strength`, so the user's
+// "Despill Strength" slider drives both colour cleanup and matte
+// transparency together. Mirrors the original CorridorKey reference's
+// premultiplied-output convention (`processed = despilled * alpha`)
+// while still allowing the user to opt out by setting strength to 0.
+typedef struct CKSpillAlphaParams {
+    float strength;
+    vector_float3 screenColor;
+} CKSpillAlphaParams;
 
 // Connected-components despeckle parameters.
 // * `areaThreshold` — a component is preserved if its pixel count is at or

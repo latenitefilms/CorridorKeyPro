@@ -67,6 +67,7 @@ enum CorridorKeyBufferIndex: Int32 {
     case CKBufferIndexCCLabelCounts = 11
     case CKBufferIndexTemporalBlendParams = 12
     case CKBufferIndexChromaHintParams = 13
+    case CKBufferIndexSpillAlphaParams = 14
 }
 
 let CKBufferIndexDespillParams = CorridorKeyBufferIndex.CKBufferIndexDespillParams
@@ -83,6 +84,7 @@ let CKBufferIndexCCLabelParams = CorridorKeyBufferIndex.CKBufferIndexCCLabelPara
 let CKBufferIndexCCLabelCounts = CorridorKeyBufferIndex.CKBufferIndexCCLabelCounts
 let CKBufferIndexTemporalBlendParams = CorridorKeyBufferIndex.CKBufferIndexTemporalBlendParams
 let CKBufferIndexChromaHintParams = CorridorKeyBufferIndex.CKBufferIndexChromaHintParams
+let CKBufferIndexSpillAlphaParams = CorridorKeyBufferIndex.CKBufferIndexSpillAlphaParams
 
 // Spill method and output mode enums. Use Int32 so rawValue matches the
 // shader's signed int.
@@ -174,6 +176,11 @@ struct CKEdgeDecontaminateParams {
 }
 
 struct CKChromaHintParams {
+    var screenColor: SIMD3<Float>
+}
+
+struct CKSpillAlphaParams {
+    var strength: Float
     var screenColor: SIMD3<Float>
 }
 

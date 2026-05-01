@@ -194,6 +194,75 @@ struct ShaderGoldenTests {
         }
     }
 
+    @Test("Spill alpha attenuation pulls matte to zero on full screen pixels and leaves foreground pixels alone")
+    func spillAlphaAttenuationCutsScreenLeavesForeground() async throws {
+        let entry: MetalDeviceCacheEntry
+        do { entry = try TestHarness.makeEntry() } catch { throw XCTSkipError("\(error)") }
+
+        let blueScreen = SIMD3<Float>(0.08, 0.16, 0.84)
+        // Three (foreground colour, input matte alpha) pairs that
+        // together prove the kernel does what despill needs:
+        //   1. A pure-screen pixel with bogus 0.5 alpha → must end up
+        //      near zero (the bug being fixed: those pixels currently
+        //      produce a coloured halo because alpha stays positive).
+        //   2. A foreground skin tone with 1.0 alpha → must pass
+        //      through unchanged so we don't punch holes in the
+        //      keyed subject.
+        //   3. A grey edge pixel with 0.5 alpha → must come down only
+        //      slightly because the chroma projects only weakly along
+        //      the screen direction.
+        let cases: [(label: String, fg: SIMD4<Float>, alphaIn: Float, expectedRange: ClosedRange<Float>)] = [
+            ("pure blue screen, alpha=0.5", SIMD4<Float>(0.08, 0.16, 0.84, 1.0), 0.5, 0.0...0.05),
+            ("warm skin tone, alpha=1.0", SIMD4<Float>(0.55, 0.45, 0.40, 1.0), 1.0, 0.95...1.0),
+            ("neutral grey edge, alpha=0.5", SIMD4<Float>(0.50, 0.50, 0.50, 1.0), 0.5, 0.4...0.5)
+        ]
+
+        let commandQueue = try makeCommandQueue(entry: entry)
+        for (label, fg, alphaIn, range) in cases {
+            let foregroundTexture = try makeColourTexture(
+                entry: entry, width: 1, height: 1, pixelFormat: .rgba32Float, colour: fg
+            )
+            let matteTexture = try makeScalarTexture(entry: entry, width: 1, height: 1, value: alphaIn)
+
+            guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+                Issue.record("Could not create command buffer for \(label).")
+                return
+            }
+            let attenuated = try RenderStages.attenuateMatteBySpill(
+                matte: matteTexture,
+                foreground: foregroundTexture,
+                screenColor: blueScreen,
+                strength: 1.0,
+                entry: entry,
+                commandBuffer: commandBuffer
+            )
+            guard let attenuated else {
+                Issue.record("attenuateMatteBySpill returned nil for \(label).")
+                return
+            }
+            try commitAndWait(commandBuffer)
+
+            // The kernel inherits the matte texture's pixel format
+            // (r32Float in this test, r16Float in production). Read
+            // back as Float — `makeScalarTexture` only allocates
+            // r32Float so the test path is always the simple case.
+            var attenuatedAlpha: Float = 0
+            attenuated.texture.getBytes(
+                &attenuatedAlpha,
+                bytesPerRow: MemoryLayout<Float>.size,
+                from: MTLRegionMake2D(0, 0, 1, 1),
+                mipmapLevel: 0
+            )
+            attenuated.returnManually()
+
+            #expect(
+                range.contains(attenuatedAlpha),
+                "[\(label)] attenuated alpha \(attenuatedAlpha) outside expected range \(range)"
+            )
+            print("Spill alpha attenuation [\(label)] → out=\(attenuatedAlpha)")
+        }
+    }
+
     @Test("Despill Neutral with low R/B does not amplify noise past the 1e-3 guard")
     func despillNeutralStability() async throws {
         let entry: MetalDeviceCacheEntry

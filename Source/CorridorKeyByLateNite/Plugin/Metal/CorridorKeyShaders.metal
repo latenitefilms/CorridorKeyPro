@@ -362,6 +362,69 @@ kernel void corridorKeyDespillKernel(
     destination.write(float4(rgb, rgba.a), gid);
 }
 
+// MARK: - Spill-driven alpha attenuation
+
+/// Pulls the matte's alpha toward zero in pixels whose chroma points
+/// strongly along the screen-colour axis, scaled by `params.strength`.
+/// Run *after* matte refinement and *before* light wrap, so the rest
+/// of the pipeline sees a single matte that already incorporates the
+/// despill's "make the screen disappear" intent.
+///
+/// Matches the original CorridorKey reference's premultiplied-output
+/// behaviour: a pure-screen pixel that the network mistakenly tagged
+/// with positive alpha gets pulled to zero so it doesn't show up as a
+/// coloured halo on the composite. Foreground pixels (no chroma along
+/// the screen direction) pass through unchanged.
+///
+/// Reads `pre-despill` foreground because the despilled FG already has
+/// the screen-direction chroma removed — measuring spill on the
+/// despilled FG would always read zero.
+kernel void corridorKeySpillAlphaAttenuationKernel(
+    texture2d<float, access::read> foreground [[texture(CKTextureIndexForeground)]],
+    texture2d<float, access::read> matte [[texture(CKTextureIndexMatte)]],
+    texture2d<float, access::write> destination [[texture(CKTextureIndexOutput)]],
+    constant CKSpillAlphaParams &params [[buffer(CKBufferIndexSpillAlphaParams)]],
+    uint2 gid [[thread_position_in_grid]]
+) {
+    uint2 dims = uint2(destination.get_width(), destination.get_height());
+    if (gid.x >= dims.x || gid.y >= dims.y) { return; }
+
+    float matteAlpha = saturate(matte.read(gid).r);
+    if (params.strength <= 0.0) {
+        destination.write(float4(matteAlpha, 0.0, 0.0, 1.0), gid);
+        return;
+    }
+
+    float3 rgb = foreground.read(gid).rgb;
+
+    // Same BT.709 RGB → CbCr basis as the despill kernel; sharing the
+    // coefficients keeps the spill direction definition in lockstep
+    // across the two kernels so user expectations match across both
+    // colour and alpha cleanup.
+    const float3 cbBasis = float3(-0.1146, -0.3854, 0.5000);
+    const float3 crBasis = float3( 0.5000, -0.4542, -0.0458);
+    float2 chromaScreen = float2(dot(cbBasis, params.screenColor),
+                                 dot(crBasis, params.screenColor));
+    float screenChromaLen = length(chromaScreen);
+    if (screenChromaLen < 1e-4) {
+        // Neutral-grey "screen" reference would have no defined
+        // direction — leave the matte untouched in that pathological
+        // case.
+        destination.write(float4(matteAlpha, 0.0, 0.0, 1.0), gid);
+        return;
+    }
+
+    float2 screenDir = chromaScreen / screenChromaLen;
+    float2 chroma = float2(dot(cbBasis, rgb), dot(crBasis, rgb));
+    float screenProjection = dot(chroma, screenDir);
+    // Normalise so a pixel that's pure canonical screen colour reads
+    // `1.0` (full attenuation possible at strength = 1) and a pixel
+    // pointing away from the screen reads `0` (no attenuation).
+    float spillFraction = saturate(screenProjection / screenChromaLen);
+    float attenuation = saturate(1.0 - spillFraction * params.strength);
+    destination.write(float4(matteAlpha * attenuation, 0.0, 0.0, 1.0), gid);
+}
+
 // MARK: - Alpha levels + gamma
 
 kernel void corridorKeyAlphaLevelsGammaKernel(

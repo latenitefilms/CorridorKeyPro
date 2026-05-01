@@ -167,8 +167,12 @@ final class EditorViewModel {
     var phase: EditorPhase = .noClipLoaded
     /// All user-editable parameters. Bound directly to the inspector
     /// controls; mutating any property triggers a preview re-render via
-    /// `parameterDidChange`.
-    var state: PluginStateData = PluginStateData()
+    /// `parameterDidChange`. Initialised from `EditorPreferences` so
+    /// the user's last-used Quality / Hint / Upscale Method choices
+    /// survive across sessions; per-clip parameters (sliders, screen
+    /// colour, etc.) start from the factory defaults inside
+    /// `PluginStateData()`.
+    var state: PluginStateData = EditorPreferences.makeInitialState()
     /// Loaded clip metadata. `nil` while `.noClipLoaded`.
     var clipInfo: VideoSourceInfo?
     /// Most recently rendered frame, ready to draw on the preview
@@ -440,8 +444,9 @@ final class EditorViewModel {
     // MARK: - Clip loading
 
     /// Loads a clip into the editor. Existing matte cache is dropped.
-    /// On success transitions to `.ready` and renders the first frame
-    /// for preview.
+    /// On success transitions to `.ready`, auto-detects the Screen
+    /// Colour from the first frame, and renders the first frame for
+    /// preview.
     func loadClip(at url: URL) async {
         cancelInflightWork()
         phase = .loadingClip(url)
@@ -456,11 +461,40 @@ final class EditorViewModel {
             self.analysisStatus = .idle
             self.exportStatus = .idle
             self.playheadTime = .zero
+            await autoDetectScreenColor(source: source)
             self.phase = .ready
             beginWarmupForCurrentQuality()
             renderPreview(at: .zero)
         } catch {
             self.phase = .loadFailed(error.localizedDescription)
+        }
+    }
+
+    /// Samples the first frame and switches `state.screenColor` to
+    /// whichever colour dominates the frame's chroma. The user's last
+    /// manual choice (read from `state.screenColor` before this call,
+    /// which itself was seeded from `EditorPreferences`) is the
+    /// fallback when the frame is too neutral to be confident — e.g.
+    /// a pre-screen reference plate or a slate.
+    ///
+    /// Best-effort: any decode failure leaves the screen colour
+    /// untouched. The user can flip the picker manually in that case.
+    private func autoDetectScreenColor(source: VideoSource) async {
+        do {
+            let pixelBuffer = try await source.makeFrame(
+                atTime: .zero,
+                preferredPixelFormat: kCVPixelFormatType_32BGRA
+            )
+            let detected = ScreenColorAutoDetector.detect(
+                firstFrame: pixelBuffer,
+                fallback: state.screenColor
+            )
+            if detected != state.screenColor {
+                state.screenColor = detected
+            }
+        } catch {
+            // Decoder couldn't produce a probe frame in BGRA — that's
+            // OK, just keep the user's prior choice.
         }
     }
 
@@ -756,12 +790,20 @@ final class EditorViewModel {
 
     /// Re-renders the current preview frame. Called whenever the user
     /// edits a parameter so the change is reflected immediately.
-    /// Also re-kicks the MLX warm-up when the user flips the Screen
-    /// Colour picker — Green and Blue ship as separate `.mlxfn`
-    /// bridges, so a colour change has to swap which engine the
-    /// inspector badge tracks and which bridge the next preview render
-    /// will land on. Other parameter edits hit the no-op fast path
-    /// inside `beginWarmupForCurrentQuality` because the cached
+    /// Also:
+    ///
+    /// * Re-kicks the MLX warm-up when the user flips the Screen
+    ///   Colour picker — Green and Blue ship as separate `.mlxfn`
+    ///   bridges, so a colour change has to swap which engine the
+    ///   inspector badge tracks and which bridge the next preview
+    ///   render will land on.
+    /// * Persists the three "session-level" choices (Quality, Hint,
+    ///   Upscale Method) via `EditorPreferences`. Sliders, toggles,
+    ///   and the screen-colour pick stay per-clip; the Reset to
+    ///   Default button covers factory-recovery for those.
+    ///
+    /// Other parameter edits hit the no-op fast path inside
+    /// `beginWarmupForCurrentQuality` because the cached
     /// `(resolution, colour)` already matches.
     func parameterDidChange() {
         renderPreview(at: playheadTime)
@@ -769,6 +811,9 @@ final class EditorViewModel {
             || activeWarmupScreenColor != state.screenColor {
             beginWarmupForCurrentQuality()
         }
+        EditorPreferences.qualityMode = state.qualityMode
+        EditorPreferences.hintMode = state.hintMode
+        EditorPreferences.upscaleMethod = state.upscaleMethod
     }
 
     // MARK: - On-screen control (OSC)

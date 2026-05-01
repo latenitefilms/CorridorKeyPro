@@ -65,6 +65,11 @@ final class CorridorKeyComputePipelines: Sendable {
     /// Vision subject mask so foreground props (which the subject
     /// detector ignores) still get marked as foreground.
     let hintUnion: any MTLComputePipelineState
+    /// Alpha attenuation by spill amount. Reduces matte alpha in
+    /// pixels strongly biased toward the screen colour, scaled by the
+    /// user's Despill Strength — the "make the spill disappear, not
+    /// just change colour" half of despill.
+    let spillAlphaAttenuation: any MTLComputePipelineState
     let sourcePassthrough: any MTLComputePipelineState
     let applyScreenMatrix: any MTLComputePipelineState
     let resample: any MTLComputePipelineState
@@ -101,6 +106,7 @@ final class CorridorKeyComputePipelines: Sendable {
         gaussianVertical = try compute("corridorKeyGaussianVerticalKernel")
         chromaHint = try compute("corridorKeyChromaHintKernel")
         hintUnion = try compute("corridorKeyHintUnionKernel")
+        spillAlphaAttenuation = try compute("corridorKeySpillAlphaAttenuationKernel")
         sourcePassthrough = try compute("corridorKeySourcePassthroughKernel")
         applyScreenMatrix = try compute("corridorKeyApplyScreenMatrixKernel")
         resample = try compute("corridorKeyResampleKernel")

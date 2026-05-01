@@ -1043,12 +1043,32 @@ final class RenderPipeline: @unchecked Sendable {
 
         // 3. Matte refinement chain (fused levels/gamma/refiner → CC
         // despeckle → erode/dilate → softness).
-        let (refinedMattePooled, refinedMatte) = try refineMatte(
+        let (refinedMattePooled, refinedMatteRaw) = try refineMatte(
             alpha: upscaledAlpha,
             state: inputs.state,
             entry: context.entry,
             commandBuffer: postCommandBuffer
         )
+
+        // 3b. Spill-driven alpha attenuation. Pulls matte alpha toward
+        // zero in pixels whose chroma points along the screen direction,
+        // scaled by the same Despill Strength slider that drives the
+        // colour despill. Without this stage, model-error pixels (faint
+        // alpha in the screen background) become coloured halos at the
+        // composite step — blue at strength 0, greenish at strength 1
+        // — because the despilled foreground colour stays bound to a
+        // non-zero alpha. Reads the *pre-despill* foreground because the
+        // despilled FG already has the screen-direction chroma removed,
+        // which would zero the spill measurement.
+        let attenuatedMattePooled = try RenderStages.attenuateMatteBySpill(
+            matte: refinedMatteRaw,
+            foreground: upscaledForeground,
+            screenColor: inputs.state.screenColor.canonicalScreenReference,
+            strength: Float(inputs.state.despillStrength),
+            entry: context.entry,
+            commandBuffer: postCommandBuffer
+        )
+        let refinedMatte = attenuatedMattePooled?.texture ?? refinedMatteRaw
 
         // 4. Pre-blur the source once when light-wrap is on so the fused
         // post-process pass has a blurred RGB input to sample.
@@ -1146,6 +1166,7 @@ final class RenderPipeline: @unchecked Sendable {
         upscaledForegroundPooled?.returnManually()
         despilledPooled?.returnManually()
         refinedMattePooled?.returnManually()
+        attenuatedMattePooled?.returnManually()
         blurredSourcePooled?.returnManually()
         blurredSourceIntermediatePooled?.returnManually()
         restoredPooled.returnManually()
