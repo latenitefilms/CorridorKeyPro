@@ -33,6 +33,7 @@ struct ExportSheet: View {
                 EnumPicker(
                     title: "Codec",
                     selection: $codec,
+                    defaultValue: .proRes4444,
                     onChange: {}
                 )
 

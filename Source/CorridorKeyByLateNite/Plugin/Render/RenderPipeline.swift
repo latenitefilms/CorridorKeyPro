@@ -632,7 +632,11 @@ final class RenderPipeline: @unchecked Sendable {
                 commandBuffer: commandBuffer
             )
         } else if let mask = visionMask {
-            hintPooled = try RenderStages.extractHint(
+            // Same union as `runPreInference` — see the long comment
+            // there for why a Vision-only hint loses foreground props.
+            // Diagnostic mode shows exactly what the network will see,
+            // so it has to mirror the production combine.
+            let visionPooled = try RenderStages.extractHint(
                 source: mask.texture,
                 layout: 1,
                 targetWidth: rotatedSource.width,
@@ -641,6 +645,20 @@ final class RenderPipeline: @unchecked Sendable {
                 commandBuffer: commandBuffer
             )
             mask.retainOnCompletion(of: commandBuffer)
+            let chromaPooled = try RenderStages.generateChromaHint(
+                source: rotatedSource,
+                screenColor: screenTransform.estimatedScreenReference,
+                entry: context.entry,
+                commandBuffer: commandBuffer
+            )
+            hintPooled = try RenderStages.unionHints(
+                primary: visionPooled.texture,
+                secondary: chromaPooled.texture,
+                entry: context.entry,
+                commandBuffer: commandBuffer
+            )
+            visionPooled.returnOnCompletion(of: commandBuffer)
+            chromaPooled.returnOnCompletion(of: commandBuffer)
         } else {
             // Manual and Automatic share the chroma prior — see the
             // matching branch in `runPreInference` for why a pure
@@ -855,7 +873,20 @@ final class RenderPipeline: @unchecked Sendable {
                 commandBuffer: preCommandBuffer
             )
         } else if let mask = visionMask {
-            hintTexturePooled = try RenderStages.extractHint(
+            // Apple Vision's foreground-instance detector is a *subject*
+            // model — it picks people, animals, and salient objects but
+            // ignores generic foreground props (a sword, a phone, a
+            // carved totem in front of the screen). On its own that
+            // means the hint says "background" everywhere a prop sits,
+            // and the network pulls the prop out of the matte too. To
+            // recover those pixels we union the Vision mask with the
+            // chroma prior: anywhere chroma says "this isn't the screen
+            // colour" gets pulled back into foreground even if Vision
+            // missed it. Vision still drives the hint where it does see
+            // a subject (people consistently key better with the binary
+            // saliency mask than with the chroma gradient), and the
+            // chroma fills in everything else.
+            let visionPooled = try RenderStages.extractHint(
                 source: mask.texture,
                 layout: 1,
                 targetWidth: rotatedSource.width,
@@ -864,6 +895,20 @@ final class RenderPipeline: @unchecked Sendable {
                 commandBuffer: preCommandBuffer
             )
             mask.retainOnCompletion(of: preCommandBuffer)
+            let chromaPooled = try RenderStages.generateChromaHint(
+                source: rotatedSource,
+                screenColor: screenTransform.estimatedScreenReference,
+                entry: entry,
+                commandBuffer: preCommandBuffer
+            )
+            hintTexturePooled = try RenderStages.unionHints(
+                primary: visionPooled.texture,
+                secondary: chromaPooled.texture,
+                entry: entry,
+                commandBuffer: preCommandBuffer
+            )
+            visionPooled.returnOnCompletion(of: preCommandBuffer)
+            chromaPooled.returnOnCompletion(of: preCommandBuffer)
         } else {
             // Manual and Automatic both use the chroma-derived prior
             // here — the network was trained on that distribution,

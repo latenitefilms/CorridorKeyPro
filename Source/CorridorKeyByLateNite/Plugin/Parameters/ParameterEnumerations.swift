@@ -66,9 +66,13 @@ public enum HintMode: Int, Sendable, CaseIterable, Codable {
     /// best results here when the screen colour itself is clean.
     case automatic = 0
     /// Apple Vision foreground-instance mask, run on the Neural
-    /// Engine. Beats the chroma prior on most footage because it
-    /// segments by subject saliency rather than by green-channel
-    /// dominance.
+    /// Engine, layered on top of the chroma prior so foreground props
+    /// the subject detector ignores still get keyed. Beats the chroma
+    /// prior alone on people / animals / salient subjects because
+    /// Vision segments by saliency rather than by screen-channel
+    /// dominance; the chroma prior fills in everything else (set
+    /// dressing, weapons, instruments, anything not on the subject
+    /// list) so the matte doesn't lose objects in front of the screen.
     case appleVision = 1
     /// Same upstream chroma prior as `.automatic`, but the user's
     /// hint dots are required — the renderer fails the analysis if

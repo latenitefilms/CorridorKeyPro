@@ -186,6 +186,7 @@ private struct SettingsGroup: View {
             EnumPicker(
                 title: ParameterRanges.qualityModeName,
                 selection: $viewModel.state.qualityMode,
+                defaultValue: ParameterRanges.Defaults.qualityMode,
                 onChange: viewModel.parameterDidChange
             )
             // The Hint dropdown sits directly under Quality because
@@ -198,21 +199,25 @@ private struct SettingsGroup: View {
             EnumPicker(
                 title: ParameterRanges.hintModeName,
                 selection: $viewModel.state.hintMode,
+                defaultValue: ParameterRanges.Defaults.hintMode,
                 onChange: viewModel.parameterDidChange
             )
             EnumPicker(
                 title: ParameterRanges.screenColorName,
                 selection: $viewModel.state.screenColor,
+                defaultValue: ParameterRanges.Defaults.screenColor,
                 onChange: viewModel.parameterDidChange
             )
             EnumPicker(
                 title: ParameterRanges.upscaleMethodName,
                 selection: $viewModel.state.upscaleMethod,
+                defaultValue: ParameterRanges.Defaults.upscaleMethod,
                 onChange: viewModel.parameterDidChange
             )
             EnumPicker(
                 title: ParameterRanges.outputModeName,
                 selection: $viewModel.state.outputMode,
+                defaultValue: ParameterRanges.Defaults.outputMode,
                 onChange: viewModel.parameterDidChange
             )
 
@@ -237,6 +242,7 @@ private struct InteriorDetailGroup: View {
             ParameterToggle(
                 title: ParameterRanges.sourcePassthroughName,
                 isOn: $viewModel.state.sourcePassthroughEnabled,
+                defaultValue: ParameterRanges.Defaults.sourcePassthroughEnabled,
                 onChange: viewModel.parameterDidChange
             )
             ParameterFloatSlider(
@@ -286,6 +292,7 @@ private struct MatteGroup: View {
             ParameterToggle(
                 title: ParameterRanges.autoDespeckleName,
                 isOn: $viewModel.state.autoDespeckleEnabled,
+                defaultValue: ParameterRanges.Defaults.autoDespeckleEnabled,
                 onChange: viewModel.parameterDidChange
             )
             ParameterIntSlider(
@@ -316,6 +323,7 @@ private struct EdgeAndSpillGroup: View {
             EnumPicker(
                 title: ParameterRanges.spillMethodName,
                 selection: $viewModel.state.spillMethod,
+                defaultValue: ParameterRanges.Defaults.spillMethod,
                 onChange: viewModel.parameterDidChange
             )
         }
@@ -330,6 +338,7 @@ private struct EdgeRefinementGroup: View {
             ParameterToggle(
                 title: ParameterRanges.lightWrapName,
                 isOn: $viewModel.state.lightWrapEnabled,
+                defaultValue: ParameterRanges.Defaults.lightWrapEnabled,
                 onChange: viewModel.parameterDidChange
             )
             ParameterFloatSlider(
@@ -348,6 +357,7 @@ private struct EdgeRefinementGroup: View {
             ParameterToggle(
                 title: ParameterRanges.edgeDecontaminateName,
                 isOn: $viewModel.state.edgeDecontaminateEnabled,
+                defaultValue: ParameterRanges.Defaults.edgeDecontaminateEnabled,
                 onChange: viewModel.parameterDidChange
             )
             ParameterFloatSlider(
@@ -368,6 +378,7 @@ private struct TemporalStabilityGroup: View {
             ParameterToggle(
                 title: ParameterRanges.temporalStabilityName,
                 isOn: $viewModel.state.temporalStabilityEnabled,
+                defaultValue: ParameterRanges.Defaults.temporalStabilityEnabled,
                 onChange: viewModel.parameterDidChange
             )
             ParameterFloatSlider(
@@ -410,6 +421,14 @@ struct ParameterFloatSlider: View {
     @Binding var value: Double
     var onChange: () -> Void = {}
 
+    /// True when the current value sits within half a step of the
+    /// factory default. Used to show / hide the reset affordance — a
+    /// "Reset to Default" button on a parameter that's already at its
+    /// default would be visual noise.
+    private var isAtDefault: Bool {
+        abs(value - range.defaultValue) < (range.step / 2)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
@@ -419,6 +438,13 @@ struct ParameterFloatSlider: View {
                 Text(value, format: .number.precision(.fractionLength(2)))
                     .font(.callout.monospacedDigit())
                     .foregroundStyle(.secondary)
+                ResetToDefaultButton(
+                    isVisible: !isAtDefault,
+                    helpText: "Reset \(range.name) to \(formatDefault(range.defaultValue))"
+                ) {
+                    value = range.defaultValue
+                    onChange()
+                }
             }
             Slider(
                 value: $value,
@@ -430,12 +456,18 @@ struct ParameterFloatSlider: View {
             }
         }
     }
+
+    private func formatDefault(_ defaultValue: Double) -> String {
+        defaultValue.formatted(.number.precision(.fractionLength(2)))
+    }
 }
 
 struct ParameterIntSlider: View {
     let range: IntParameterRange
     @Binding var value: Int
     var onChange: () -> Void = {}
+
+    private var isAtDefault: Bool { value == range.defaultValue }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -446,6 +478,13 @@ struct ParameterIntSlider: View {
                 Text(value, format: .number)
                     .font(.callout.monospacedDigit())
                     .foregroundStyle(.secondary)
+                ResetToDefaultButton(
+                    isVisible: !isAtDefault,
+                    helpText: "Reset \(range.name) to \(range.defaultValue)"
+                ) {
+                    value = range.defaultValue
+                    onChange()
+                }
             }
             Slider(
                 value: Binding(
@@ -465,13 +504,23 @@ struct ParameterIntSlider: View {
 struct ParameterToggle: View {
     let title: String
     @Binding var isOn: Bool
+    let defaultValue: Bool
     var onChange: () -> Void = {}
 
     var body: some View {
-        Toggle(title, isOn: $isOn)
-            .onChange(of: isOn) {
+        HStack {
+            Toggle(title, isOn: $isOn)
+                .onChange(of: isOn) {
+                    onChange()
+                }
+            ResetToDefaultButton(
+                isVisible: isOn != defaultValue,
+                helpText: "Reset \(title) to \(defaultValue ? "On" : "Off")"
+            ) {
+                isOn = defaultValue
                 onChange()
             }
+        }
     }
 }
 
@@ -483,6 +532,7 @@ struct EnumPicker<EnumType: CaseIterable & Identifiable & Hashable>: View
 
     let title: String
     @Binding var selection: EnumType
+    let defaultValue: EnumType
     var onChange: () -> Void = {}
 
     var body: some View {
@@ -502,6 +552,13 @@ struct EnumPicker<EnumType: CaseIterable & Identifiable & Hashable>: View
             .onChange(of: selection) {
                 onChange()
             }
+            ResetToDefaultButton(
+                isVisible: selection != defaultValue,
+                helpText: "Reset \(title) to \(displayName(for: defaultValue))"
+            ) {
+                selection = defaultValue
+                onChange()
+            }
         }
     }
 
@@ -510,6 +567,31 @@ struct EnumPicker<EnumType: CaseIterable & Identifiable & Hashable>: View
             return displayable.displayName
         }
         return String(describing: option)
+    }
+}
+
+/// Inline circular-arrow button that resets a single parameter to its
+/// factory default. Hidden via `.opacity(0)` rather than removed from
+/// the layout so the row's `HStack` doesn't reflow when a value is
+/// nudged off-default — the arrow just fades in next to the value
+/// readout. Sized down to `.mini` so it doesn't crowd the slider rail.
+private struct ResetToDefaultButton: View {
+    let isVisible: Bool
+    let helpText: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "arrow.counterclockwise")
+                .imageScale(.small)
+        }
+        .buttonStyle(.borderless)
+        .controlSize(.mini)
+        .opacity(isVisible ? 1 : 0)
+        .allowsHitTesting(isVisible)
+        .help(helpText)
+        .accessibilityLabel(isVisible ? helpText : "")
+        .accessibilityHidden(!isVisible)
     }
 }
 

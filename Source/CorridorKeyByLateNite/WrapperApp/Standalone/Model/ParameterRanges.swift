@@ -129,4 +129,23 @@ enum ParameterRanges {
         defaultValue: 0.5, parameterMin: 0, parameterMax: 1,
         sliderMin: 0, sliderMax: 1, step: 0.01
     )
+
+    /// Default values for the non-slider parameters. The Standalone
+    /// Editor's per-row "Reset to Default" affordance reads these so
+    /// every parameter has a single source of truth for its factory
+    /// state; the `PluginStateData` initialiser uses the same values
+    /// so loading a fresh project lands on identical defaults.
+    enum Defaults {
+        static let qualityMode: QualityMode = .automatic
+        static let hintMode: HintMode = .appleVision
+        static let screenColor: ScreenColor = .green
+        static let upscaleMethod: UpscaleMethod = .lanczos
+        static let outputMode: OutputMode = .processed
+        static let spillMethod: SpillMethod = .ultra
+        static let sourcePassthroughEnabled: Bool = false
+        static let autoDespeckleEnabled: Bool = true
+        static let lightWrapEnabled: Bool = true
+        static let edgeDecontaminateEnabled: Bool = true
+        static let temporalStabilityEnabled: Bool = true
+    }
 }

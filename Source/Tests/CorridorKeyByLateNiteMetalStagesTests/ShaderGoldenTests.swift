@@ -124,6 +124,76 @@ struct ShaderGoldenTests {
         #expect(output.y >= input.y - 1e-3, "Green should not have been reduced on a blue-screen despill.")
     }
 
+    @Test("Despill Ultra on a blue-screen pixel does not push the result toward green")
+    func despillUltraOnBlueScreenIsNeutralOrRedLeaning() async throws {
+        let entry: MetalDeviceCacheEntry
+        do { entry = try TestHarness.makeEntry() } catch { throw XCTSkipError("\(error)") }
+
+        // Sweep a handful of blue-spilled pixels — neutral shoulders, warm
+        // skin tones, and saturated pure blue — through the Ultra method
+        // with the canonical blue screen reference, and assert that none
+        // of them comes out with green as the dominant channel. The bug
+        // hypothesis we're refuting: that removing chroma along the blue
+        // axis pushes the residual into yellow strongly enough that
+        // green becomes the dominant channel on real footage.
+        let blueScreen = SIMD3<Float>(0.08, 0.16, 0.84)
+        let cases: [(label: String, input: SIMD4<Float>)] = [
+            ("strong blue spill on grey base", SIMD4<Float>(0.40, 0.40, 0.70, 1.0)),
+            ("subtle blue spill on warm shoulder", SIMD4<Float>(0.50, 0.40, 0.55, 1.0)),
+            ("saturated foreground with mild blue spill", SIMD4<Float>(0.55, 0.45, 0.60, 1.0)),
+            ("pure canonical blue (full screen)", SIMD4<Float>(0.08, 0.16, 0.84, 1.0)),
+            ("dark blue-tinted hair edge", SIMD4<Float>(0.12, 0.10, 0.30, 1.0))
+        ]
+
+        let commandQueue = try makeCommandQueue(entry: entry)
+
+        for (label, input) in cases {
+            let sourceTexture = try makeColourTexture(
+                entry: entry, width: 2, height: 2, pixelFormat: .rgba32Float, colour: input
+            )
+            guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+                Issue.record("Could not create command buffer for \(label).")
+                return
+            }
+            let pooled = try RenderStages.despill(
+                foreground: sourceTexture,
+                strength: 1.0,
+                method: .ultra,
+                screenColor: blueScreen,
+                entry: entry,
+                commandBuffer: commandBuffer
+            )
+            guard let pooled else {
+                Issue.record("Ultra despill returned nil for \(label).")
+                return
+            }
+            try commitAndWait(commandBuffer)
+            let output = readFirstPixel(texture: pooled.texture)
+            pooled.returnManually()
+
+            // The spill (blue channel) must come down (or stay flat for
+            // pixels with no positive screen-direction projection — but
+            // never go up).
+            #expect(
+                output.z <= input.z + 1e-3,
+                "[\(label)] Blue went up after blue-screen Ultra despill: in=\(input.z) out=\(output.z)"
+            )
+            // The despill must not turn the pixel green-dominant. The
+            // user-visible bug would be "I picked Blue, ran Ultra, and my
+            // skin tones look green" — we check the post-despill green
+            // channel is no higher than the post-despill red channel by
+            // more than a small tolerance for genuinely green-leaning
+            // inputs.
+            let greenLeanBefore = max(input.y - input.x, 0)
+            let greenLeanAfter = max(output.y - output.x, 0)
+            #expect(
+                greenLeanAfter <= greenLeanBefore + 0.02,
+                "[\(label)] Ultra despill amplified the green-over-red lean: before=\(greenLeanBefore), after=\(greenLeanAfter), in=\(input), out=\(output)"
+            )
+            print("Ultra blue-despill \(label): in=\(input) out=\(output)")
+        }
+    }
+
     @Test("Despill Neutral with low R/B does not amplify noise past the 1e-3 guard")
     func despillNeutralStability() async throws {
         let entry: MetalDeviceCacheEntry

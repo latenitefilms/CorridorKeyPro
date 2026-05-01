@@ -860,6 +860,30 @@ kernel void corridorKeyChromaHintKernel(
     destination.write(float4(matte, 0.0, 0.0, 1.0), gid);
 }
 
+// MARK: - Hint union (max combine)
+
+/// Combines two single-channel alpha-hint textures with `max(a, b)` so a
+/// pixel that's "foreground" in either input stays foreground in the
+/// output. Used when the Apple Vision hint is active and we want to fold
+/// the chroma-prior in underneath — Vision picks up people / animals /
+/// salient subjects, and the chroma prior fills in everything else
+/// (props, set dressing, anything that isn't the screen colour).
+/// Without the union, Vision-only mattes lose foreground props because
+/// `VNGenerateForegroundInstanceMaskRequest` is a subject detector, not
+/// a generic foreground segmenter.
+kernel void corridorKeyHintUnionKernel(
+    texture2d<float, access::read> hintA [[texture(CKTextureIndexHint)]],
+    texture2d<float, access::read> hintB [[texture(CKTextureIndexCoarse)]],
+    texture2d<float, access::write> destination [[texture(CKTextureIndexOutput)]],
+    uint2 gid [[thread_position_in_grid]]
+) {
+    uint2 dims = uint2(destination.get_width(), destination.get_height());
+    if (gid.x >= dims.x || gid.y >= dims.y) { return; }
+    float a = hintA.read(gid).r;
+    float b = hintB.read(gid).r;
+    destination.write(float4(max(a, b), 0.0, 0.0, 1.0), gid);
+}
+
 // MARK: - Source passthrough blending
 
 kernel void corridorKeySourcePassthroughKernel(

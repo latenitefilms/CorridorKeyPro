@@ -67,6 +67,49 @@ enum RenderStages {
 
     // MARK: - Chroma-prior hint / rough matte
 
+    /// Combines two single-channel alpha-hint textures pixel-wise via
+    /// `max(a, b)` so foreground signal from either input survives. The
+    /// renderer uses this when Apple Vision is the chosen hint source —
+    /// Vision returns a strong subject mask but only for people /
+    /// animals / salient objects, so we fold the chroma prior in
+    /// underneath to recover foreground props that Vision ignored.
+    /// Both inputs must be the same size and format.
+    static func unionHints(
+        primary: any MTLTexture,
+        secondary: any MTLTexture,
+        entry: MetalDeviceCacheEntry,
+        commandBuffer: any MTLCommandBuffer
+    ) throws -> PooledTexture {
+        guard primary.width == secondary.width, primary.height == secondary.height else {
+            // Mismatched resolutions would silently key the wrong region;
+            // fail loudly so the caller surfaces the mistake instead of
+            // a corrupt matte.
+            throw MetalDeviceCacheError.textureAllocationFailed
+        }
+        guard let output = entry.texturePool.acquire(
+            width: primary.width,
+            height: primary.height,
+            pixelFormat: .r16Float
+        ) else { throw MetalDeviceCacheError.textureAllocationFailed }
+        guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
+            output.returnManually()
+            throw MetalDeviceCacheError.commandEncoderCreationFailed
+        }
+        encoder.label = "CorridorKey by LateNite Hint Union"
+        encoder.setComputePipelineState(entry.computePipelines.hintUnion)
+        encoder.setTexture(primary, index: Int(CKTextureIndexHint.rawValue))
+        encoder.setTexture(secondary, index: Int(CKTextureIndexCoarse.rawValue))
+        encoder.setTexture(output.texture, index: Int(CKTextureIndexOutput.rawValue))
+        dispatch(
+            encoder: encoder,
+            pipeline: entry.computePipelines.hintUnion,
+            width: output.texture.width,
+            height: output.texture.height
+        )
+        encoder.endEncoding()
+        return output
+    }
+
     /// Generates a screen-colour-bias hint texture from the source RGB.
     /// The kernel reads `screenColor` to pick which channel to treat as
     /// the screen — pass `ScreenColor.green.canonicalScreenReference`

@@ -60,6 +60,11 @@ final class CorridorKeyComputePipelines: Sendable {
     /// services both green and blue keys without needing a separate
     /// kernel per colour.
     let chromaHint: any MTLComputePipelineState
+    /// Union-combiner for two alpha-hint textures. Used in Apple
+    /// Vision hint mode to fold the chroma prior underneath the
+    /// Vision subject mask so foreground props (which the subject
+    /// detector ignores) still get marked as foreground.
+    let hintUnion: any MTLComputePipelineState
     let sourcePassthrough: any MTLComputePipelineState
     let applyScreenMatrix: any MTLComputePipelineState
     let resample: any MTLComputePipelineState
@@ -95,6 +100,7 @@ final class CorridorKeyComputePipelines: Sendable {
         gaussianHorizontal = try compute("corridorKeyGaussianHorizontalKernel")
         gaussianVertical = try compute("corridorKeyGaussianVerticalKernel")
         chromaHint = try compute("corridorKeyChromaHintKernel")
+        hintUnion = try compute("corridorKeyHintUnionKernel")
         sourcePassthrough = try compute("corridorKeySourcePassthroughKernel")
         applyScreenMatrix = try compute("corridorKeyApplyScreenMatrixKernel")
         resample = try compute("corridorKeyResampleKernel")
