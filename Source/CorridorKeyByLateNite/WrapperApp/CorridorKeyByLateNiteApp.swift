@@ -67,7 +67,7 @@ struct CorridorKeyToolboxApp: App {
         WindowGroup("Editor", id: EditorWindow.id) {
             EditorView()
                 .preferredColorScheme(.dark)
-                .frame(minWidth: 1100, minHeight: 700)
+                .frame(minWidth: 1260, minHeight: 700)
         }
         .windowResizability(.contentMinSize)
     }
