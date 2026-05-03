@@ -2,21 +2,11 @@
 
 **CorridorKey by LateNite** brings [Corridor Digital's](https://www.corridordigital.com) [CorridorKey](https://github.com/nikopueringer/CorridorKey) to Final Cut Pro. 🥳
 
-This is **NOT** a fork. We've taken the machine learning [MLX Models](https://huggingface.co/alexandrealvaro/corridorkey-models/tree/main) created by [Alexandre Alvaro](https://huggingface.co/alexandrealvaro) and built a completely new Swift & Swift UI engine powered by Metal & MLX. 🔥
+This is **NOT** a fork. We've taken the blue and green CorridorKey models, converted them to MLX and built a completely new Swift & Swift UI engine powered by modern Apple frameworks. 🔥
 
-Whilst there are already some great fork's of CorridorKey, such as [EZ-CorridorKey](https://github.com/edenaion/EZ-CorridorKey), none of them are purposely build for Mac & Apple Silicon.
+Whilst there are already some great fork's of CorridorKey, such as [EZ-CorridorKey](https://github.com/edenaion/EZ-CorridorKey), none of them are purposely build for **Mac & Apple Silicon**.
 
-**CorridorKey by LateNite** brings an Effect directly into **Final Cut Pro**, as well as a **Standalone Editor** - optimised for ProRes 4444 in and out. 🏎️
-
-What is CorridorKey? Niko explains:
-
-> When you film something against a green screen, the edges of your subject inevitably blend with the green background. This creates pixels that are a mix of your subject's color and the green screen's color. Traditional keyers struggle to untangle these colors, forcing you to spend hours building complex edge mattes or manually rotoscoping. Even modern "AI Roto" solutions typically output a harsh binary mask, completely destroying the delicate, semi-transparent pixels needed for a realistic composite.
->
-> I built CorridorKey to solve this *unmixing* problem.
->
-> You input a raw green screen frame, and the neural network completely separates the foreground object from the green screen. For every single pixel, even the highly transparent ones like motion blur or out-of-focus edges, the model predicts the true, un-multiplied straight color of the foreground element, alongside a clean, linear alpha channel. It doesn't just guess what is opaque and what is transparent; it actively reconstructs the color of the foreground object as if the green screen was never there.
->
-> No more fighting with garbage mattes or agonizing over "core" vs "edge" keys. Give CorridorKey a hint of what you want, and it separates the light for you.
+**CorridorKey by LateNite** brings an Effect directly into **Final Cut Pro**, as well as a **Standalone Editor** - optimised for **ProRes** in and out. 🏎️
 
 You can download and learn more on the [CorridorKey by LateNite website](https://corridorkeybylatenite.fcp.cafe).
 
@@ -25,6 +15,10 @@ You can download and learn more on the [CorridorKey by LateNite website](https:/
 ## Acknowledgements
 
 **CorridorKey by LateNite** would **NOT** be possible without Niko's amazing [CorridorKey](https://github.com/nikopueringer/CorridorKey).
+
+The images of Niko used in the screenshots on this website are from the [CorridorKey Benchmarks](https://huggingface.co/datasets/nikopueringer/CorridorKey1.0_QualityBenchmark).
+
+It also uses Apple's [MLX Swift](https://github.com/ml-explore/mlx-swift) and [Swift Numerics](https://github.com/apple/swift-numerics).
 
 ---
 
@@ -60,13 +54,9 @@ SOFTWARE.
 
 ## Model License
 
-**CorridorKey by LateNite** is subject to the same license terms as CorridorKey — [CC BY-NC-SA 4.0](https://github.com/nikopueringer/CorridorKey/blob/main/LICENSE).
+**CorridorKey by LateNite** is subject to the same license terms as **CorridorKey** models — [CC BY-NC-SA 4.0](https://github.com/nikopueringer/CorridorKey/blob/main/LICENSE).
 
-You may use it freely including for commercial projects. You may not repackage or sell it, and the CorridorKey name must be retained in any forks or releases.
-
-If you want to integrate CorridorKey into a commercial software product or paid inference service, reach out to Corridor Digital at [contact@corridordigital.com](mailto:contact@corridordigital.com).
-
-The [CorridorKey MLX Models](https://huggingface.co/alexandrealvaro/corridorkey-models/tree/main) by [Alexandre Alvaro](https://huggingface.co/alexandrealvaro) used in this project have the following license:
+We use MLX versions of the [green screen model](https://huggingface.co/nikopueringer/CorridorKey_v1.0) and [blue screen model](https://huggingface.co/nikopueringer/CorridorKeyBlue_1.0).
 
 ```
 CORRIDOR KEY LICENCE
