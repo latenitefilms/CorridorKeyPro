@@ -4,6 +4,8 @@
 We're currently in a **public beta testing phase**. 👷
 
 We're just using a placeholder icon for now (taken from [VFX Toolbox](https://vfxtoolbox.fcp.cafe)) - new icon coming soon!
+
+Once the new icon is ready, we'll release for free on the Mac App Store.
 !!!
 
 **CorridorKey by LateNite** brings [Corridor Digital's](https://www.corridordigital.com) [CorridorKey](https://github.com/nikopueringer/CorridorKey) to Final Cut Pro. 🥳
@@ -12,7 +14,7 @@ We're just using a placeholder icon for now (taken from [VFX Toolbox](https://vf
 [Download](/download) on **TestFlight** and find the source code on [GitHub](https://github.com/latenitefilms/CorridorKeyByLateNite)!
 !!!
 
-This is **NOT** a fork. We've taken the machine learning [MLX Models](https://huggingface.co/alexandrealvaro/corridorkey-models/tree/main) created by [Alexandre Alvaro](https://huggingface.co/alexandrealvaro) and built a completely new Swift & Swift UI engine powered by Metal & MLX. 🔥
+This is **NOT** a fork. We've taken the blue and green CorridorKey models, converted them to MLX and built a completely new Swift & Swift UI engine powered by modern Apple frameworks. 🔥
 
 Whilst there are already some great fork's of CorridorKey, such as [EZ-CorridorKey](https://github.com/edenaion/EZ-CorridorKey), none of them are purposely build for Mac & Apple Silicon.
 
@@ -38,7 +40,7 @@ It makes full use of the GPU, Neural Engine, Metal and MPX - pushing the hardwar
 
 If you're working with ProRes or HEVC, it makes use of Apple Silicon's hardware encoders and decoders.
 
-If you enable **Auto Subject Hint** it uses Apple's [Vision Framework](https://developer.apple.com/documentation/vision) to use machine learning to "cut out" any foreground people, to use as a "hint" for CorridorKey.
+It uses Apple's [Vision Framework](https://developer.apple.com/documentation/vision) to use machine learning to "cut out" any foreground people, to use as a "hint" for CorridorKey.
 
 ![Footage courtesy of Corridor Digital's Benchmark Test Footage](/static/corridor-key-standalone.png)
 
@@ -57,25 +59,3 @@ https://www.youtube.com/watch?v=3Ploi723hg4
 https://www.youtube.com/watch?v=Y3Dfw969itU
 
 https://www.youtube.com/watch?v=MR0vQjr-Avc
-
-https://www.youtube.com/watch?v=Bx5OMAav0IY
-
----
-
-## What is EZ-CorridorKey?
-
-[EZ-CorridorKey](https://github.com/edenaion/EZ-CorridorKey) is a fork of the hero CorridorKey repository that adds a friendly user interface.
-
-It's basically a front-end for the original CorridorKey CLI.
-
-https://www.youtube.com/watch?v=ezg_1oQzz7w
-
----
-
-## What is CorridorKey by blace.ai?
-
-[CorridorKey by blace.ai](https://aescripts.com/corridorkey-by-blace-ai/) is a paid/commercial version of CorridorKey.
-
-It boasts "High rendering performance (2x-4x faster rendering times) and completely C++ based for maximum stability".
-
-https://www.youtube.com/watch?v=m-mZcTjnSnI

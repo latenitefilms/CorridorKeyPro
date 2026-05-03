@@ -1,6 +1,22 @@
 # Frequently Asked Questions
 
-## Why does this exist?
+## What is CorridorKey?
+
+[CorridorKey](https://github.com/nikopueringer/CorridorKey) is an open source project created by the talented [Corridor Digital](https://www.corridordigital.com) team.
+
+You can learn more about CorridorKey on their official [GitHub](https://github.com/nikopueringer/CorridorKey).
+
+You can also watch these amazing videos that explain the history of CorridorKey:
+
+https://www.youtube.com/watch?v=3Ploi723hg4
+
+https://www.youtube.com/watch?v=Y3Dfw969itU
+
+https://www.youtube.com/watch?v=MR0vQjr-Avc
+
+---
+
+## What is CorridorKey by LateNite?
 
 The official [CorridorKey](https://github.com/nikopueringer/CorridorKey) repository does work on Mac, however, it's written in Python and is not really optimised for the latest Apple Silicon hardware.
 
@@ -34,6 +50,15 @@ If you've tested and compared, please let us know in the [FCP Cafe Discord](http
 
 ---
 
+## What models do you use?
+
+We use MLX versions of:
+
+- [CorridorKey Green v1.0](https://huggingface.co/nikopueringer/CorridorKey_v1.0)
+- [CorridorKey Blue v1.0](https://huggingface.co/nikopueringer/CorridorKeyBlue_1.0)
+
+---
+
 ## What other CorridorKey projects exist?
 
 Here's some cool projects:
@@ -47,3 +72,31 @@ Here's some cool projects:
 - [CorridorKeyOpenVINO](https://github.com/daniil-lyakhov/CorridorKeyOpenVINO) - Fast Inference on Intel Hardware with OpenVINO
 - [EZ-CorridorKey](https://github.com/edenaion/EZ-CorridorKey) - a GUI for CorridorKey.
 - [Iris — CorridorKey](https://github.com/DomCoganda/Iris-CorridorKey) - A native desktop frontend for CorridorKey by Corridor Digital.
+
+---
+
+## What is EZ-CorridorKey?
+
+[EZ-CorridorKey](https://github.com/edenaion/EZ-CorridorKey) is a fork of the hero CorridorKey repository that adds a friendly user interface.
+
+It's basically a front-end for the original CorridorKey CLI.
+
+https://www.youtube.com/watch?v=ezg_1oQzz7w
+
+---
+
+## What is CorridorKey by blace.ai?
+
+[CorridorKey by blace.ai](https://aescripts.com/corridorkey-by-blace-ai/) is a paid/commercial version of CorridorKey.
+
+It boasts "High rendering performance (2x-4x faster rendering times) and completely C++ based for maximum stability".
+
+https://www.youtube.com/watch?v=m-mZcTjnSnI
+
+---
+
+## What is the Beeble Background Remover?
+
+You can learn more in this video:
+
+https://www.youtube.com/watch?v=Bx5OMAav0IY
