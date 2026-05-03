@@ -1,6 +1,6 @@
 ﻿# CorridorKey by LateNite
 
-> We're currently in a public beta testing phase. 👷
+> CorridorKey by LateNite brings Corridor Digital's CorridorKey to Final Cut Pro. 🥳
 
 - [CorridorKey by LateNite](https://corridorkeybylatenite.fcp.cafe/readme.md): CorridorKey by LateNite
 - [Download](https://corridorkeybylatenite.fcp.cafe/download.md): We're currently in a public beta testing phase on Apple's TestFlight.
