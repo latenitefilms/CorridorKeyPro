@@ -1,4 +1,5 @@
 {
+  "color-space-for-untagged-svg-colors" : "display-p3",
   "fill" : {
     "linear-gradient" : [
       "display-p3:0.36667,0.58576,1.00000,1.00000",
@@ -11,15 +12,15 @@
         {
           "image-name-specializations" : [
             {
-              "value" : "Light.png"
+              "value" : "Light@2x.png"
             },
             {
               "appearance" : "dark",
-              "value" : "Dark.png"
+              "value" : "Dark@2x.png"
             },
             {
               "appearance" : "tinted",
-              "value" : "Mono.png"
+              "value" : "Mono@2x.png"
             }
           ],
           "name" : "Dark@2x"
@@ -29,6 +30,7 @@
         "kind" : "none",
         "opacity" : 0.5
       },
+      "specular" : false,
       "translucency" : {
         "enabled" : false,
         "value" : 0.5
@@ -36,8 +38,6 @@
     }
   ],
   "supported-platforms" : {
-    "squares" : [
-      "macOS"
-    ]
+    "squares" : "shared"
   }
 }

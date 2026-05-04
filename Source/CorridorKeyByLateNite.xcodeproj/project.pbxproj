@@ -12,7 +12,6 @@
 		221345E42F98BC6800CF734C /* corridorkey_mlx_bridge_768.mlxfn in Resources */ = {isa = PBXBuildFile; fileRef = 221345DD2F98BC6800CF734C /* corridorkey_mlx_bridge_768.mlxfn */; };
 		221345E52F98BC6800CF734C /* corridorkey_mlx_bridge_1024.mlxfn in Resources */ = {isa = PBXBuildFile; fileRef = 221345DE2F98BC6800CF734C /* corridorkey_mlx_bridge_1024.mlxfn */; };
 		221345E62F98BC6800CF734C /* corridorkey_mlx_bridge_2048.mlxfn in Resources */ = {isa = PBXBuildFile; fileRef = 221345E02F98BC6800CF734C /* corridorkey_mlx_bridge_2048.mlxfn */; };
-		221345E82F99948900CF734C /* VFX Toolbox.icon in Resources */ = {isa = PBXBuildFile; fileRef = 221345E72F99948900CF734C /* VFX Toolbox.icon */; };
 		221345F52F98BC6800CF734C /* corridorkeyblue_mlx_bridge_512.mlxfn in Resources */ = {isa = PBXBuildFile; fileRef = 221345F02F98BC6800CF734C /* corridorkeyblue_mlx_bridge_512.mlxfn */; };
 		221345F62F98BC6800CF734C /* corridorkeyblue_mlx_bridge_768.mlxfn in Resources */ = {isa = PBXBuildFile; fileRef = 221345F12F98BC6800CF734C /* corridorkeyblue_mlx_bridge_768.mlxfn */; };
 		221345F72F98BC6800CF734C /* corridorkeyblue_mlx_bridge_1024.mlxfn in Resources */ = {isa = PBXBuildFile; fileRef = 221345F22F98BC6800CF734C /* corridorkeyblue_mlx_bridge_1024.mlxfn */; };
@@ -21,6 +20,7 @@
 		22D097FF2F9887BD0096E749 /* Credits.rtf in Resources */ = {isa = PBXBuildFile; fileRef = 22D097FE2F9887BD0096E749 /* Credits.rtf */; };
 		22D0980E2F988FB70096E749 /* Motion Template in Resources */ = {isa = PBXBuildFile; fileRef = 22D0980D2F988FB70096E749 /* Motion Template */; };
 		22D7DAEC2FA7403600D828FB /* Background.png in Resources */ = {isa = PBXBuildFile; fileRef = 22D7DAEB2FA7403600D828FB /* Background.png */; };
+		22D7DAEE2FA82ECD00D828FB /* CorridorKey.icon in Resources */ = {isa = PBXBuildFile; fileRef = 22D7DAED2FA82ECD00D828FB /* CorridorKey.icon */; };
 		CK0100000000000000000001 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000001 /* main.swift */; };
 		CK0100000000000000000002 /* CorridorKeyByLateNitePlugIn.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000002 /* CorridorKeyByLateNitePlugIn.swift */; };
 		CK0100000000000000000003 /* CorridorKeyByLateNitePlugIn+Parameters.swift in Sources */ = {isa = PBXBuildFile; fileRef = CK0200000000000000000003 /* CorridorKeyByLateNitePlugIn+Parameters.swift */; };
@@ -187,7 +187,6 @@
 		221345DE2F98BC6800CF734C /* corridorkey_mlx_bridge_1024.mlxfn */ = {isa = PBXFileReference; lastKnownFileType = file; path = corridorkey_mlx_bridge_1024.mlxfn; sourceTree = "<group>"; };
 		221345DF2F98BC6800CF734C /* corridorkey_mlx_bridge_1536.mlxfn */ = {isa = PBXFileReference; lastKnownFileType = file; path = corridorkey_mlx_bridge_1536.mlxfn; sourceTree = "<group>"; };
 		221345E02F98BC6800CF734C /* corridorkey_mlx_bridge_2048.mlxfn */ = {isa = PBXFileReference; lastKnownFileType = file; path = corridorkey_mlx_bridge_2048.mlxfn; sourceTree = "<group>"; };
-		221345E72F99948900CF734C /* VFX Toolbox.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; name = "VFX Toolbox.icon"; path = "CorridorKeyByLateNite/WrapperApp/VFX Toolbox.icon"; sourceTree = "<group>"; };
 		221345F02F98BC6800CF734C /* corridorkeyblue_mlx_bridge_512.mlxfn */ = {isa = PBXFileReference; lastKnownFileType = file; path = corridorkeyblue_mlx_bridge_512.mlxfn; sourceTree = "<group>"; };
 		221345F12F98BC6800CF734C /* corridorkeyblue_mlx_bridge_768.mlxfn */ = {isa = PBXFileReference; lastKnownFileType = file; path = corridorkeyblue_mlx_bridge_768.mlxfn; sourceTree = "<group>"; };
 		221345F22F98BC6800CF734C /* corridorkeyblue_mlx_bridge_1024.mlxfn */ = {isa = PBXFileReference; lastKnownFileType = file; path = corridorkeyblue_mlx_bridge_1024.mlxfn; sourceTree = "<group>"; };
@@ -196,6 +195,7 @@
 		22D097FE2F9887BD0096E749 /* Credits.rtf */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; name = Credits.rtf; path = CorridorKeyByLateNite/WrapperApp/Credits.rtf; sourceTree = "<group>"; };
 		22D0980D2F988FB70096E749 /* Motion Template */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "Motion Template"; path = "CorridorKeyByLateNite/WrapperApp/Resources/Motion Template"; sourceTree = "<group>"; };
 		22D7DAEB2FA7403600D828FB /* Background.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Background.png; path = CorridorKeyByLateNite/WrapperApp/Resources/Background.png; sourceTree = "<group>"; };
+		22D7DAED2FA82ECD00D828FB /* CorridorKey.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; name = CorridorKey.icon; path = CorridorKeyByLateNite/WrapperApp/CorridorKey.icon; sourceTree = "<group>"; };
 		CK0200000000000000000001 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = main.swift; path = CorridorKeyByLateNite/Plugin/main.swift; sourceTree = "<group>"; };
 		CK0200000000000000000002 /* CorridorKeyByLateNitePlugIn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CorridorKeyByLateNitePlugIn.swift; path = CorridorKeyByLateNite/Plugin/CorridorKeyByLateNitePlugIn.swift; sourceTree = "<group>"; };
 		CK0200000000000000000003 /* CorridorKeyByLateNitePlugIn+Parameters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CorridorKeyByLateNitePlugIn+Parameters.swift"; path = "CorridorKeyByLateNite/Plugin/Parameters/CorridorKeyByLateNitePlugIn+Parameters.swift"; sourceTree = "<group>"; };
@@ -427,7 +427,7 @@
 				SG0000000000000000000004 /* Standalone */,
 				221345E12F98BC6800CF734C /* MLX Models */,
 				22D097FE2F9887BD0096E749 /* Credits.rtf */,
-				221345E72F99948900CF734C /* VFX Toolbox.icon */,
+				22D7DAED2FA82ECD00D828FB /* CorridorKey.icon */,
 				CK0200000000000000000015 /* CorridorKeyByLateNiteApp.swift */,
 				CK0200000000000000000016 /* WelcomeView.swift */,
 				CK020000000000000000002A /* MotionTemplateInstaller.swift */,
@@ -716,11 +716,11 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				22D7DAEE2FA82ECD00D828FB /* CorridorKey.icon in Resources */,
 				22D7DAEC2FA7403600D828FB /* Background.png in Resources */,
 				22D097FF2F9887BD0096E749 /* Credits.rtf in Resources */,
 				22D0980E2F988FB70096E749 /* Motion Template in Resources */,
 				CK0100000000000000000017 /* InfoPlist.strings in Resources */,
-				221345E82F99948900CF734C /* VFX Toolbox.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1028,7 +1028,7 @@
 			baseConfigurationReference = CK0200000000000000000026 /* Shared.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSETCATALOG_COMPILER_APPICON_NAME = "VFX Toolbox";
+				ASSETCATALOG_COMPILER_APPICON_NAME = CorridorKey;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = CorridorKeyByLateNite/WrapperApp/WrapperApp.entitlements;
 				DEAD_CODE_STRIPPING = YES;
@@ -1065,7 +1065,7 @@
 			baseConfigurationReference = CK0200000000000000000026 /* Shared.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSETCATALOG_COMPILER_APPICON_NAME = "VFX Toolbox";
+				ASSETCATALOG_COMPILER_APPICON_NAME = CorridorKey;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = CorridorKeyByLateNite/WrapperApp/WrapperApp.entitlements;
 				DEAD_CODE_STRIPPING = YES;
