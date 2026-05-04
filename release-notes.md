@@ -1,5 +1,19 @@
 # Release Notes
 
+### 1.0.0 (Build 10)
+
+**🎉 Released:**
+- 4th May 2026
+
+**🔨 Improvements:**
+- We now have a new icon, designed by the amazing [Matthew Skiles](http://matthewskiles.com)!
+- Now runs on macOS Sonoma 14.6 or later (on Apple Silicon only).
+- Increased the default window size for the Standalone Editor.
+- Added a built-in default **Custom Image Background** of a castle for easier testing out-of-the-box.
+- Combined two MLX render stages for slightly faster performance.
+
+---
+
 ### 1.0.0 (Build 9)
 
 **🎉 Released:**
