@@ -2,10 +2,6 @@
 
 !!!primary
 We're currently in a **public beta testing phase** on Apple's TestFlight.
-
-We're just using a placeholder icon for now (taken from [VFX Toolbox](https://vfxtoolbox.fcp.cafe)) - new icon coming soon!
-
-Once the new icon is ready, we'll release for free on the Mac App Store.
 !!!
 
 You can download the latest **CorridorKey by LateNite** beta on [Apple's TestFlight](https://testflight.apple.com/join/2Xq4uckM).
@@ -22,9 +18,11 @@ You can learn more about TestFlight on [Apple's TestFlight website](https://test
 
 You can find all the source code on [GitHub](https://github.com/latenitefilms/CorridorKeyByLateNite).
 
-CorridorKey by LateNite is free and open-source, with an MIT license.
+**CorridorKey by LateNite** is free and open-source, with an MIT license.
 
-The CorridorKey models however, are
+The CorridorKey models however have a [CC BY-NC-SA 4.0](https://github.com/nikopueringer/CorridorKey/blob/main/LICENSE) license.
+
+We use MLX versions of the [green screen model](https://huggingface.co/nikopueringer/CorridorKey_v1.0) and [blue screen model](https://huggingface.co/nikopueringer/CorridorKeyBlue_1.0).
 
 ---
 

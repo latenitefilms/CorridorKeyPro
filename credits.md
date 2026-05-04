@@ -4,25 +4,19 @@
 
 This would **NOT** be possible without Niko's at [Corridor Digital's](https://www.corridordigital.com) amazing [CorridorKey](https://github.com/nikopueringer/CorridorKey) [green screen model](https://huggingface.co/nikopueringer/CorridorKey_v1.0) and [blue screen model](https://huggingface.co/nikopueringer/CorridorKeyBlue_1.0).
 
-The temporary **CorridorKey by LateNite** icon was designed by the amazing [Matthew Skiles](http://matthewskiles.com) - he's working on a new unique icon!
+It also uses Apple's [MLX Swift](https://github.com/ml-explore/mlx-swift) and [Swift Numerics](https://github.com/apple/swift-numerics).
+
+The **CorridorKey by LateNite** icon was designed by the amazing [Matthew Skiles](http://matthewskiles.com).
 
 You can learn more about LateNite's creations over at [FCP Cafe](https://fcp.cafe/latenite/).
 
----
-
-## Acknowledgements
-
-Again, **CorridorKey by LateNite** would **NOT** be possible without Niko's amazing [CorridorKey](https://github.com/nikopueringer/CorridorKey) [green screen model](https://huggingface.co/nikopueringer/CorridorKey_v1.0) and [blue screen model](https://huggingface.co/nikopueringer/CorridorKeyBlue_1.0).
-
 The images of Niko used in the screenshots on this website are from the [CorridorKey Benchmarks](https://huggingface.co/datasets/nikopueringer/CorridorKey1.0_QualityBenchmark).
-
-It also uses Apple's [MLX Swift](https://github.com/ml-explore/mlx-swift) and [Swift Numerics](https://github.com/apple/swift-numerics).
 
 ---
 
 ## Code License
 
-All the Swift and website code in this repository is MIT license, however when distributed as an application with the CorridorKey models, it falls under the CorridorKey License below.
+All the Swift and website code in this repository is **MIT License**, however when distributed as an application with the CorridorKey models, it falls under the CorridorKey Model License below.
 
 ```
 MIT License
@@ -52,7 +46,7 @@ SOFTWARE.
 
 ## Model License
 
-**CorridorKey by LateNite** is subject to the same license terms as **CorridorKey** models — [CC BY-NC-SA 4.0](https://github.com/nikopueringer/CorridorKey/blob/main/LICENSE).
+When distributed, **CorridorKey by LateNite** is subject to the same license terms as the **CorridorKey** models — [CC BY-NC-SA 4.0](https://github.com/nikopueringer/CorridorKey/blob/main/LICENSE).
 
 We use MLX versions of the [green screen model](https://huggingface.co/nikopueringer/CorridorKey_v1.0) and [blue screen model](https://huggingface.co/nikopueringer/CorridorKeyBlue_1.0).
 
