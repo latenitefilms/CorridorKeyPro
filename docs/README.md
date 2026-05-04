@@ -4,10 +4,6 @@
 
 !!!primary
 We're currently in a **public beta testing phase**. 👷
-
-We're just using a placeholder icon for now (taken from [VFX Toolbox](https://vfxtoolbox.fcp.cafe)) - new icon coming soon!
-
-Once the new icon is ready, we'll release for free on the Mac App Store.
 !!!
 
 This is **NOT** a fork. We've taken the blue and green CorridorKey models, converted them to MLX and built a completely new Swift & Swift UI engine powered by modern Apple frameworks. 🔥
