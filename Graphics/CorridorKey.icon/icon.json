@@ -1,0 +1,43 @@
+{
+  "color-space-for-untagged-svg-colors" : "display-p3",
+  "fill" : {
+    "linear-gradient" : [
+      "display-p3:0.36667,0.58576,1.00000,1.00000",
+      "display-p3:0.20465,0.47096,0.96611,1.00000"
+    ]
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "image-name-specializations" : [
+            {
+              "value" : "Light@2x.png"
+            },
+            {
+              "appearance" : "dark",
+              "value" : "Dark@2x.png"
+            },
+            {
+              "appearance" : "tinted",
+              "value" : "Mono@2x.png"
+            }
+          ],
+          "name" : "Dark@2x"
+        }
+      ],
+      "shadow" : {
+        "kind" : "none",
+        "opacity" : 0.5
+      },
+      "specular" : false,
+      "translucency" : {
+        "enabled" : false,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "squares" : "shared"
+  }
+}
