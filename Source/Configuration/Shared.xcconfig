@@ -11,10 +11,6 @@ ARCHS = arm64
 ONLY_ACTIVE_ARCH = NO
 VALID_ARCHS = arm64
 
-// macOS target. Final Cut Pro 12 ships on macOS 26; the plugin matches the host.
-MACOSX_DEPLOYMENT_TARGET = 26.0
-SDKROOT = macosx
-
 // FxPlug SDK lives alongside Xcode's macOS SDK.
 ADDITIONAL_SDKS = /Library/Developer/SDKs/FxPlug.sdk
 FRAMEWORK_SEARCH_PATHS = $(inherited) /Library/Frameworks
